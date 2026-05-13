@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const primary = Color(0xFF006D77);
-  static const primaryDark = Color(0xFF00545C);
-  static const secondary = Color(0xFF2EC4B6);
+  static const primary = Color(0xFF006C73);
+  static const secondary = Color(0xFF22B8A8);
+  static const softGreen = Color(0xFFE7F6F2);
+  static const softBlue = Color(0xFFEAF4F7);
+  static const softPurple = Color(0xFFF0ECFF);
+  static const softOrange = Color(0xFFFFF3E3);
+
   static const background = Color(0xFFF7FAFC);
   static const card = Color(0xFFFFFFFF);
-  static const text = Color(0xFF0F172A);
-  static const muted = Color(0xFF64748B);
-  static const border = Color(0xFFE2E8F0);
-  static const softBlue = Color(0xFFEFF6FF);
-  static const softGreen = Color(0xFFE7F8F3);
+
+  static const text = Color(0xFF102A43);
+  static const muted = Color(0xFF6B7C93);
+  static const border = Color(0xFFE6EDF2);
+
+  static const success = Color(0xFF35C989);
+  static const warning = Color(0xFFF5A623);
+  static const danger = Color(0xFFFF6B6B);
 }
 
 class AppTheme {
@@ -18,12 +25,12 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       scaffoldBackgroundColor: AppColors.background,
-      fontFamily: 'Arial',
+      fontFamily: 'Roboto',
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primary,
         primary: AppColors.primary,
         secondary: AppColors.secondary,
-        surface: AppColors.card,
+        background: AppColors.background,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.background,
@@ -33,9 +40,11 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
-        hintStyle: const TextStyle(color: AppColors.muted),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        fillColor: const Color(0xFFF8FAFC),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.border),
@@ -46,7 +55,10 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
+          borderSide: const BorderSide(
+            color: AppColors.primary,
+            width: 1.4,
+          ),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -59,9 +71,46 @@ class AppTheme {
             borderRadius: BorderRadius.circular(14),
           ),
           textStyle: const TextStyle(
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w800,
             fontSize: 15,
           ),
+        ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        height: 70,
+        backgroundColor: Colors.white,
+        indicatorColor: AppColors.softGreen,
+        labelTextStyle: MaterialStateProperty.resolveWith(
+          (states) {
+            if (states.contains(MaterialState.selected)) {
+              return const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primary,
+              );
+            }
+
+            return const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: AppColors.muted,
+            );
+          },
+        ),
+        iconTheme: MaterialStateProperty.resolveWith(
+          (states) {
+            if (states.contains(MaterialState.selected)) {
+              return const IconThemeData(
+                color: AppColors.primary,
+                size: 22,
+              );
+            }
+
+            return const IconThemeData(
+              color: AppColors.muted,
+              size: 21,
+            );
+          },
         ),
       ),
     );
