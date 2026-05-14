@@ -51,51 +51,192 @@ class _AdminPsicologosPageState extends State<AdminPsicologosPage> {
 
         final psicologos = snapshot.data ?? [];
 
-        return RefreshIndicator(
-          onRefresh: _recarregar,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Psicólogos',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.text,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Acompanhe profissionais cadastrados.',
-                  style: TextStyle(color: AppColors.muted),
-                ),
-                const SizedBox(height: 20),
-
-                if (psicologos.isEmpty)
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          body: RefreshIndicator(
+            onRefresh: _recarregar,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   const Text(
-                    'Nenhum psicólogo encontrado.',
+                    'Psicólogos',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.text,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Acompanhe profissionais cadastrados.',
                     style: TextStyle(color: AppColors.muted),
                   ),
-
+                  const SizedBox(height: 20),
+                  if (psicologos.isEmpty)
+                    const Text(
+                      'Nenhum psicólogo encontrado.',
+                      style: TextStyle(color: AppColors.muted),
+                  ),
                 ...psicologos.map((p) {
-                  final psicologo = Map<String, dynamic>.from(p);
-                  final usuario = psicologo['usuario'];
+                    final psicologo = Map<String, dynamic>.from(p);
+                    final usuario = psicologo['usuario'];
+                    final nome =
+                        usuario?['nome'] ?? psicologo['nome'] ?? 'Psicólogo';
+                    final email = usuario?['email'] ?? '';
 
-                  return _PsicologoCard(
-                    nome: usuario?['nome'] ?? psicologo['nome'] ?? 'Psicólogo',
-                    email: usuario?['email'] ?? '',
-                    crp: psicologo['crp'] ?? '-',
-                    aprovado: psicologo['aprovado'] == true,
-                  );
-                }),
-              ],
+                    return _PsicologoCard(
+                      nome: nome,
+                      email: email,
+                      crp: psicologo['crp'] ?? '-',
+                      aprovado: psicologo['aprovado'] == true,
+                      onEdit: () => _exibirDialogoEditar(context, psicologo),
+                    );
+                  }),
+                ],
+              ),
             ),
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () => _exibirDialogoCriar(context),
+            child: const Icon(LucideIcons.plus),
           ),
         );
       },
+    );
+  }
+
+  void _exibirDialogoEditar(
+      BuildContext context, Map<String, dynamic> psicologo) {
+    final usuario = psicologo['usuario'];
+    final nomeController =
+        TextEditingController(text: usuario?['nome'] ?? psicologo['nome']);
+    final emailController =
+        TextEditingController(text: usuario?['email'] ?? psicologo['email']);
+    final crpController = TextEditingController(text: psicologo['crp']);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Editar Psicólogo'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nomeController,
+                decoration: const InputDecoration(labelText: 'Nome'),
+              ),
+              TextField(
+                controller: emailController,
+                decoration: const InputDecoration(labelText: 'Email'),
+              ),
+              TextField(
+                controller: crpController,
+                decoration: const InputDecoration(labelText: 'CRP'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await service.atualizarPsicologo(
+                  id: psicologo['id'].toString(),
+                  nome: nomeController.text,
+                  email: emailController.text,
+                  crp: crpController.text,
+                );
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  _recarregar();
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erro: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _exibirDialogoCriar(BuildContext context) {
+    final nomeController = TextEditingController();
+    final emailController = TextEditingController();
+    final senhaController = TextEditingController();
+    final crpController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Novo Psicólogo'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nomeController,
+                decoration: const InputDecoration(labelText: 'Nome'),
+              ),
+              TextField(
+                controller: emailController,
+                decoration: const InputDecoration(labelText: 'Email'),
+              ),
+              TextField(
+                controller: senhaController,
+                decoration: const InputDecoration(labelText: 'Senha'),
+                obscureText: true,
+              ),
+              TextField(
+                controller: crpController,
+                decoration: const InputDecoration(labelText: 'CRP'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await service.criarPsicologo(
+                  nome: nomeController.text,
+                  email: emailController.text,
+                  senha: senhaController.text,
+                  crp: crpController.text,
+                );
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  _recarregar();
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erro: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Criar'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -105,12 +246,14 @@ class _PsicologoCard extends StatelessWidget {
   final String email;
   final String crp;
   final bool aprovado;
+  final VoidCallback onEdit;
 
   const _PsicologoCard({
     required this.nome,
     required this.email,
     required this.crp,
     required this.aprovado,
+    required this.onEdit,
   });
 
   @override
@@ -169,6 +312,11 @@ class _PsicologoCard extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          IconButton(
+            onPressed: onEdit,
+            icon: const Icon(LucideIcons.pencil, size: 18),
+            color: AppColors.muted,
           ),
           Icon(
             aprovado ? LucideIcons.badgeCheck : LucideIcons.clock,

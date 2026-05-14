@@ -38,6 +38,16 @@ class PacienteService {
     return List<dynamic>.from(response.data);
   }
 
+  Future<bool> verificarCheckinHoje() async {
+    final pacienteId = await obterPacienteId();
+
+    final response = await ApiClient.dio.get(
+      '/CheckInsEmocionais/status-hoje/$pacienteId',
+    );
+
+    return response.data['jaFez'] ?? false;
+  }
+
   Future<List<dynamic>> listarMeusRegistrosPensamentos() async {
     final pacienteId = await obterPacienteId();
 
@@ -61,12 +71,28 @@ class PacienteService {
           status?.toString() == 'Concluído';
     }).length;
 
+    String humorMedio = '-';
+    if (checkins.isNotEmpty) {
+      final soma = checkins.fold<int>(0, (sum, item) => sum + (item['humor'] as int));
+      final media = soma / checkins.length;
+
+      if (media >= 4) {
+        humorMedio = 'Ótimo';
+      } else if (media >= 3) {
+        humorMedio = 'Bom';
+      } else if (media >= 2) {
+        humorMedio = 'Regular';
+      } else {
+        humorMedio = 'Ruim';
+      }
+    }
+
     return {
       'atividades': atividades.length,
       'concluidas': concluidas,
       'checkins': checkins.length,
       'registros': registros.length,
-      'humorMedio': checkins.isEmpty ? '-' : 'Bom',
+      'humorMedio': humorMedio,
     };
   }
 
@@ -105,4 +131,31 @@ class PacienteService {
     );
    }
 
+  Future<void> criarRegistroPensamento({
+    required String situacao,
+    required String pensamentoAutomatico,
+    required String emocao,
+    required int intensidadeEmocao,
+    String? evidenciasAFavor,
+    String? evidenciasContra,
+    String? pensamentoAlternativo,
+    int? intensidadeFinal,
+  }) async {
+    final pacienteId = await obterPacienteId();
+
+    await ApiClient.dio.post(
+      '/RegistrosPensamentos',
+      data: {
+        'pacienteId': pacienteId,
+        'situacao': situacao,
+        'pensamentoAutomatico': pensamentoAutomatico,
+        'emocao': emocao,
+        'intensidadeEmocao': intensidadeEmocao,
+        'evidenciasAFavor': evidenciasAFavor,
+        'evidenciasContra': evidenciasContra,
+        'pensamentoAlternativo': pensamentoAlternativo,
+        'intensidadeFinal': intensidadeFinal,
+      },
+    );
+  }
 }

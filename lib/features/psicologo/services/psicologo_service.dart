@@ -64,11 +64,28 @@ class PsicologoService {
     final pacientes = await listarPacientesDoPsicologo();
     final atividades = await listarAtividadesDoPsicologo();
 
+    int totalAtividades = 0;
+    int totalConcluidas = 0;
+
+    for (var a in atividades) {
+      final status = a['status'];
+      totalAtividades++;
+      if (status == 2 ||
+          status?.toString().toLowerCase() == 'concluida' ||
+          status?.toString().toLowerCase() == 'concluído') {
+        totalConcluidas++;
+      }
+    }
+
+    final pendencias = totalAtividades - totalConcluidas;
+    final adesaoMedia =
+        totalAtividades > 0 ? (totalConcluidas / totalAtividades * 100).round() : 0;
+
     return {
       'pacientesAtivos': pacientes.length,
-      'atividadesEnviadas': atividades.length,
-      'pendencias': 0,
-      'adesaoMedia': 85,
+      'atividadesEnviadas': totalAtividades,
+      'pendencias': pendencias,
+      'adesaoMedia': adesaoMedia,
     };
   }
 
@@ -106,5 +123,49 @@ class PsicologoService {
         'dataLimite': dataLimite?.toIso8601String(),
       },
     );
+  }
+
+  Future<void> criarPaciente({
+    required String nome,
+    required String email,
+    required String senha,
+    DateTime? dataNascimento,
+    String? genero,
+  }) async {
+    final psicologoId = await obterPsicologoId();
+
+    await ApiClient.dio.post(
+      '/Pacientes',
+      data: {
+        'psicologoId': psicologoId,
+        'nome': nome,
+        'email': email,
+        'senha': senha,
+        'dataNascimento': dataNascimento?.toIso8601String(),
+        'genero': genero,
+      },
+    );
+  }
+
+  Future<void> atualizarPaciente({
+    required String id,
+    required String nome,
+    required String email,
+    DateTime? dataNascimento,
+    String? genero,
+  }) async {
+    await ApiClient.dio.put(
+      '/Pacientes/$id',
+      data: {
+        'nome': nome,
+        'email': email,
+        'dataNascimento': dataNascimento?.toIso8601String(),
+        'genero': genero,
+      },
+    );
+  }
+
+  Future<void> desativarPaciente(String id) async {
+    await ApiClient.dio.delete('/Pacientes/$id');
   }
 }

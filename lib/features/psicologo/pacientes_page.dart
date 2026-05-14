@@ -52,48 +52,183 @@ class _PacientesPageState extends State<PacientesPage> {
 
         final pacientes = snapshot.data ?? [];
 
-        return RefreshIndicator(
-          onRefresh: _recarregar,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Meus pacientes',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.text,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                const _CampoBuscaPaciente(),
-                const SizedBox(height: 18),
-
-                if (pacientes.isEmpty)
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: RefreshIndicator(
+            onRefresh: _recarregar,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   const Text(
-                    'Nenhum paciente encontrado.',
-                    style: TextStyle(color: AppColors.muted),
+                    'Meus pacientes',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.text,
+                    ),
                   ),
+                  const SizedBox(height: 18),
+                  const _CampoBuscaPaciente(),
+                  const SizedBox(height: 24),
+                  if (pacientes.isEmpty)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 40),
+                        child: Text(
+                          'Nenhum paciente encontrado.',
+                          style: TextStyle(color: AppColors.muted),
+                        ),
+                      ),
+                    ),
+                  ...pacientes.map((paciente) {
+                    final usuario = paciente['usuario'];
+                    final nome =
+                        usuario?['nome'] ?? paciente['nome'] ?? 'Paciente';
+                    final id = paciente['id']?.toString() ?? '';
 
-                ...pacientes.map((paciente) {
-                  final usuario = paciente['usuario'];
-                  final nome = usuario?['nome'] ?? paciente['nome'] ?? 'Paciente';
-                  final id = paciente['id']?.toString() ?? '';
-
-                  return _PacienteItem(
-                    id: id,
-                    nome: nome,
-                    descricao: 'Paciente em acompanhamento',
-                  );
-                }),
-              ],
+                    return _PacienteItem(
+                      id: id,
+                      nome: nome,
+                      descricao: 'Última atividade: Ontem',
+                      onEdit: () => _exibirDialogoEditar(context, paciente),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+          floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () => _exibirDialogoCriar(context),
+            backgroundColor: AppColors.primary,
+            icon: const Icon(LucideIcons.plus, color: Colors.white),
+            label: const Text(
+              'Novo paciente',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             ),
           ),
         );
       },
+    );
+  }
+
+  void _exibirDialogoEditar(BuildContext context, Map<String, dynamic> paciente) {
+    final usuario = paciente['usuario'];
+    final nomeController = TextEditingController(text: usuario?['nome'] ?? paciente['nome']);
+    final emailController = TextEditingController(text: usuario?['email'] ?? paciente['email']);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Editar Paciente'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nomeController,
+                decoration: const InputDecoration(labelText: 'Nome'),
+              ),
+              TextField(
+                controller: emailController,
+                decoration: const InputDecoration(labelText: 'Email'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await service.atualizarPaciente(
+                  id: paciente['id'].toString(),
+                  nome: nomeController.text,
+                  email: emailController.text,
+                );
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  _recarregar();
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erro: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _exibirDialogoCriar(BuildContext context) {
+    final nomeController = TextEditingController();
+    final emailController = TextEditingController();
+    final senhaController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Novo Paciente'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nomeController,
+                decoration: const InputDecoration(labelText: 'Nome'),
+              ),
+              TextField(
+                controller: emailController,
+                decoration: const InputDecoration(labelText: 'Email'),
+              ),
+              TextField(
+                controller: senhaController,
+                decoration: const InputDecoration(labelText: 'Senha'),
+                obscureText: true,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await service.criarPaciente(
+                  nome: nomeController.text,
+                  email: emailController.text,
+                  senha: senhaController.text,
+                );
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  _recarregar();
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erro: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Criar'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -120,11 +255,13 @@ class _PacienteItem extends StatelessWidget {
   final String id;
   final String nome;
   final String descricao;
+  final VoidCallback onEdit;
 
   const _PacienteItem({
     required this.id,
     required this.nome,
     required this.descricao,
+    required this.onEdit,
   });
 
   @override
@@ -144,27 +281,34 @@ class _PacienteItem extends StatelessWidget {
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 14),
-        padding: const EdgeInsets.all(14),
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.card,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
             CircleAvatar(
-              radius: 25,
+              radius: 22,
               backgroundColor: AppColors.softGreen,
               child: Text(
                 inicial,
                 style: const TextStyle(
                   color: AppColors.primary,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
                 ),
               ),
             ),
-            const SizedBox(width: 13),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,25 +317,27 @@ class _PacienteItem extends StatelessWidget {
                     nome,
                     style: const TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                       color: AppColors.text,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     descricao,
                     style: const TextStyle(
-                      fontSize: 12,
+                      fontSize: 11,
                       color: AppColors.muted,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(
-              LucideIcons.chevronRight,
-              color: AppColors.muted,
+            IconButton(
+              onPressed: onEdit,
+              icon: const Icon(LucideIcons.pencil, size: 16),
+              color: AppColors.muted.withOpacity(0.5),
             ),
+            const Icon(LucideIcons.smile, color: AppColors.success, size: 20),
           ],
         ),
       ),

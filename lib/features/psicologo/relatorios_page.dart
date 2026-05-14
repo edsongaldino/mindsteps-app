@@ -2,36 +2,93 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/app_theme.dart';
+import 'services/psicologo_service.dart';
 
-class RelatoriosPage extends StatelessWidget {
+class RelatoriosPage extends StatefulWidget {
   const RelatoriosPage({super.key});
 
   @override
+  State<RelatoriosPage> createState() => _RelatoriosPageState();
+}
+
+class _RelatoriosPageState extends State<RelatoriosPage> {
+  final service = PsicologoService();
+  late Future<Map<String, dynamic>> resumoFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    resumoFuture = service.obterResumoDashboard();
+  }
+
+  Future<void> _recarregar() async {
+    setState(() {
+      resumoFuture = service.obterResumoDashboard();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text(
-            'Relatórios',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              color: AppColors.text,
+    return FutureBuilder<Map<String, dynamic>>(
+      future: resumoFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Erro ao carregar: ${snapshot.error}'));
+        }
+
+        final resumo = snapshot.data ?? {};
+
+        return RefreshIndicator(
+          onRefresh: _recarregar,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Relatórios',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.text,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Acompanhe evolução, adesão e humor dos pacientes.',
+                  style: TextStyle(color: AppColors.muted),
+                ),
+                const SizedBox(height: 20),
+                _RelatorioCard(
+                  'Adesão média',
+                  '${resumo['adesaoMedia']}%',
+                  LucideIcons.trendingUp,
+                ),
+                _RelatorioCard(
+                  'Atividades enviadas',
+                  '${resumo['atividadesEnviadas']}',
+                  LucideIcons.clipboardList,
+                ),
+                _RelatorioCard(
+                  'Pendências totais',
+                  '${resumo['pendencias']}',
+                  LucideIcons.clock,
+                ),
+                _RelatorioCard(
+                  'Pacientes ativos',
+                  '${resumo['pacientesAtivos']}',
+                  LucideIcons.users,
+                ),
+              ],
             ),
           ),
-          SizedBox(height: 6),
-          Text(
-            'Acompanhe evolução, adesão e humor dos pacientes.',
-            style: TextStyle(color: AppColors.muted),
-          ),
-          SizedBox(height: 20),
-          _RelatorioCard('Adesão semanal', '85%', LucideIcons.trendingUp),
-          _RelatorioCard('Check-ins realizados', '42', LucideIcons.heartPulse),
-          _RelatorioCard('Atividades concluídas', '128', LucideIcons.clipboardCheck),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -78,4 +135,4 @@ class _RelatorioCard extends StatelessWidget {
       ),
     );
   }
-}
+}

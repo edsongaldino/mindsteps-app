@@ -36,33 +36,44 @@ class _PsicologoHomePageState extends State<PsicologoHomePage> {
           children: paginas,
         ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: paginaAtual,
-        onDestinationSelected: (index) {
-          setState(() => paginaAtual = index);
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(LucideIcons.house),
-            label: 'Dashboard',
-          ),
-          NavigationDestination(
-            icon: Icon(LucideIcons.users),
-            label: 'Pacientes',
-          ),
-          NavigationDestination(
-            icon: Icon(LucideIcons.clipboardList),
-            label: 'Atividades',
-          ),
-          NavigationDestination(
-            icon: Icon(LucideIcons.chartNoAxesColumn),
-            label: 'Relatórios',
-          ),
-          NavigationDestination(
-            icon: Icon(LucideIcons.ellipsis),
-            label: 'Mais',
-          ),
-        ],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: NavigationBar(
+          selectedIndex: paginaAtual,
+          onDestinationSelected: (index) {
+            setState(() => paginaAtual = index);
+          },
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(LucideIcons.house),
+              label: 'Dashboard',
+            ),
+            NavigationDestination(
+              icon: Icon(LucideIcons.users),
+              label: 'Pacientes',
+            ),
+            NavigationDestination(
+              icon: Icon(LucideIcons.calendar),
+              label: 'Atividades',
+            ),
+            NavigationDestination(
+              icon: Icon(LucideIcons.fileText),
+              label: 'Relatórios',
+            ),
+            NavigationDestination(
+              icon: Icon(LucideIcons.ellipsis),
+              label: 'Mais',
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -257,9 +268,9 @@ class _GridResumo extends StatelessWidget {
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 1.22,
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
+      childAspectRatio: 1.4,
       children: [
         _CardResumo(
           '$pacientesAtivos',
@@ -270,20 +281,20 @@ class _GridResumo extends StatelessWidget {
         _CardResumo(
           '$atividadesEnviadas',
           'Atividades enviadas',
-          LucideIcons.clipboardList,
-          AppColors.softPurple,
+          LucideIcons.calendar,
+          const Color(0xFFF0ECFF),
         ),
         _CardResumo(
           '$pendencias',
           'Pendências',
           LucideIcons.clock,
-          AppColors.softOrange,
+          const Color(0xFFFFF3E3),
         ),
         _CardResumo(
           '$adesaoMedia%',
           'Adesão média',
           LucideIcons.trendingUp,
-          AppColors.softGreen,
+          const Color(0xFFEAF4F7),
         ),
       ],
     );
@@ -301,49 +312,50 @@ class _CardResumo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: 0,
-            top: 0,
-            child: Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: cor,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icone, color: AppColors.primary, size: 20),
-            ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Spacer(),
               Text(
                 valor,
                 style: const TextStyle(
-                  fontSize: 25,
-                  fontWeight: FontWeight.w900,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
                   color: AppColors.text,
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                titulo,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.text,
-                  fontWeight: FontWeight.w600,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: cor,
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                child: Icon(icone, color: AppColors.primary, size: 18),
               ),
             ],
+          ),
+          const Spacer(),
+          Text(
+            titulo,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.muted,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -356,85 +368,93 @@ class _CardHumorSemana extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pontos = [0.75, 0.58, 0.62, 0.47, 0.68, 0.52, 0.61];
+    final pontos = [0.4, 0.5, 0.45, 0.6, 0.55, 0.65, 0.5];
     final dias = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Humor médio da semana',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w900,
-              color: AppColors.text,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Humor médio da semana',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.text,
+                ),
+              ),
+              const Icon(LucideIcons.smile, color: AppColors.success, size: 20),
+            ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 24),
           SizedBox(
-            height: 170,
-            child: Column(
+            height: 120,
+            child: Stack(
               children: [
-                Expanded(
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: List.generate(
+                      3,
+                      (index) => Container(
+                            height: 1,
+                            color: AppColors.border.withOpacity(0.5),
+                          )),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: List.generate(pontos.length, (index) {
-                      return Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Container(
-                              height: 90 * pontos[index],
-                              width: 9,
-                              decoration: BoxDecoration(
-                                color: AppColors.secondary,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            margin: EdgeInsets.only(bottom: 100 * pontos[index]),
+                            decoration: BoxDecoration(
+                              color: AppColors.secondary,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
                             ),
-                            const SizedBox(height: 8),
-                            Container(
-                              width: 9,
-                              height: 9,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppColors.primary,
-                                  width: 2,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       );
                     }),
                   ),
                 ),
-                const SizedBox(height: 10),
-                Row(
-                  children: List.generate(dias.length, (index) {
-                    return Expanded(
-                      child: Center(
-                        child: Text(
-                          dias[index],
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: AppColors.muted,
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                ),
               ],
             ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(dias.length, (index) {
+              return Text(
+                dias[index],
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: AppColors.muted,
+                  fontWeight: FontWeight.w500,
+                ),
+              );
+            }),
           ),
         ],
       ),

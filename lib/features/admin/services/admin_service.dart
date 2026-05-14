@@ -27,4 +27,78 @@ class AdminService {
       'psicologosCadastrados': psicologos.length,
     };
   }
+
+  Future<void> criarUsuario({
+    required String nome,
+    required String email,
+    required String senha,
+    required int perfil,
+  }) async {
+    await ApiClient.dio.post(
+      '/Usuarios',
+      data: {
+        'nome': nome,
+        'email': email,
+        'senha': senha,
+        'perfil': perfil,
+      },
+    );
+  }
+
+  Future<void> atualizarUsuario({
+    required String id,
+    required String nome,
+    required String email,
+    required int perfil,
+  }) async {
+    await ApiClient.dio.put(
+      '/Usuarios/$id',
+      data: {
+        'nome': nome,
+        'email': email,
+        'perfil': perfil,
+      },
+    );
+  }
+
+  Future<void> criarPsicologo({
+    required String nome,
+    required String email,
+    required String senha,
+    required String crp,
+    String? bio,
+  }) async {
+    await ApiClient.dio.post(
+      '/Psicologos',
+      data: {
+        'nome': nome,
+        'email': email,
+        'senha': senha,
+        'crp': crp,
+        'bio': bio,
+      },
+    );
+  }
+
+  Future<void> atualizarPsicologo({
+    required String id,
+    required String nome,
+    required String email,
+    required String crp,
+    String? bio,
+  }) async {
+    await ApiClient.dio.put(
+      '/Psicologos/$id',
+      data: {
+        'nome': nome,
+        'email': email,
+        'crp': crp,
+        'bio': bio,
+      },
+    );
+  }
+
+  Future<void> desativarUsuario(String id) async {
+    await ApiClient.dio.delete('/Usuarios/$id');
+  }
 }

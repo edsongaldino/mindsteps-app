@@ -36,33 +36,44 @@ class _AdminHomePageState extends State<AdminHomePage> {
           children: paginas,
         ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: paginaAtual,
-        onDestinationSelected: (index) {
-          setState(() => paginaAtual = index);
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(LucideIcons.house),
-            label: 'Início',
-          ),
-          NavigationDestination(
-            icon: Icon(LucideIcons.users),
-            label: 'Usuários',
-          ),
-          NavigationDestination(
-            icon: Icon(LucideIcons.brain),
-            label: 'Psicólogos',
-          ),
-          NavigationDestination(
-            icon: Icon(LucideIcons.chartNoAxesColumn),
-            label: 'Métricas',
-          ),
-          NavigationDestination(
-            icon: Icon(LucideIcons.settings),
-            label: 'Mais',
-          ),
-        ],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: NavigationBar(
+          selectedIndex: paginaAtual,
+          onDestinationSelected: (index) {
+            setState(() => paginaAtual = index);
+          },
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(LucideIcons.house),
+              label: 'Início',
+            ),
+            NavigationDestination(
+              icon: Icon(LucideIcons.users),
+              label: 'Usuários',
+            ),
+            NavigationDestination(
+              icon: Icon(LucideIcons.brain),
+              label: 'Psicólogos',
+            ),
+            NavigationDestination(
+              icon: Icon(LucideIcons.fileText),
+              label: 'Métricas',
+            ),
+            NavigationDestination(
+              icon: Icon(LucideIcons.settings),
+              label: 'Mais',
+            ),
+          ],
+        ),
       ),
     );
   }

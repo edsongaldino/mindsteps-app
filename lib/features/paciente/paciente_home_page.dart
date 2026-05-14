@@ -6,16 +6,17 @@ import 'paciente_atividades_page.dart';
 import 'paciente_checkin_page.dart';
 import 'paciente_evolucao_page.dart';
 import 'paciente_perfil_page.dart';
+import 'paciente_registro_pensamento_page.dart';
 import 'services/paciente_service.dart';
 
 class PacienteHomePage extends StatefulWidget {
   const PacienteHomePage({super.key});
 
   @override
-  State<PacienteHomePage> createState() => _PacienteHomePageState();
+  State<PacienteHomePage> createState() => PacienteHomePageState();
 }
 
-class _PacienteHomePageState extends State<PacienteHomePage> {
+class PacienteHomePageState extends State<PacienteHomePage> {
   int paginaAtual = 0;
 
   final paginas = const [
@@ -84,6 +85,20 @@ class _DashboardPacienteState extends State<_DashboardPaciente> {
   void initState() {
     super.initState();
     resumoFuture = service.obterResumoHome();
+    _verificarCheckinHoje();
+  }
+
+  Future<void> _verificarCheckinHoje() async {
+    try {
+      final jaFez = await service.verificarCheckinHoje();
+      if (!jaFez && mounted) {
+        // Redireciona para a página de check-in (índice 2)
+        final state = context.findAncestorStateOfType<PacienteHomePageState>();
+        state?.setState(() => state.paginaAtual = 2);
+      }
+    } catch (e) {
+      debugPrint('Erro ao verificar check-in hoje: $e');
+    }
   }
 
   Future<void> _recarregar() async {
@@ -140,7 +155,26 @@ class _DashboardPacienteState extends State<_DashboardPaciente> {
                 const SizedBox(height: 22),
                 const _CardAtividadeHoje(),
                 const SizedBox(height: 18),
-                const _BotaoPrincipal(texto: 'Fazer check-in agora'),
+                _BotaoPrincipal(
+                  texto: 'Registrar pensamento (TCC)',
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const PacienteRegistroPensamentoPage(),
+                      ),
+                    ).then((_) => _recarregar());
+                  },
+                  cor: AppColors.softPurple,
+                ),
+                const SizedBox(height: 12),
+                _BotaoPrincipal(
+                  texto: 'Fazer check-in agora',
+                  onPressed: () {
+                    final state = context.findAncestorStateOfType<PacienteHomePageState>();
+                    state?.setState(() => state.paginaAtual = 2);
+                  },
+                ),
               ],
             ),
           ),
@@ -419,16 +453,30 @@ class _CardAtividadeHoje extends StatelessWidget {
 
 class _BotaoPrincipal extends StatelessWidget {
   final String texto;
+  final VoidCallback onPressed;
+  final Color? cor;
 
   const _BotaoPrincipal({
     required this.texto,
+    required this.onPressed,
+    this.cor,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: () {},
-      child: Text(texto),
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: cor != null
+            ? ElevatedButton.styleFrom(
+                backgroundColor: cor,
+                foregroundColor: AppColors.primary,
+                elevation: 0,
+              )
+            : null,
+        child: Text(texto),
+      ),
     );
   }
 }

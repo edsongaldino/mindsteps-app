@@ -85,225 +85,174 @@ class _LoginPageState extends State<LoginPage> {
         }
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFFF7FAFC),
-              Color(0xFFE9F7F6),
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.88),
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 30,
-                        offset: const Offset(0, 14),
-                      ),
-                    ],
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(LucideIcons.arrowLeft, color: AppColors.text),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Logo
+              Container(
+                width: 100,
+                height: 100,
+                decoration: const BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage('assets/logo.png'), // Fallback to icon if image missing
+                    fit: BoxFit.contain,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const SizedBox(height: 18),
-                      Container(
-                        width: 84,
-                        height: 84,
-                        decoration: BoxDecoration(
-                          color: AppColors.softGreen,
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                        child: const Icon(
-                          LucideIcons.brain,
-                          size: 42,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 22),
-                      RichText(
-                        text: const TextSpan(
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.text,
-                          ),
-                          children: [
-                            TextSpan(text: 'Mind'),
-                            TextSpan(
-                              text: 'Steps',
-                              style: TextStyle(color: AppColors.secondary),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Um passo de cada vez.',
-                        style: TextStyle(
-                          color: AppColors.muted,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 34),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'Bem-vindo(a)!',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.text,
-                              ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'Fique feliz em te ver de novo.',
-                          style: TextStyle(color: AppColors.muted),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      TextField(
-                        controller: emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(
-                          labelText: 'E-mail',
-                          hintText: 'seu@email.com',
-                          prefixIcon: Icon(LucideIcons.mail),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      TextField(
-                        controller: senhaController,
-                        obscureText: ocultarSenha,
-                        decoration: InputDecoration(
-                          labelText: 'Senha',
-                          prefixIcon: const Icon(LucideIcons.lock),
-                          suffixIcon: IconButton(
-                            onPressed: () {
-                              setState(() => ocultarSenha = !ocultarSenha);
-                            },
-                            icon: Icon(
-                              ocultarSenha ? LucideIcons.eye : LucideIcons.eyeOff,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {},
-                          child: const Text('Esqueci minha senha'),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: carregando ? null : entrar,
-                        child: carregando
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: Colors.white,
-                                ),
-                                )
-                            : const Text('Entrar'),
-                      ),
-                      const SizedBox(height: 22),
-                      const Text(
-                        'ou continue com',
-                        style: TextStyle(color: AppColors.muted, fontSize: 13),
-                      ),
-                      const SizedBox(height: 18),
-                      Row(
-                        children: [
-                          Expanded(child: _socialButton('G')),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _socialButtonIcon(LucideIcons.apple),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _socialButtonIcon(LucideIcons.mail),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            'Não tem uma conta?',
-                            style: TextStyle(color: AppColors.muted),
-                          ),
-                          TextButton(
-                            onPressed: () {},
-                            child: const Text('Criar conta'),
-                          ),
-                        ],
-                      ),
-                    ],
+                ),
+                child: const Icon(LucideIcons.brain, size: 60, color: AppColors.primary),
+              ),
+              const SizedBox(height: 32),
+              const Text(
+                'Bem-vindo(a)!',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.text,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Fique feliz em te ver de novo.',
+                style: TextStyle(color: AppColors.muted, fontSize: 14),
+              ),
+              const SizedBox(height: 48),
+              TextField(
+                controller: emailController,
+                decoration: const InputDecoration(
+                  labelText: 'E-mail',
+                  hintText: 'seu@email.com',
+                ),
+              ),
+              const SizedBox(height: 18),
+              TextField(
+                controller: senhaController,
+                obscureText: ocultarSenha,
+                decoration: InputDecoration(
+                  labelText: 'Senha',
+                  suffixIcon: IconButton(
+                    onPressed: () {
+                      setState(() => ocultarSenha = !ocultarSenha);
+                    },
+                    icon: Icon(
+                      ocultarSenha ? LucideIcons.eye : LucideIcons.eyeOff,
+                      size: 20,
+                    ),
                   ),
                 ),
               ),
-            ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {},
+                  child: const Text(
+                    'Esqueci minha senha',
+                    style: TextStyle(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: carregando ? null : entrar,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  minimumSize: const Size(double.infinity, 54),
+                ),
+                child: carregando
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                      )
+                    : const Text('Entrar'),
+              ),
+              const SizedBox(height: 32),
+              const Text(
+                'ou continue com',
+                style: TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _socialButton('G'),
+                  const SizedBox(width: 20),
+                  _socialIcon(LucideIcons.apple),
+                  const SizedBox(width: 20),
+                  _socialIcon(LucideIcons.mail),
+                ],
+              ),
+              const SizedBox(height: 48),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Não tem uma conta? ',
+                    style: TextStyle(color: AppColors.muted, fontSize: 14),
+                  ),
+                  GestureDetector(
+                    onTap: () {},
+                    child: const Text(
+                      'Criar conta',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _socialButton(String text) {
+  Widget _socialButton(String label) {
     return Container(
-      height: 48,
+      width: 54,
+      height: 54,
       decoration: BoxDecoration(
         color: Colors.white,
+        shape: BoxShape.circle,
         border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(16),
       ),
       child: Center(
         child: Text(
-          text,
-          style: const TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 20,
-            color: AppColors.primary,
-          ),
+          label,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.red),
         ),
       ),
     );
   }
 
-  Widget _socialButtonIcon(IconData icon) {
+  Widget _socialIcon(IconData icon) {
     return Container(
-      height: 48,
+      width: 54,
+      height: 54,
       decoration: BoxDecoration(
         color: Colors.white,
+        shape: BoxShape.circle,
         border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(16),
       ),
-      child: Icon(icon, color: AppColors.text),
+      child: Icon(icon, color: AppColors.text, size: 22),
     );
   }
 }

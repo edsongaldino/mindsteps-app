@@ -51,64 +51,227 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
 
         final usuarios = snapshot.data ?? [];
 
-        return RefreshIndicator(
-          onRefresh: _recarregar,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Usuários',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.text,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Gerencie os acessos da plataforma.',
-                  style: TextStyle(color: AppColors.muted),
-                ),
-                const SizedBox(height: 20),
-
-                if (usuarios.isEmpty)
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          body: RefreshIndicator(
+            onRefresh: _recarregar,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   const Text(
-                    'Nenhum usuário encontrado.',
+                    'Usuários',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.text,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Gerencie os acessos da plataforma.',
                     style: TextStyle(color: AppColors.muted),
                   ),
-
-                ...usuarios.map((u) {
-                  final usuario = Map<String, dynamic>.from(u);
-                  return _UsuarioCard(
-                    nome: usuario['nome'] ?? 'Usuário',
-                    email: usuario['email'] ?? '',
-                    perfil: usuario['perfil']?.toString() ?? '-',
-                    ativo: usuario['ativo'] == true,
-                  );
-                }),
-              ],
+                  const SizedBox(height: 20),
+                  if (usuarios.isEmpty)
+                    const Text(
+                      'Nenhum usuário encontrado.',
+                      style: TextStyle(color: AppColors.muted),
+                    ),
+                  ...usuarios.map((u) {
+                    final usuario = Map<String, dynamic>.from(u);
+                    final id = usuario['id']?.toString() ?? '';
+                    return _UsuarioCard(
+                      id: id,
+                      nome: usuario['nome'] ?? 'Usuário',
+                      email: usuario['email'] ?? '',
+                      perfil: usuario['perfil']?.toString() ?? '-',
+                      ativo: usuario['ativo'] == true,
+                      onEdit: () => _exibirDialogoEditar(context, usuario),
+                    );
+                  }),
+                ],
+              ),
             ),
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () => _exibirDialogoCriar(context),
+            child: const Icon(LucideIcons.plus),
           ),
         );
       },
     );
   }
+
+  void _exibirDialogoEditar(BuildContext context, Map<String, dynamic> usuario) {
+    final nomeController = TextEditingController(text: usuario['nome']);
+    final emailController = TextEditingController(text: usuario['email']);
+    int perfilSelecionado = 3;
+
+    final perfilRaw = usuario['perfil'];
+    if (perfilRaw == 'Administrador' || perfilRaw == 1) perfilSelecionado = 1;
+    if (perfilRaw == 'Psicologo' || perfilRaw == 2) perfilSelecionado = 2;
+    if (perfilRaw == 'Paciente' || perfilRaw == 3) perfilSelecionado = 3;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) => AlertDialog(
+          title: const Text('Editar Usuário'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nomeController,
+                  decoration: const InputDecoration(labelText: 'Nome'),
+                ),
+                TextField(
+                  controller: emailController,
+                  decoration: const InputDecoration(labelText: 'Email'),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<int>(
+                  value: perfilSelecionado,
+                  decoration: const InputDecoration(labelText: 'Perfil'),
+                  items: const [
+                    DropdownMenuItem(value: 1, child: Text('Administrador')),
+                    DropdownMenuItem(value: 2, child: Text('Psicólogo')),
+                    DropdownMenuItem(value: 3, child: Text('Paciente')),
+                  ],
+                  onChanged: (v) => setStateDialog(() => perfilSelecionado = v!),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await service.atualizarUsuario(
+                    id: usuario['id'].toString(),
+                    nome: nomeController.text,
+                    email: emailController.text,
+                    perfil: perfilSelecionado,
+                  );
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    _recarregar();
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Erro: $e')),
+                    );
+                  }
+                }
+              },
+              child: const Text('Salvar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _exibirDialogoCriar(BuildContext context) {
+    final nomeController = TextEditingController();
+    final emailController = TextEditingController();
+    final senhaController = TextEditingController();
+    int perfilSelecionado = 3; // Paciente por padrão
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Novo Usuário'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nomeController,
+                  decoration: const InputDecoration(labelText: 'Nome'),
+                ),
+                TextField(
+                  controller: emailController,
+                  decoration: const InputDecoration(labelText: 'Email'),
+                ),
+                TextField(
+                  controller: senhaController,
+                  decoration: const InputDecoration(labelText: 'Senha'),
+                  obscureText: true,
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<int>(
+                  value: perfilSelecionado,
+                  decoration: const InputDecoration(labelText: 'Perfil'),
+                  items: const [
+                    DropdownMenuItem(value: 1, child: Text('Administrador')),
+                    DropdownMenuItem(value: 2, child: Text('Psicólogo')),
+                    DropdownMenuItem(value: 3, child: Text('Paciente')),
+                  ],
+                  onChanged: (v) => setState(() => perfilSelecionado = v!),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await service.criarUsuario(
+                    nome: nomeController.text,
+                    email: emailController.text,
+                    senha: senhaController.text,
+                    perfil: perfilSelecionado,
+                  );
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    _recarregar();
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Erro: $e')),
+                    );
+                  }
+                }
+              },
+              child: const Text('Criar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _UsuarioCard extends StatelessWidget {
+  final String id;
   final String nome;
   final String email;
   final String perfil;
   final bool ativo;
+  final VoidCallback onEdit;
 
   const _UsuarioCard({
+    required this.id,
     required this.nome,
     required this.email,
     required this.perfil,
     required this.ativo,
+    required this.onEdit,
   });
 
   @override
@@ -168,6 +331,11 @@ class _UsuarioCard extends StatelessWidget {
               ],
             ),
           ),
+          IconButton(
+            onPressed: onEdit,
+            icon: const Icon(LucideIcons.pencil, size: 18),
+            color: AppColors.muted,
+          ),
           Icon(
             ativo ? LucideIcons.circleCheck : LucideIcons.circleX,
             color: ativo ? AppColors.success : AppColors.danger,
@@ -176,4 +344,4 @@ class _UsuarioCard extends StatelessWidget {
       ),
     );
   }
-}
+}

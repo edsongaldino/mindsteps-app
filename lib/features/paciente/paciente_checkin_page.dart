@@ -3,6 +3,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/app_theme.dart';
 import 'services/paciente_service.dart';
+import 'paciente_home_page.dart';
 
 class PacienteCheckinPage extends StatefulWidget {
   const PacienteCheckinPage({super.key});
@@ -19,6 +20,30 @@ class _PacienteCheckinPageState extends State<PacienteCheckinPage> {
   int intensidade = 5;
   String emocaoPrincipal = 'Calmo';
   bool salvando = false;
+  bool jaFezHoje = false;
+  bool carregandoStatus = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _verificarStatus();
+  }
+
+  Future<void> _verificarStatus() async {
+    try {
+      final status = await service.verificarCheckinHoje();
+      if (mounted) {
+        setState(() {
+          jaFezHoje = status;
+          carregandoStatus = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => carregandoStatus = false);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -47,6 +72,7 @@ class _PacienteCheckinPageState extends State<PacienteCheckinPage> {
         humor = 3;
         intensidade = 5;
         emocaoPrincipal = 'Calmo';
+        jaFezHoje = true;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -67,6 +93,57 @@ class _PacienteCheckinPageState extends State<PacienteCheckinPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (carregandoStatus) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (jaFezHoje) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                LucideIcons.circleCheck,
+                color: AppColors.success,
+                size: 84,
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Check-in concluído!',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.text,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Você já registrou como está se sentindo hoje. Continue assim!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.muted,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: () {
+                  final state = context.findAncestorStateOfType<PacienteHomePageState>();
+                  state?.setState(() => state.paginaAtual = 0);
+                },
+                child: const Text('Voltar para o Início'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
       child: Column(
@@ -86,7 +163,6 @@ class _PacienteCheckinPageState extends State<PacienteCheckinPage> {
             style: TextStyle(color: AppColors.muted),
           ),
           const SizedBox(height: 24),
-
           _CardHumorAtual(
             humorSelecionado: humor,
             onSelecionar: (valor, emocao) {
@@ -96,18 +172,14 @@ class _PacienteCheckinPageState extends State<PacienteCheckinPage> {
               });
             },
           ),
-
           const SizedBox(height: 22),
-
           _CardIntensidade(
             intensidade: intensidade,
             onChanged: (valor) {
               setState(() => intensidade = valor);
             },
           ),
-
           const SizedBox(height: 22),
-
           TextField(
             controller: observacaoController,
             maxLines: 5,
@@ -120,9 +192,7 @@ class _PacienteCheckinPageState extends State<PacienteCheckinPage> {
               ),
             ),
           ),
-
           const SizedBox(height: 18),
-
           ElevatedButton.icon(
             onPressed: salvando ? null : salvarCheckin,
             icon: salvando
