@@ -9,10 +9,10 @@ class PacientesPage extends StatefulWidget {
   const PacientesPage({super.key});
 
   @override
-  State<PacientesPage> createState() => _PacientesPageState();
+  State<PacientesPage> createState() => PacientesPageState();
 }
 
-class _PacientesPageState extends State<PacientesPage> {
+class PacientesPageState extends State<PacientesPage> {
   final service = PsicologoService();
 
   late Future<List<dynamic>> pacientesFuture;
@@ -100,16 +100,6 @@ class _PacientesPageState extends State<PacientesPage> {
               ),
             ),
           ),
-          floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => _exibirDialogoCriar(context),
-            backgroundColor: AppColors.primary,
-            icon: const Icon(LucideIcons.plus, color: Colors.white),
-            label: const Text(
-              'Novo paciente',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-          ),
         );
       },
     );
@@ -171,7 +161,7 @@ class _PacientesPageState extends State<PacientesPage> {
     );
   }
 
-  void _exibirDialogoCriar(BuildContext context) {
+  void exibirDialogoCriar(BuildContext context) {
     final nomeController = TextEditingController();
     final emailController = TextEditingController();
     final senhaController = TextEditingController();
@@ -267,6 +257,19 @@ class _PacienteItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final inicial = nome.isNotEmpty ? nome.substring(0, 1) : '?';
+    
+    // Mocking the percentage and icon based on name length for visual variety
+    int percentage = 50 + (nome.length * 5) % 50; 
+    IconData moodIcon = LucideIcons.smile;
+    Color moodColor = AppColors.success;
+    
+    if (percentage < 60) {
+      moodIcon = LucideIcons.meh;
+      moodColor = AppColors.warning;
+    } else if (percentage < 40) {
+      moodIcon = LucideIcons.frown;
+      moodColor = AppColors.danger;
+    }
 
     return GestureDetector(
       onTap: () {
@@ -282,10 +285,11 @@ class _PacienteItem extends StatelessWidget {
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.card,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border.withOpacity(0.5)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.02),
@@ -297,18 +301,18 @@ class _PacienteItem extends StatelessWidget {
         child: Row(
           children: [
             CircleAvatar(
-              radius: 22,
+              radius: 24,
               backgroundColor: AppColors.softGreen,
               child: Text(
                 inicial,
                 style: const TextStyle(
                   color: AppColors.primary,
                   fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontSize: 18,
                 ),
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -316,28 +320,36 @@ class _PacienteItem extends StatelessWidget {
                   Text(
                     nome,
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: AppColors.text,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   Text(
                     descricao,
                     style: const TextStyle(
-                      fontSize: 11,
+                      fontSize: 12,
                       color: AppColors.muted,
                     ),
                   ),
                 ],
               ),
             ),
-            IconButton(
-              onPressed: onEdit,
-              icon: const Icon(LucideIcons.pencil, size: 16),
-              color: AppColors.muted.withOpacity(0.5),
+            Row(
+              children: [
+                Icon(moodIcon, color: moodColor, size: 20),
+                const SizedBox(width: 6),
+                Text(
+                  '$percentage%',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.text,
+                  ),
+                ),
+              ],
             ),
-            const Icon(LucideIcons.smile, color: AppColors.success, size: 20),
           ],
         ),
       ),

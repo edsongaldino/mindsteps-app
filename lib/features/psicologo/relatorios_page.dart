@@ -42,49 +42,60 @@ class _RelatoriosPageState extends State<RelatoriosPage> {
 
         final resumo = snapshot.data ?? {};
 
-        return RefreshIndicator(
-          onRefresh: _recarregar,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Relatórios',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.text,
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(
+            title: const Text('Relatórios', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            centerTitle: true,
+            leading: IconButton(
+              icon: const Icon(LucideIcons.arrowLeft),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          body: RefreshIndicator(
+            onRefresh: _recarregar,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Visão Geral',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.text,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Acompanhe evolução, adesão e humor dos pacientes.',
-                  style: TextStyle(color: AppColors.muted),
-                ),
-                const SizedBox(height: 20),
-                _RelatorioCard(
-                  'Adesão média',
-                  '${resumo['adesaoMedia']}%',
-                  LucideIcons.trendingUp,
-                ),
-                _RelatorioCard(
-                  'Atividades enviadas',
-                  '${resumo['atividadesEnviadas']}',
-                  LucideIcons.clipboardList,
-                ),
-                _RelatorioCard(
-                  'Pendências totais',
-                  '${resumo['pendencias']}',
-                  LucideIcons.clock,
-                ),
-                _RelatorioCard(
-                  'Pacientes ativos',
-                  '${resumo['pacientesAtivos']}',
-                  LucideIcons.users,
-                ),
-              ],
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Acompanhe evolução, adesão e humor dos pacientes.',
+                    style: TextStyle(color: AppColors.muted),
+                  ),
+                  const SizedBox(height: 20),
+                  _RelatorioCard(
+                    'Adesão média',
+                    '${resumo['adesaoMedia']}%',
+                    LucideIcons.trendingUp,
+                  ),
+                  _RelatorioCard(
+                    'Atividades enviadas',
+                    '${resumo['atividadesEnviadas']}',
+                    LucideIcons.clipboardList,
+                  ),
+                  _RelatorioCard(
+                    'Pendências totais',
+                    '${resumo['pendencias']}',
+                    LucideIcons.clock,
+                  ),
+                  _RelatorioCard(
+                    'Pacientes ativos',
+                    '${resumo['pacientesAtivos']}',
+                    LucideIcons.users,
+                  ),
+                ],
+              ),
             ),
           ),
         );

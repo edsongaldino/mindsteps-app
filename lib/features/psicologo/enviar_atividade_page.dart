@@ -85,14 +85,15 @@ class _EnviarAtividadePageState extends State<EnviarAtividadePage> {
 
   @override
   Widget build(BuildContext context) {
-    final dataLimiteTexto = dataLimite == null
-        ? 'Sem data limite'
-        : '${dataLimite!.day.toString().padLeft(2, '0')}/${dataLimite!.month.toString().padLeft(2, '0')}/${dataLimite!.year}';
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Enviar atividade'),
+        title: const Text('Nova atividade', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(LucideIcons.arrowLeft),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: FutureBuilder<List<dynamic>>(
         future: atividadesFuture,
@@ -102,84 +103,141 @@ class _EnviarAtividadePageState extends State<EnviarAtividadePage> {
           }
 
           if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(22),
-                child: Text(
-                  'Erro ao carregar atividades: ${snapshot.error}',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            );
+            return Center(child: Text('Erro ao carregar atividades: ${snapshot.error}'));
           }
 
           final atividades = snapshot.data ?? [];
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _CardPaciente(nome: widget.pacienteNome),
-                const SizedBox(height: 22),
-                const Text(
-                  'Escolha uma atividade',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.text,
+          return Column(
+            children: [
+              _buildStepper(),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Escolha o tipo de atividade',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.text),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Selecione o formato da atividade que deseja criar.',
+                        style: TextStyle(fontSize: 14, color: AppColors.muted),
+                      ),
+                      const SizedBox(height: 24),
+                      if (atividades.isEmpty)
+                        const Text('Nenhuma atividade cadastrada.', style: TextStyle(color: AppColors.muted)),
+                      ...atividades.asMap().entries.map((entry) {
+                        int index = entry.key;
+                        final atividade = Map<String, dynamic>.from(entry.value);
+                        final id = atividade['id']?.toString() ?? '';
+                        final titulo = atividade['titulo'] ?? 'Atividade';
+                        final descricao = atividade['descricao'] ?? 'Descrição';
+
+                        // Cores alternadas baseadas no índice para simular o mockup
+                        final cores = [
+                          const Color(0xFFF0ECFF), // Roxo claro
+                          const Color(0xFFFFF3E3), // Laranja claro
+                          const Color(0xFFFFF9E6), // Amarelo claro
+                          const Color(0xFFE6F5F2), // Verde claro
+                          const Color(0xFFEAF4F7), // Azul claro
+                        ];
+                        final icones = [
+                          LucideIcons.brain,
+                          LucideIcons.messageSquare,
+                          LucideIcons.dumbbell,
+                          LucideIcons.checkSquare,
+                          LucideIcons.headphones,
+                        ];
+
+                        return _AtividadeSelecionavelCard(
+                          titulo: titulo,
+                          descricao: descricao,
+                          selecionada: atividadeSelecionadaId == id,
+                          corFundoIcone: cores[index % cores.length],
+                          icone: icones[index % icones.length],
+                          onTap: () => setState(() => atividadeSelecionadaId = id),
+                        );
+                      }),
+                      const SizedBox(height: 100), // Espaço pro botão fixo
+                    ],
                   ),
                 ),
-                const SizedBox(height: 12),
-
-                if (atividades.isEmpty)
-                  const Text(
-                    'Nenhuma atividade cadastrada.',
-                    style: TextStyle(color: AppColors.muted),
-                  ),
-
-                ...atividades.map((item) {
-                  final atividade = Map<String, dynamic>.from(item);
-                  final id = atividade['id']?.toString() ?? '';
-                  final titulo = atividade['titulo'] ?? 'Atividade';
-                  final descricao = atividade['descricao'] ?? 'Sem descrição.';
-
-                  return _AtividadeSelecionavelCard(
-                    titulo: titulo,
-                    descricao: descricao,
-                    selecionada: atividadeSelecionadaId == id,
-                    onTap: () => setState(() => atividadeSelecionadaId = id),
-                  );
-                }),
-
-                const SizedBox(height: 18),
-
-                _DataLimiteCard(
-                  texto: dataLimiteTexto,
-                  onTap: escolherDataLimite,
-                ),
-
-                const SizedBox(height: 22),
-
-                ElevatedButton.icon(
-                  onPressed: enviando ? null : enviar,
-                  icon: enviando
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(LucideIcons.send),
-                  label: Text(enviando ? 'Enviando...' : 'Enviar atividade'),
-                ),
-              ],
-            ),
+              ),
+            ],
           );
         },
       ),
+      bottomSheet: Container(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5)),
+          ],
+        ),
+        child: ElevatedButton(
+          onPressed: enviando ? null : enviar,
+          child: enviando
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white))
+              : const Text('Próximo'),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepper() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _stepItem('Tipo', true, isFirst: true),
+          _stepDivider(),
+          _stepItem('Conteúdo', false),
+          _stepDivider(),
+          _stepItem('Agendar', false),
+          _stepDivider(),
+          _stepItem('Revisar', false, isLast: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _stepDivider() {
+    return Expanded(
+      child: Container(
+        height: 2,
+        color: AppColors.border,
+      ),
+    );
+  }
+
+  Widget _stepItem(String label, bool active, {bool isFirst = false, bool isLast = false}) {
+    return Column(
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: active ? AppColors.secondary : Colors.white,
+            border: Border.all(color: active ? AppColors.secondary : AppColors.border, width: 2),
+            shape: BoxShape.circle,
+          ),
+          child: active ? const Icon(Icons.check, color: Colors.white, size: 14) : null,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: active ? FontWeight.bold : FontWeight.w500,
+            color: active ? AppColors.primary : AppColors.muted,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -235,12 +293,16 @@ class _AtividadeSelecionavelCard extends StatelessWidget {
   final String titulo;
   final String descricao;
   final bool selecionada;
+  final IconData icone;
+  final Color corFundoIcone;
   final VoidCallback onTap;
 
   const _AtividadeSelecionavelCard({
     required this.titulo,
     required this.descricao,
     required this.selecionada,
+    required this.icone,
+    required this.corFundoIcone,
     required this.onTap,
   });
 
@@ -253,19 +315,31 @@ class _AtividadeSelecionavelCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.card,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selecionada ? AppColors.primary : AppColors.border,
-            width: selecionada ? 1.6 : 1,
+            width: selecionada ? 2 : 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
-            Icon(
-              selecionada ? LucideIcons.circleCheck : LucideIcons.clipboardList,
-              color: selecionada ? AppColors.success : AppColors.primary,
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: corFundoIcone,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icone, color: AppColors.primary, size: 24),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,7 +348,8 @@ class _AtividadeSelecionavelCard extends StatelessWidget {
                     titulo,
                     style: const TextStyle(
                       color: AppColors.text,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -288,6 +363,8 @@ class _AtividadeSelecionavelCard extends StatelessWidget {
                 ],
               ),
             ),
+            if (selecionada)
+              const Icon(LucideIcons.circleCheck, color: AppColors.success),
           ],
         ),
       ),

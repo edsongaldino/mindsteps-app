@@ -91,65 +91,74 @@ class _LoginPageState extends State<LoginPage> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(LucideIcons.arrowLeft, color: AppColors.text),
-                ),
-              ),
-              const SizedBox(height: 20),
               // Logo
-              Container(
-                width: 100,
-                height: 100,
-                decoration: const BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage('assets/logo.png'), // Fallback to icon if image missing
-                    fit: BoxFit.contain,
-                  ),
+              Center(
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  height: 60,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.psychology, size: 60, color: AppColors.primary),
                 ),
-                child: const Icon(LucideIcons.brain, size: 60, color: AppColors.primary),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 48),
               const Text(
-                'Bem-vindo(a)!',
+                'Bem-vindo(a)! 👋',
                 style: TextStyle(
-                  fontSize: 26,
+                  fontSize: 24,
                   fontWeight: FontWeight.w700,
                   color: AppColors.text,
+                  letterSpacing: -0.5,
                 ),
               ),
               const SizedBox(height: 8),
               const Text(
-                'Fique feliz em te ver de novo.',
+                'Que bom ter você de volta.',
                 style: TextStyle(color: AppColors.muted, fontSize: 14),
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: 32),
+              const Text(
+                'E-mail',
+                style: TextStyle(
+                  color: AppColors.text,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
               TextField(
                 controller: emailController,
                 decoration: const InputDecoration(
-                  labelText: 'E-mail',
                   hintText: 'seu@email.com',
                 ),
+                keyboardType: TextInputType.emailAddress,
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 20),
+              const Text(
+                'Senha',
+                style: TextStyle(
+                  color: AppColors.text,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
               TextField(
                 controller: senhaController,
                 obscureText: ocultarSenha,
                 decoration: InputDecoration(
-                  labelText: 'Senha',
+                  hintText: '••••••••',
                   suffixIcon: IconButton(
                     onPressed: () {
                       setState(() => ocultarSenha = !ocultarSenha);
                     },
                     icon: Icon(
-                      ocultarSenha ? LucideIcons.eye : LucideIcons.eyeOff,
+                      ocultarSenha ? LucideIcons.eyeOff : LucideIcons.eye,
                       size: 20,
+                      color: AppColors.muted,
                     ),
                   ),
                 ),
@@ -159,20 +168,24 @@ class _LoginPageState extends State<LoginPage> {
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () {},
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                   child: const Text(
-                    'Esqueci minha senha',
-                    style: TextStyle(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.w600),
+                    'Esqueceu sua senha?',
+                    style: TextStyle(
+                      color: AppColors.secondary, // Secondary is green/teal in mockup
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: carregando ? null : entrar,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  minimumSize: const Size(double.infinity, 54),
-                ),
                 child: carregando
                     ? const SizedBox(
                         width: 22,
@@ -182,19 +195,21 @@ class _LoginPageState extends State<LoginPage> {
                     : const Text('Entrar'),
               ),
               const SizedBox(height: 32),
-              const Text(
-                'ou continue com',
-                style: TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w500),
+              Center(
+                child: const Text(
+                  'ou continue com',
+                  style: TextStyle(color: AppColors.muted, fontSize: 13, fontWeight: FontWeight.w500),
+                ),
               ),
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _socialButton('G'),
-                  const SizedBox(width: 20),
-                  _socialIcon(LucideIcons.apple),
-                  const SizedBox(width: 20),
-                  _socialIcon(LucideIcons.mail),
+                  _socialButton('G', Colors.red, isIcon: false),
+                  const SizedBox(width: 16),
+                  _socialButton('', Colors.black, isIcon: true, icon: Icons.apple),
+                  const SizedBox(width: 16),
+                  _socialButton('', AppColors.text, isIcon: true, icon: LucideIcons.mail),
                 ],
               ),
               const SizedBox(height: 48),
@@ -202,13 +217,13 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text(
-                    'Não tem uma conta? ',
+                    'Ainda não tem uma conta? ',
                     style: TextStyle(color: AppColors.muted, fontSize: 14),
                   ),
                   GestureDetector(
                     onTap: () {},
                     child: const Text(
-                      'Criar conta',
+                      'Cadastre-se',
                       style: TextStyle(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w700,
@@ -225,34 +240,23 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _socialButton(String label) {
+  Widget _socialButton(String label, Color color, {required bool isIcon, IconData? icon}) {
     return Container(
-      width: 54,
-      height: 54,
+      width: 70,
+      height: 48,
       decoration: BoxDecoration(
         color: Colors.white,
-        shape: BoxShape.circle,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
       ),
       child: Center(
-        child: Text(
-          label,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.red),
-        ),
+        child: isIcon
+            ? Icon(icon, color: color, size: 24)
+            : Text(
+                label,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color),
+              ),
       ),
-    );
-  }
-
-  Widget _socialIcon(IconData icon) {
-    return Container(
-      width: 54,
-      height: 54,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Icon(icon, color: AppColors.text, size: 22),
     );
   }
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/auth/auth_storage.dart';
 import '../../core/theme/app_theme.dart';
 import '../admin/admin_home_page.dart';
@@ -14,17 +13,35 @@ class SplashPage extends StatefulWidget {
   State<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage> {
-  bool mostrarSelecao = false;
+class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _progressAnimation;
 
   @override
   void initState() {
     super.initState();
+    
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    );
+    
+    _progressAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+
+    _animationController.forward();
     verificarLogin();
   }
 
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
   Future<void> verificarLogin() async {
-    await Future.delayed(const Duration(milliseconds: 1200));
+    await Future.delayed(const Duration(milliseconds: 2200));
 
     final token = await AuthStorage.obterToken();
     final perfil = await AuthStorage.obterPerfil();
@@ -32,7 +49,15 @@ class _SplashPageState extends State<SplashPage> {
     if (!mounted) return;
 
     if (token == null || perfil == null) {
-      setState(() => mostrarSelecao = true);
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const LoginPage(),
+          transitionsBuilder: (_, animation, __, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+      );
       return;
     }
 
@@ -48,7 +73,10 @@ class _SplashPageState extends State<SplashPage> {
         destino = const PacienteHomePage();
         break;
       default:
-        setState(() => mostrarSelecao = true);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+        );
         return;
     }
 
@@ -61,105 +89,79 @@ class _SplashPageState extends State<SplashPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Center(
-          child: mostrarSelecao ? _buildSelecao() : _buildSplash(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSplash() {
-    return const Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(LucideIcons.brain, size: 80, color: AppColors.primary),
-        SizedBox(height: 24),
-        Text(
-          'MindSteps',
-          style: TextStyle(
-            fontSize: 36,
-            fontWeight: FontWeight.w800,
-            color: AppColors.text,
+      body: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppColors.primary,
+              AppColors.secondary,
+            ],
           ),
         ),
-        SizedBox(height: 8),
-        Text(
-          'Um passo de cada vez.',
-          style: TextStyle(color: AppColors.muted),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSelecao() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(LucideIcons.brain, size: 80, color: AppColors.primary),
-          const SizedBox(height: 24),
-          const Text(
-            'MindSteps',
-            style: TextStyle(
-              fontSize: 36,
-              fontWeight: FontWeight.w800,
-              color: AppColors.text,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Um passo de cada vez.',
-            style: TextStyle(color: AppColors.muted),
-          ),
-          const SizedBox(height: 60),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage()));
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              minimumSize: const Size(double.infinity, 54),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Sou Psicólogo'),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage()));
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: AppColors.primary,
-              minimumSize: const Size(double.infinity, 54),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: AppColors.border),
-              ),
-              elevation: 0,
-            ),
-            child: const Text('Sou Paciente'),
-          ),
-          const SizedBox(height: 32),
-          Row(
+        child: SafeArea(
+          child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text('Já tem uma conta? ', style: TextStyle(color: AppColors.muted)),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage()));
-                },
-                child: const Text(
-                  'Entrar',
-                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+              const Spacer(),
+              // Logo
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  width: 100,
+                  height: 100,
+                  errorBuilder: (context, error, stackTrace) {
+                    // Fallback to text if logo fails to load
+                    return const Icon(Icons.psychology, size: 100, color: AppColors.primary);
+                  },
+                ),
+              ),
+              const SizedBox(height: 32),
+              const Text(
+                'MindSteps',
+                style: TextStyle(
+                  fontSize: 40,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Um passo de cada vez.',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white.withOpacity(0.9),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Spacer(),
+              // Indicador de Carregamento
+              Padding(
+                padding: const EdgeInsets.only(bottom: 48.0, left: 64, right: 64),
+                child: AnimatedBuilder(
+                  animation: _progressAnimation,
+                  builder: (context, child) {
+                    return LinearProgressIndicator(
+                      value: _progressAnimation.value,
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                      minHeight: 4,
+                      borderRadius: BorderRadius.circular(4),
+                    );
+                  },
                 ),
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

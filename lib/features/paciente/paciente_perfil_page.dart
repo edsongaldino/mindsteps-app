@@ -74,10 +74,19 @@ class _PacientePerfilPageState extends State<PacientePerfilPage> {
                 icone: LucideIcons.circleQuestionMark,
               ),
               const SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: () => _sair(context),
-                icon: const Icon(LucideIcons.logOut),
-                label: const Text('Sair'),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _sair(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFE5E5),
+                    foregroundColor: AppColors.danger,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  icon: const Icon(LucideIcons.logOut),
+                  label: const Text('Sair da conta', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
               ),
             ],
           ),

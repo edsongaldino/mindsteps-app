@@ -17,11 +17,12 @@ class _PacienteCheckinPageState extends State<PacienteCheckinPage> {
   final service = PacienteService();
 
   int humor = 3;
-  int intensidade = 5;
-  String emocaoPrincipal = 'Calmo';
+  String emocaoPrincipal = 'Calma';
   bool salvando = false;
   bool jaFezHoje = false;
   bool carregandoStatus = true;
+
+  final emocoes = ['Ansiedade', 'Tristeza', 'Alegria', 'Raiva', 'Calma', 'Medo', 'Outra'];
 
   @override
   void initState() {
@@ -57,7 +58,7 @@ class _PacienteCheckinPageState extends State<PacienteCheckinPage> {
 
       await service.criarCheckin(
         humor: humor,
-        intensidade: intensidade,
+        intensidade: 5, // Default pois não tem no mockup 09
         emocaoPrincipal: emocaoPrincipal,
         observacao: observacaoController.text.trim().isEmpty
             ? null
@@ -70,8 +71,7 @@ class _PacienteCheckinPageState extends State<PacienteCheckinPage> {
 
       setState(() {
         humor = 3;
-        intensidade = 5;
-        emocaoPrincipal = 'Calmo';
+        emocaoPrincipal = 'Calma';
         jaFezHoje = true;
       });
 
@@ -144,183 +144,147 @@ class _PacienteCheckinPageState extends State<PacienteCheckinPage> {
       );
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Check-in emocional',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              color: AppColors.text,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Registre como você está se sentindo agora.',
-            style: TextStyle(color: AppColors.muted),
-          ),
-          const SizedBox(height: 24),
-          _CardHumorAtual(
-            humorSelecionado: humor,
-            onSelecionar: (valor, emocao) {
-              setState(() {
-                humor = valor;
-                emocaoPrincipal = emocao;
-              });
-            },
-          ),
-          const SizedBox(height: 22),
-          _CardIntensidade(
-            intensidade: intensidade,
-            onChanged: (valor) {
-              setState(() => intensidade = valor);
-            },
-          ),
-          const SizedBox(height: 22),
-          TextField(
-            controller: observacaoController,
-            maxLines: 5,
-            decoration: const InputDecoration(
-              hintText: 'Escreva brevemente o que está passando pela sua mente...',
-              alignLabelWithHint: true,
-              prefixIcon: Padding(
-                padding: EdgeInsets.only(bottom: 82),
-                child: Icon(LucideIcons.penLine),
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
-          ElevatedButton.icon(
-            onPressed: salvando ? null : salvarCheckin,
-            icon: salvando
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Icon(LucideIcons.save),
-            label: Text(salvando ? 'Salvando...' : 'Salvar check-in'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CardHumorAtual extends StatelessWidget {
-  final int humorSelecionado;
-  final void Function(int valor, String emocao) onSelecionar;
-
-  const _CardHumorAtual({
-    required this.humorSelecionado,
-    required this.onSelecionar,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Como está seu humor?',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              color: AppColors.text,
-            ),
-          ),
-          const SizedBox(height: 18),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _HumorOpcao(
-                icone: LucideIcons.frown,
-                texto: 'Difícil',
-                selecionado: humorSelecionado == 1,
-                onTap: () => onSelecionar(1, 'Difícil'),
-              ),
-              _HumorOpcao(
-                icone: LucideIcons.meh,
-                texto: 'Neutro',
-                selecionado: humorSelecionado == 3,
-                onTap: () => onSelecionar(3, 'Neutro'),
-              ),
-              _HumorOpcao(
-                icone: LucideIcons.smile,
-                texto: 'Bem',
-                selecionado: humorSelecionado == 5,
-                onTap: () => onSelecionar(5, 'Calmo'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HumorOpcao extends StatelessWidget {
-  final IconData icone;
-  final String texto;
-  final bool selecionado;
-  final VoidCallback onTap;
-
-  const _HumorOpcao({
-    required this.icone,
-    required this.texto,
-    required this.selecionado,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: selecionado ? AppColors.softGreen : Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: selecionado ? AppColors.primary : Colors.transparent,
-          ),
-        ),
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
         child: Column(
           children: [
-            Container(
-              width: 62,
-              height: 62,
-              decoration: BoxDecoration(
-                color: selecionado ? AppColors.primary : AppColors.softGreen,
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: Icon(
-                icone,
-                color: selecionado ? Colors.white : AppColors.primary,
-                size: 30,
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Check-in de hoje',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.text,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Como você está se sentindo?',
+                      style: TextStyle(color: AppColors.muted, fontSize: 16),
+                    ),
+                    const SizedBox(height: 32),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _EmojiButton(
+                          icone: LucideIcons.frown,
+                          corFundo: const Color(0xFFFFE5E5),
+                          corIcone: AppColors.danger,
+                          selecionado: humor == 1,
+                          onTap: () => setState(() => humor = 1),
+                        ),
+                        _EmojiButton(
+                          icone: LucideIcons.meh,
+                          corFundo: const Color(0xFFFFF2E5),
+                          corIcone: AppColors.warning,
+                          selecionado: humor == 2,
+                          onTap: () => setState(() => humor = 2),
+                        ),
+                        _EmojiButton(
+                          icone: LucideIcons.smile,
+                          corFundo: const Color(0xFFE5F0FF),
+                          corIcone: Colors.blue,
+                          selecionado: humor == 3,
+                          onTap: () => setState(() => humor = 3),
+                        ),
+                        _EmojiButton(
+                          icone: LucideIcons.laugh,
+                          corFundo: const Color(0xFFE5FFE5),
+                          corIcone: AppColors.success,
+                          selecionado: humor == 4,
+                          onTap: () => setState(() => humor = 4),
+                        ),
+                        _EmojiButton(
+                          icone: LucideIcons.heart,
+                          corFundo: const Color(0xFFFFE5F2),
+                          corIcone: Colors.pink,
+                          selecionado: humor == 5,
+                          onTap: () => setState(() => humor = 5),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 40),
+                    const Text(
+                      'Qual emoção principal?',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.text,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: emocoes.map((emocao) {
+                        return _TagEmocao(
+                          texto: emocao,
+                          selecionada: emocaoPrincipal == emocao,
+                          onTap: () => setState(() => emocaoPrincipal = emocao),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 40),
+                    const Text(
+                      'Quer adicionar alguma anotação? (Opcional)',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.text,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: observacaoController,
+                      maxLines: 4,
+                      decoration: InputDecoration(
+                        hintText: 'Escreva aqui...',
+                        hintStyle: const TextStyle(color: AppColors.muted),
+                        alignLabelWithHint: true,
+                        fillColor: Colors.white,
+                        filled: true,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              texto,
-              style: TextStyle(
-                color: selecionado ? AppColors.primary : AppColors.text,
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
+            Container(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
+              ),
+              child: ElevatedButton(
+                onPressed: salvando ? null : salvarCheckin,
+                child: salvando
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(color: Colors.white),
+                      )
+                    : const Text('Salvar Check-in'),
               ),
             ),
           ],
@@ -330,54 +294,89 @@ class _HumorOpcao extends StatelessWidget {
   }
 }
 
-class _CardIntensidade extends StatelessWidget {
-  final int intensidade;
-  final ValueChanged<int> onChanged;
+class _EmojiButton extends StatelessWidget {
+  final IconData icone;
+  final Color corFundo;
+  final Color corIcone;
+  final bool selecionado;
+  final VoidCallback onTap;
 
-  const _CardIntensidade({
-    required this.intensidade,
-    required this.onChanged,
+  const _EmojiButton({
+    required this.icone,
+    required this.corFundo,
+    required this.corIcone,
+    required this.selecionado,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.border),
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: corFundo,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: selecionado ? corIcone : Colors.transparent,
+            width: selecionado ? 3 : 0,
+          ),
+          boxShadow: selecionado
+              ? [
+                  BoxShadow(
+                    color: corIcone.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  )
+                ]
+              : null,
+        ),
+        child: Icon(
+          icone,
+          color: corIcone,
+          size: selecionado ? 34 : 28,
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Intensidade da emoção',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              color: AppColors.text,
-            ),
+    );
+  }
+}
+
+class _TagEmocao extends StatelessWidget {
+  final String texto;
+  final bool selecionada;
+  final VoidCallback onTap;
+
+  const _TagEmocao({
+    required this.texto,
+    required this.selecionada,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: selecionada ? AppColors.primary : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selecionada ? AppColors.primary : AppColors.border,
           ),
-          const SizedBox(height: 8),
-          Slider(
-            value: intensidade.toDouble(),
-            min: 1,
-            max: 10,
-            divisions: 9,
-            label: intensidade.toString(),
-            onChanged: (value) => onChanged(value.round()),
+        ),
+        child: Text(
+          texto,
+          style: TextStyle(
+            color: selecionada ? Colors.white : AppColors.text,
+            fontWeight: selecionada ? FontWeight.bold : FontWeight.w600,
+            fontSize: 14,
           ),
-          Center(
-            child: Text(
-              '$intensidade/10',
-              style: const TextStyle(
-                color: AppColors.text,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

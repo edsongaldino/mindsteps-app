@@ -8,10 +8,10 @@ class AdminPsicologosPage extends StatefulWidget {
   const AdminPsicologosPage({super.key});
 
   @override
-  State<AdminPsicologosPage> createState() => _AdminPsicologosPageState();
+  State<AdminPsicologosPage> createState() => AdminPsicologosPageState();
 }
 
-class _AdminPsicologosPageState extends State<AdminPsicologosPage> {
+class AdminPsicologosPageState extends State<AdminPsicologosPage> {
   final service = AdminService();
 
   late Future<List<dynamic>> psicologosFuture;
@@ -99,10 +99,6 @@ class _AdminPsicologosPageState extends State<AdminPsicologosPage> {
               ),
             ),
           ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () => _exibirDialogoCriar(context),
-            child: const Icon(LucideIcons.plus),
-          ),
         );
       },
     );
@@ -173,7 +169,7 @@ class _AdminPsicologosPageState extends State<AdminPsicologosPage> {
     );
   }
 
-  void _exibirDialogoCriar(BuildContext context) {
+  void exibirDialogoCriar(BuildContext context) {
     final nomeController = TextEditingController();
     final emailController = TextEditingController();
     final senhaController = TextEditingController();

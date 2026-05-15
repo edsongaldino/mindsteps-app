@@ -1,6 +1,11 @@
 import '../../../core/api/api_client.dart';
 
 class AdminService {
+  Future<Map<String, dynamic>> obterMe() async {
+    final response = await ApiClient.dio.get('/Auth/me');
+    return Map<String, dynamic>.from(response.data);
+  }
+
   Future<List<dynamic>> listarUsuarios() async {
     final response = await ApiClient.dio.get('/Usuarios');
     return List<dynamic>.from(response.data);

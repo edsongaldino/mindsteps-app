@@ -77,62 +77,108 @@ class _PacienteResponderAtividadePageState
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Responder atividade'),
+        title: Text(widget.titulo, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(LucideIcons.arrowLeft),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Center(
+              child: Text('1 de 1', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _CardAtividade(
-              titulo: widget.titulo,
-              descricao: widget.descricao,
-            ),
-            const SizedBox(height: 22),
-            const Text(
-              'Como você se sentiu ao fazer essa atividade?',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-                color: AppColors.text,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _SliderHumor(
-              valor: notaHumor,
-              onChanged: (valor) {
-                setState(() => notaHumor = valor);
-              },
-            ),
-            const SizedBox(height: 22),
-            TextField(
-              controller: respostaController,
-              maxLines: 7,
-              decoration: const InputDecoration(
-                hintText: 'Escreva sua resposta aqui...',
-                alignLabelWithHint: true,
-                prefixIcon: Padding(
-                  padding: EdgeInsets.only(bottom: 120),
-                  child: Icon(LucideIcons.penLine),
-                ),
-              ),
-            ),
-            const SizedBox(height: 22),
-            ElevatedButton.icon(
-              onPressed: salvando ? null : salvar,
-              icon: salvando
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Descreva a situação',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.text,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Conte sobre o que aconteceu.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: respostaController,
+                    maxLines: 5,
+                    decoration: InputDecoration(
+                      hintText: 'Ex: Tive uma reunião importante e fiquei muito ansioso...',
+                      hintStyle: const TextStyle(color: AppColors.muted),
+                      alignLabelWithHint: true,
+                      fillColor: Colors.white,
+                      filled: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: AppColors.border),
                       ),
-                    )
-                  : const Icon(LucideIcons.send),
-              label: Text(salvando ? 'Enviando...' : 'Enviar atividade'),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: AppColors.border),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  const Text(
+                    'Como você se sentiu?',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.text,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Intensidade da emoção',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _SliderHumor(
+                    valor: notaHumor,
+                    onChanged: (valor) {
+                      setState(() => notaHumor = valor);
+                    },
+                  ),
+                ],
+              ),
             ),
+          ),
+        ],
+      ),
+      bottomSheet: Container(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5)),
           ],
+        ),
+        child: ElevatedButton(
+          onPressed: salvando ? null : salvar,
+          child: salvando
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white))
+              : const Text('Salvar e continuar'),
         ),
       ),
     );

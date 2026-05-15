@@ -8,10 +8,10 @@ class AdminUsuariosPage extends StatefulWidget {
   const AdminUsuariosPage({super.key});
 
   @override
-  State<AdminUsuariosPage> createState() => _AdminUsuariosPageState();
+  State<AdminUsuariosPage> createState() => AdminUsuariosPageState();
 }
 
-class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
+class AdminUsuariosPageState extends State<AdminUsuariosPage> {
   final service = AdminService();
 
   late Future<List<dynamic>> usuariosFuture;
@@ -26,6 +26,19 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
     setState(() {
       usuariosFuture = service.listarUsuarios();
     });
+  }
+
+  Future<void> _excluirUsuario(String id) async {
+    try {
+      await service.desativarUsuario(id);
+      _recarregar();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -90,15 +103,12 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
                       perfil: usuario['perfil']?.toString() ?? '-',
                       ativo: usuario['ativo'] == true,
                       onEdit: () => _exibirDialogoEditar(context, usuario),
+                      onDelete: () => _excluirUsuario(id),
                     );
                   }),
                 ],
               ),
             ),
-          ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () => _exibirDialogoCriar(context),
-            child: const Icon(LucideIcons.plus),
           ),
         );
       },
@@ -180,7 +190,7 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
     );
   }
 
-  void _exibirDialogoCriar(BuildContext context) {
+  void exibirDialogoCriar(BuildContext context) {
     final nomeController = TextEditingController();
     final emailController = TextEditingController();
     final senhaController = TextEditingController();
@@ -264,6 +274,7 @@ class _UsuarioCard extends StatelessWidget {
   final String perfil;
   final bool ativo;
   final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   const _UsuarioCard({
     required this.id,
@@ -272,6 +283,7 @@ class _UsuarioCard extends StatelessWidget {
     required this.perfil,
     required this.ativo,
     required this.onEdit,
+    required this.onDelete,
   });
 
   @override
@@ -335,6 +347,11 @@ class _UsuarioCard extends StatelessWidget {
             onPressed: onEdit,
             icon: const Icon(LucideIcons.pencil, size: 18),
             color: AppColors.muted,
+          ),
+          IconButton(
+            onPressed: onDelete,
+            icon: const Icon(LucideIcons.trash2, size: 18),
+            color: AppColors.danger,
           ),
           Icon(
             ativo ? LucideIcons.circleCheck : LucideIcons.circleX,

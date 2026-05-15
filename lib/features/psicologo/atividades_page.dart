@@ -8,10 +8,10 @@ class AtividadesPage extends StatefulWidget {
   const AtividadesPage({super.key});
 
   @override
-  State<AtividadesPage> createState() => _AtividadesPageState();
+  State<AtividadesPage> createState() => AtividadesPageState();
 }
 
-class _AtividadesPageState extends State<AtividadesPage> {
+class AtividadesPageState extends State<AtividadesPage> {
   final service = PsicologoService();
 
   late Future<List<dynamic>> atividadesFuture;
@@ -92,6 +92,61 @@ class _AtividadesPageState extends State<AtividadesPage> {
           ),
         );
       },
+    );
+  }
+
+  void exibirDialogoCriar(BuildContext context) {
+    final tituloController = TextEditingController();
+    final descricaoController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Nova Atividade'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: tituloController,
+                decoration: const InputDecoration(labelText: 'Título'),
+              ),
+              TextField(
+                controller: descricaoController,
+                decoration: const InputDecoration(labelText: 'Descrição'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await service.criarAtividade(
+                  titulo: tituloController.text,
+                  descricao: descricaoController.text,
+                  tipo: 1, // Padrão
+                );
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  _recarregar();
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erro: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Criar'),
+          ),
+        ],
+      ),
     );
   }
 }

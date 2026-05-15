@@ -5,7 +5,7 @@ import '../../core/theme/app_theme.dart';
 import 'atividades_page.dart';
 import 'mais_page.dart';
 import 'pacientes_page.dart';
-import 'relatorios_page.dart';
+import 'perfil_page.dart';
 import 'services/psicologo_service.dart';
 
 class PsicologoHomePage extends StatefulWidget {
@@ -18,58 +18,99 @@ class PsicologoHomePage extends StatefulWidget {
 class _PsicologoHomePageState extends State<PsicologoHomePage> {
   int paginaAtual = 0;
 
-  final paginas = const [
-    _DashboardPsicologo(),
-    PacientesPage(),
-    AtividadesPage(),
-    RelatoriosPage(),
-    MaisPage(),
-  ];
+  final pacientesKey = GlobalKey<PacientesPageState>();
+  final atividadesKey = GlobalKey<AtividadesPageState>();
+
+  late final List<Widget> paginas;
+
+  @override
+  void initState() {
+    super.initState();
+    paginas = [
+      const _DashboardPsicologo(),
+      PacientesPage(key: pacientesKey),
+      AtividadesPage(key: atividadesKey),
+      const MaisPage(),
+    ];
+  }
+
+  void _onFabPressed() {
+    if (paginaAtual == 1) {
+      pacientesKey.currentState?.exibirDialogoCriar(context);
+    } else if (paginaAtual == 3) {
+      atividadesKey.currentState?.exibirDialogoCriar(context);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final bool temFab = paginaAtual == 1 || paginaAtual == 3;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: IndexedStack(
-          index: paginaAtual,
+          index: paginaAtual > 2 ? paginaAtual - 1 : paginaAtual,
           children: paginas,
         ),
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
+      floatingActionButton: temFab
+          ? FloatingActionButton(
+              onPressed: _onFabPressed,
+              backgroundColor: AppColors.secondary,
+              elevation: 4,
+              shape: const CircleBorder(),
+              child: const Icon(LucideIcons.plus, color: Colors.white, size: 28),
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: Theme(
+        data: Theme.of(context).copyWith(
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
         ),
-        child: NavigationBar(
-          selectedIndex: paginaAtual,
-          onDestinationSelected: (index) {
-            setState(() => paginaAtual = index);
+        child: BottomNavigationBar(
+          currentIndex: paginaAtual,
+          onTap: (index) {
+            if (index == 2) {
+              if (!temFab) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PsicologoPerfilPage()),
+                );
+              }
+            } else {
+              setState(() => paginaAtual = index);
+            }
           },
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(LucideIcons.house),
+          backgroundColor: Colors.white,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: AppColors.muted,
+          selectedFontSize: 11,
+          unselectedFontSize: 11,
+          elevation: 20,
+          items: [
+            const BottomNavigationBarItem(
+              icon: Icon(LucideIcons.house, size: 24),
               label: 'Dashboard',
             ),
-            NavigationDestination(
-              icon: Icon(LucideIcons.users),
+            const BottomNavigationBarItem(
+              icon: Icon(LucideIcons.users, size: 24),
               label: 'Pacientes',
             ),
-            NavigationDestination(
-              icon: Icon(LucideIcons.calendar),
+            BottomNavigationBarItem(
+              icon: temFab
+                  ? const Icon(Icons.circle, color: Colors.transparent)
+                  : const Icon(LucideIcons.user, size: 24),
+              label: temFab ? '' : 'Perfil',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(LucideIcons.clipboardList, size: 24),
               label: 'Atividades',
             ),
-            NavigationDestination(
-              icon: Icon(LucideIcons.fileText),
-              label: 'Relatórios',
-            ),
-            NavigationDestination(
-              icon: Icon(LucideIcons.ellipsis),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.more_horiz, size: 24),
               label: 'Mais',
             ),
           ],
@@ -88,7 +129,6 @@ class _DashboardPsicologo extends StatefulWidget {
 
 class _DashboardPsicologoState extends State<_DashboardPsicologo> {
   final service = PsicologoService();
-
   late Future<Map<String, dynamic>> resumoFuture;
 
   @override
@@ -109,11 +149,8 @@ class _DashboardPsicologoState extends State<_DashboardPsicologo> {
       future: resumoFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const Center(child: CircularProgressIndicator());
         }
-
         if (snapshot.hasError) {
           return _ErroDashboard(
             erro: snapshot.error.toString(),
@@ -127,30 +164,38 @@ class _DashboardPsicologoState extends State<_DashboardPsicologo> {
           onRefresh: _recarregar,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const _TopoDashboard(),
-                const SizedBox(height: 22),
+                const SizedBox(height: 32),
                 _GridResumo(
                   pacientesAtivos: resumo['pacientesAtivos'] ?? 0,
                   atividadesEnviadas: resumo['atividadesEnviadas'] ?? 0,
                   pendencias: resumo['pendencias'] ?? 0,
                   adesaoMedia: resumo['adesaoMedia'] ?? 0,
                 ),
-                const SizedBox(height: 22),
+                const SizedBox(height: 32),
                 const _CardHumorSemana(),
-                const SizedBox(height: 18),
-                _BotaoPrincipal(
-                  texto: 'Ver meus pacientes',
-                  onPressed: () {
-                    final state = context.findAncestorStateOfType<_PsicologoHomePageState>();
-                    state?.setState(() {
-                      state.paginaAtual = 1;
-                    });
-                  },
+                const SizedBox(height: 32),
+                const Text(
+                  'Atividades pendentes',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.text,
+                  ),
                 ),
+                const SizedBox(height: 8),
+                const Text(
+                  '5 atividades aguardando respostas',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.muted,
+                  ),
+                ),
+                const SizedBox(height: 16),
               ],
             ),
           ),
@@ -177,35 +222,21 @@ class _ErroDashboard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              LucideIcons.circleAlert,
-              color: AppColors.danger,
-              size: 42,
-            ),
+            const Icon(LucideIcons.circleAlert, color: AppColors.danger, size: 42),
             const SizedBox(height: 14),
             const Text(
               'Não foi possível carregar o dashboard.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-                color: AppColors.text,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.text),
             ),
             const SizedBox(height: 8),
             Text(
               erro,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.muted,
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: AppColors.muted, fontSize: 13),
             ),
             const SizedBox(height: 18),
-            ElevatedButton(
-              onPressed: onTentarNovamente,
-              child: const Text('Tentar novamente'),
-            ),
+            ElevatedButton(onPressed: onTentarNovamente, child: const Text('Tentar novamente')),
           ],
         ),
       ),
@@ -225,24 +256,41 @@ class _TopoDashboard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Olá, Psicóloga!',
+                'Olá, Ana! 👋',
                 style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
                   color: AppColors.text,
+                  letterSpacing: -0.5,
                 ),
               ),
               SizedBox(height: 4),
               Text(
-                'Aqui está o resumo da sua clínica hoje.',
-                style: TextStyle(fontSize: 13, color: AppColors.muted),
+                'Aqui está o resumo da sua clínica.',
+                style: TextStyle(fontSize: 14, color: AppColors.muted),
               ),
             ],
           ),
         ),
-        IconButton(
-          onPressed: null,
-          icon: Icon(LucideIcons.bell, color: AppColors.text),
+        Stack(
+          children: [
+            IconButton(
+              onPressed: () {},
+              icon: const Icon(LucideIcons.bell, color: AppColors.primary, size: 28),
+            ),
+            Positioned(
+              right: 12,
+              top: 12,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  color: AppColors.warning,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -270,31 +318,29 @@ class _GridResumo extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: 16,
       mainAxisSpacing: 16,
-      childAspectRatio: 1.4,
+      childAspectRatio: 1.1,
       children: [
         _CardResumo(
           '$pacientesAtivos',
           'Pacientes ativos',
           LucideIcons.users,
-          AppColors.softGreen,
         ),
         _CardResumo(
           '$atividadesEnviadas',
-          'Atividades enviadas',
-          LucideIcons.calendar,
-          const Color(0xFFF0ECFF),
+          'Atividades\nenviadas',
+          LucideIcons.fileText,
         ),
         _CardResumo(
           '$pendencias',
           'Pendências',
           LucideIcons.clock,
-          const Color(0xFFFFF3E3),
+          isAlert: true,
         ),
         _CardResumo(
           '$adesaoMedia%',
           'Adesão média',
           LucideIcons.trendingUp,
-          const Color(0xFFEAF4F7),
+          isSuccess: true,
         ),
       ],
     );
@@ -305,22 +351,34 @@ class _CardResumo extends StatelessWidget {
   final String valor;
   final String titulo;
   final IconData icone;
-  final Color cor;
+  final bool isAlert;
+  final bool isSuccess;
 
-  const _CardResumo(this.valor, this.titulo, this.icone, this.cor);
+  const _CardResumo(
+    this.valor,
+    this.titulo,
+    this.icone, {
+    this.isAlert = false,
+    this.isSuccess = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    Color iconColor = AppColors.primary;
+    if (isAlert) iconColor = AppColors.danger;
+    if (isSuccess) iconColor = AppColors.secondary;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border.withOpacity(0.5)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -329,22 +387,23 @@ class _CardResumo extends StatelessWidget {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 valor,
                 style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
                   color: AppColors.text,
                 ),
               ),
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: cor,
+                  color: iconColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icone, color: AppColors.primary, size: 18),
+                child: Icon(icone, color: iconColor, size: 20),
               ),
             ],
           ),
@@ -352,9 +411,10 @@ class _CardResumo extends StatelessWidget {
           Text(
             titulo,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               color: AppColors.muted,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
+              height: 1.2,
             ),
           ),
         ],
@@ -368,19 +428,20 @@ class _CardHumorSemana extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pontos = [0.4, 0.5, 0.45, 0.6, 0.55, 0.65, 0.5];
+    final pontos = [0.3, 0.4, 0.35, 0.5, 0.45, 0.7, 0.6];
     final dias = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border.withOpacity(0.5)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -393,30 +454,31 @@ class _CardHumorSemana extends StatelessWidget {
               const Text(
                 'Humor médio da semana',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: AppColors.text,
                 ),
               ),
-              const Icon(LucideIcons.smile, color: AppColors.success, size: 20),
+              Icon(LucideIcons.smile, color: AppColors.secondary, size: 20),
             ],
           ),
           const SizedBox(height: 24),
           SizedBox(
-            height: 120,
+            height: 140,
             child: Stack(
               children: [
                 Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: List.generate(
-                      3,
-                      (index) => Container(
-                            height: 1,
-                            color: AppColors.border.withOpacity(0.5),
-                          )),
+                  children: [
+                    _linhaGuia('5'),
+                    _linhaGuia('4'),
+                    _linhaGuia('3'),
+                    _linhaGuia('2'),
+                    _linhaGuia('1'),
+                  ],
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  padding: const EdgeInsets.only(left: 24, right: 8),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -425,9 +487,9 @@ class _CardHumorSemana extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           Container(
-                            width: 8,
-                            height: 8,
-                            margin: EdgeInsets.only(bottom: 100 * pontos[index]),
+                            width: 10,
+                            height: 10,
+                            margin: EdgeInsets.only(bottom: 130 * pontos[index]),
                             decoration: BoxDecoration(
                               color: AppColors.secondary,
                               shape: BoxShape.circle,
@@ -442,40 +504,46 @@ class _CardHumorSemana extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(dias.length, (index) {
-              return Text(
-                dias[index],
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: AppColors.muted,
-                  fontWeight: FontWeight.w500,
-                ),
-              );
-            }),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.only(left: 24, right: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: List.generate(dias.length, (index) {
+                return Text(
+                  dias[index],
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.muted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                );
+              }),
+            ),
           ),
         ],
       ),
     );
   }
-}
 
-class _BotaoPrincipal extends StatelessWidget {
-  final String texto;
-  final VoidCallback onPressed;
-
-  const _BotaoPrincipal({
-    required this.texto,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      child: Text(texto),
+  Widget _linhaGuia(String num) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 16,
+          child: Text(
+            num,
+            style: const TextStyle(color: AppColors.muted, fontSize: 10),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Container(
+            height: 1,
+            color: AppColors.border.withOpacity(0.5),
+          ),
+        ),
+      ],
     );
   }
 }
