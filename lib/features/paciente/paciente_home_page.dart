@@ -19,12 +19,16 @@ class PacienteHomePage extends StatefulWidget {
 class PacienteHomePageState extends State<PacienteHomePage> {
   int paginaAtual = 0;
 
-  final paginas = const [
-    _DashboardPaciente(),
-    PacienteAtividadesPage(),
-    PacienteCheckinPage(),
-    PacienteEvolucaoPage(),
-    PacientePerfilPage(),
+  void mudarPagina(int index) {
+    setState(() => paginaAtual = index);
+  }
+
+  List<Widget> get _paginas => [
+    _DashboardPaciente(isActive: paginaAtual == 0),
+    PacienteAtividadesPage(isActive: paginaAtual == 1),
+    const PacienteCheckinPage(),
+    PacienteEvolucaoPage(isActive: paginaAtual == 3),
+    const PacientePerfilPage(),
   ];
 
   @override
@@ -34,7 +38,7 @@ class PacienteHomePageState extends State<PacienteHomePage> {
       body: SafeArea(
         child: IndexedStack(
           index: paginaAtual,
-          children: paginas,
+          children: _paginas,
         ),
       ),
       bottomNavigationBar: NavigationBar(
@@ -70,13 +74,21 @@ class PacienteHomePageState extends State<PacienteHomePage> {
 }
 
 class _DashboardPaciente extends StatefulWidget {
-  const _DashboardPaciente();
+  final bool isActive;
+  const _DashboardPaciente({this.isActive = false});
 
   @override
   State<_DashboardPaciente> createState() => _DashboardPacienteState();
 }
 
 class _DashboardPacienteState extends State<_DashboardPaciente> {
+  @override
+  void didUpdateWidget(covariant _DashboardPaciente oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _recarregar();
+    }
+  }
   final service = PacienteService();
 
   late Future<Map<String, dynamic>> resumoFuture;
@@ -94,7 +106,7 @@ class _DashboardPacienteState extends State<_DashboardPaciente> {
       if (!jaFez && mounted) {
         // Redireciona para a página de check-in (índice 2)
         final state = context.findAncestorStateOfType<PacienteHomePageState>();
-        state?.setState(() => state.paginaAtual = 2);
+        state?.mudarPagina(2);
       }
     } catch (e) {
       debugPrint('Erro ao verificar check-in hoje: $e');
@@ -140,9 +152,27 @@ class _DashboardPacienteState extends State<_DashboardPaciente> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _TopoPaciente(),
+                _TopoPaciente(nome: resumo['nome'] ?? ''),
                 const SizedBox(height: 22),
-                const _CardMensagemDia(),
+                _CardGamificacao(
+                  pontos: resumo['pontos'] ?? 0,
+                  nivel: resumo['nivel'] ?? 1,
+                ),
+                const SizedBox(height: 22),
+                _CardMensagemDia(
+                  mensagem: resumo['mensagemMotivacional'],
+                  onMarcarComoLida: () async {
+                    try {
+                      final msg = resumo['mensagemMotivacional'];
+                      if (msg != null && msg['id'] != null) {
+                        await service.marcarMensagemComoLida(msg['id'].toString());
+                        _recarregar();
+                      }
+                    } catch (e) {
+                      debugPrint('Erro ao marcar mensagem como lida: $e');
+                    }
+                  },
+                ),
                 const SizedBox(height: 22),
 
                 _GridResumoPaciente(
@@ -172,7 +202,7 @@ class _DashboardPacienteState extends State<_DashboardPaciente> {
                   texto: 'Fazer check-in agora',
                   onPressed: () {
                     final state = context.findAncestorStateOfType<PacienteHomePageState>();
-                    state?.setState(() => state.paginaAtual = 2);
+                    state?.mudarPagina(2);
                   },
                 ),
               ],
@@ -185,26 +215,28 @@ class _DashboardPacienteState extends State<_DashboardPaciente> {
 }
 
 class _TopoPaciente extends StatelessWidget {
-  const _TopoPaciente();
+  final String nome;
+
+  const _TopoPaciente({required this.nome});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Olá!',
-                style: TextStyle(
+                nome.isNotEmpty ? 'Olá, $nome!' : 'Olá!',
+                style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w900,
                   color: AppColors.text,
                 ),
               ),
-              SizedBox(height: 4),
-              Text(
+              const SizedBox(height: 4),
+              const Text(
                 'Como você está se sentindo hoje?',
                 style: TextStyle(
                   fontSize: 13,
@@ -226,40 +258,180 @@ class _TopoPaciente extends StatelessWidget {
   }
 }
 
-class _CardMensagemDia extends StatelessWidget {
-  const _CardMensagemDia();
+class _CardGamificacao extends StatelessWidget {
+  final int pontos;
+  final int nivel;
+
+  const _CardGamificacao({
+    required this.pontos,
+    required this.nivel,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final pontosNoNivel = pontos % 100;
+    final progresso = pontosNoNivel / 100.0;
+    final pontosParaProximoNivel = 100 - pontosNoNivel;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF8E2DE2),
+            Color(0xFF4A00E0),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF4A00E0).withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      LucideIcons.star,
+                      color: Colors.amber,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Nível $nivel',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                '$pontos XP',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.9),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: progresso,
+              backgroundColor: Colors.white.withOpacity(0.15),
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+              minHeight: 8,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Faltam $pontosParaProximoNivel XP para o Nível ${nivel + 1} 🚀',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CardMensagemDia extends StatelessWidget {
+  final Map<String, dynamic>? mensagem;
+  final VoidCallback? onMarcarComoLida;
+
+  const _CardMensagemDia({this.mensagem, this.onMarcarComoLida});
+
+  @override
+  Widget build(BuildContext context) {
+    final temMensagem = mensagem != null;
+    final conteudo = temMensagem
+        ? mensagem!['conteudo'] ?? ''
+        : 'Hoje você não precisa resolver tudo.';
+    final titulo = temMensagem
+        ? 'Recado da Dra. ${mensagem!['psicologoNome'] ?? 'Psicóloga'}'
+        : 'Um passo de cada vez.';
+    final lida = temMensagem ? (mensagem!['lida'] ?? true) : true;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: temMensagem && !lida ? AppColors.softPurple : AppColors.primary,
         borderRadius: BorderRadius.circular(24),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            LucideIcons.sparkles,
-            color: Colors.white,
-            size: 30,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Icon(
+                temMensagem ? LucideIcons.messageSquareQuote : LucideIcons.sparkles,
+                color: temMensagem && !lida ? AppColors.primary : Colors.white,
+                size: 30,
+              ),
+              if (temMensagem && !lida)
+                GestureDetector(
+                  onTap: onMarcarComoLida,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(LucideIcons.check, color: Colors.white, size: 12),
+                        SizedBox(width: 4),
+                        Text(
+                          'Marcar como lida',
+                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
-            'Um passo de cada vez.',
+            titulo,
             style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
+              color: temMensagem && !lida ? AppColors.text : Colors.white,
+              fontSize: 20,
               fontWeight: FontWeight.w900,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            'Hoje você não precisa resolver tudo.',
+            conteudo,
             style: TextStyle(
-              color: Colors.white70,
+              color: temMensagem && !lida ? AppColors.text.withOpacity(0.8) : Colors.white70,
               fontSize: 13,
               height: 1.4,
             ),

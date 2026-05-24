@@ -58,15 +58,27 @@ class PacienteService {
     return List<dynamic>.from(response.data);
   }
 
+  Future<List<dynamic>> listarMinhasMensagens() async {
+    final response = await ApiClient.dio.get('/Mensagens/minhas');
+    return List<dynamic>.from(response.data);
+  }
+
+  Future<void> marcarMensagemComoLida(String mensagemId) async {
+    await ApiClient.dio.patch('/Mensagens/$mensagemId/ler');
+  }
+
   Future<Map<String, dynamic>> obterResumoHome() async {
+    final me = await obterMe();
     final atividades = await listarMinhasAtividades();
     final checkins = await listarMeusCheckins();
     final registros = await listarMeusRegistrosPensamentos();
+    final mensagens = await listarMinhasMensagens();
 
     final concluidas = atividades.where((x) {
       final status = x['status'];
 
-      return status == 2 ||
+      return status == 3 ||
+          status?.toString() == '3' ||
           status?.toString() == 'Concluida' ||
           status?.toString() == 'Concluído';
     }).length;
@@ -87,12 +99,21 @@ class PacienteService {
       }
     }
 
+    Map<String, dynamic>? ultimaMensagem;
+    if (mensagens.isNotEmpty) {
+      ultimaMensagem = Map<String, dynamic>.from(mensagens.first);
+    }
+
     return {
       'atividades': atividades.length,
       'concluidas': concluidas,
       'checkins': checkins.length,
       'registros': registros.length,
       'humorMedio': humorMedio,
+      'pontos': me['pontos'] ?? 0,
+      'nivel': me['nivel'] ?? 1,
+      'nome': me['nome'] ?? '',
+      'mensagemMotivacional': ultimaMensagem,
     };
   }
 

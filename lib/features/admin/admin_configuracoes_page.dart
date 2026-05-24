@@ -23,6 +23,245 @@ class AdminConfiguracoesPage extends StatelessWidget {
     );
   }
 
+  void _mostrarConfiguracoes(BuildContext context) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Configurações da plataforma',
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (ctx, anim1, anim2) => const SizedBox.shrink(),
+      transitionBuilder: (ctx, anim1, anim2, child) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(1, 0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(parent: anim1, curve: Curves.easeOut)),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Material(
+              color: AppColors.background,
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.85,
+                height: double.infinity,
+                decoration: const BoxDecoration(
+                  border: Border(left: BorderSide(color: AppColors.border, width: 1)),
+                ),
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Configurações',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.text,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(LucideIcons.x, color: AppColors.muted),
+                              onPressed: () => Navigator.pop(ctx),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        const Expanded(
+                          child: SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Configurações do Sistema',
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.text),
+                                ),
+                                SizedBox(height: 12),
+                                Text(
+                                  'Acesse os parâmetros globais da plataforma, limites de requisições, backups de bancos de dados PostgreSQL e chaves de APIs integradas.',
+                                  style: TextStyle(fontSize: 14, color: AppColors.muted, height: 1.5),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _mostrarPlanos(BuildContext context) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Planos e assinaturas',
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (ctx, anim1, anim2) => const SizedBox.shrink(),
+      transitionBuilder: (ctx, anim1, anim2, child) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(1, 0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(parent: anim1, curve: Curves.easeOut)),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Material(
+              color: AppColors.background,
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.85,
+                height: double.infinity,
+                decoration: const BoxDecoration(
+                  border: Border(left: BorderSide(color: AppColors.border, width: 1)),
+                ),
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Planos e Assinaturas',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.text,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(LucideIcons.x, color: AppColors.muted),
+                              onPressed: () => Navigator.pop(ctx),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        const Expanded(
+                          child: SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Gerenciamento Financeiro',
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.text),
+                                ),
+                                SizedBox(height: 12),
+                                Text(
+                                  'Configure faixas de cobrança, faturas ativas de psicólogos credenciados e relatórios de receitas recorrentes da plataforma.',
+                                  style: TextStyle(fontSize: 14, color: AppColors.muted, height: 1.5),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _mostrarAjuda(BuildContext context) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Ajuda e suporte',
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (ctx, anim1, anim2) => const SizedBox.shrink(),
+      transitionBuilder: (ctx, anim1, anim2, child) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(1, 0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(parent: anim1, curve: Curves.easeOut)),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Material(
+              color: AppColors.background,
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.85,
+                height: double.infinity,
+                decoration: const BoxDecoration(
+                  border: Border(left: BorderSide(color: AppColors.border, width: 1)),
+                ),
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Ajuda e Suporte',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.text,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(LucideIcons.x, color: AppColors.muted),
+                              onPressed: () => Navigator.pop(ctx),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        const Expanded(
+                          child: SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Suporte do Administrador',
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.text),
+                                ),
+                                SizedBox(height: 12),
+                                Text(
+                                  'Dúvidas sobre manutenção de servidores ou bugs críticos? Contate o time de engenharia da MindSteps:',
+                                  style: TextStyle(fontSize: 14, color: AppColors.muted, height: 1.5),
+                                ),
+                                SizedBox(height: 20),
+                                Row(
+                                  children: [
+                                    Icon(LucideIcons.mail, color: AppColors.primary, size: 18),
+                                    SizedBox(width: 8),
+                                    Text('admin@mindsteps.com.br', style: TextStyle(fontSize: 14, color: AppColors.text)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -62,17 +301,17 @@ class AdminConfiguracoesPage extends StatelessWidget {
           _OpcaoAdmin(
             titulo: 'Configurações da plataforma',
             icone: LucideIcons.settings,
-            onTap: () {},
+            onTap: () => _mostrarConfiguracoes(context),
           ),
           _OpcaoAdmin(
             titulo: 'Planos e assinaturas',
             icone: LucideIcons.creditCard,
-            onTap: () {},
+            onTap: () => _mostrarPlanos(context),
           ),
           _OpcaoAdmin(
             titulo: 'Ajuda e suporte',
             icone: LucideIcons.circleQuestionMark,
-            onTap: () {},
+            onTap: () => _mostrarAjuda(context),
           ),
           const SizedBox(height: 20),
           SizedBox(

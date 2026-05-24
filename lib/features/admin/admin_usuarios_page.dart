@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/api/api_client.dart';
 import 'services/admin_service.dart';
 
 class AdminUsuariosPage extends StatefulWidget {
@@ -102,6 +103,7 @@ class AdminUsuariosPageState extends State<AdminUsuariosPage> {
                       email: usuario['email'] ?? '',
                       perfil: usuario['perfil']?.toString() ?? '-',
                       ativo: usuario['ativo'] == true,
+                      fotoUrl: usuario['fotoUrl']?.toString(),
                       onEdit: () => _exibirDialogoEditar(context, usuario),
                       onDelete: () => _excluirUsuario(id),
                     );
@@ -273,6 +275,7 @@ class _UsuarioCard extends StatelessWidget {
   final String email;
   final String perfil;
   final bool ativo;
+  final String? fotoUrl;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
@@ -282,13 +285,24 @@ class _UsuarioCard extends StatelessWidget {
     required this.email,
     required this.perfil,
     required this.ativo,
+    this.fotoUrl,
     required this.onEdit,
     required this.onDelete,
   });
 
+  String? _obterUrlCompleta(String? url) {
+    if (url == null || url.isEmpty) return null;
+    final baseUrl = ApiClient.dio.options.baseUrl;
+    final domain = baseUrl.endsWith('/api')
+        ? baseUrl.substring(0, baseUrl.length - 4)
+        : baseUrl;
+    return '$domain$url';
+  }
+
   @override
   Widget build(BuildContext context) {
     final inicial = nome.isNotEmpty ? nome.substring(0, 1) : '?';
+    final fullFotoUrl = _obterUrlCompleta(fotoUrl);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -303,13 +317,18 @@ class _UsuarioCard extends StatelessWidget {
           CircleAvatar(
             radius: 25,
             backgroundColor: AppColors.softGreen,
-            child: Text(
-              inicial,
-              style: const TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
+            backgroundImage: fullFotoUrl != null
+                ? NetworkImage(fullFotoUrl)
+                : null,
+            child: fullFotoUrl != null
+                ? null
+                : Text(
+                    inicial,
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
           ),
           const SizedBox(width: 14),
           Expanded(

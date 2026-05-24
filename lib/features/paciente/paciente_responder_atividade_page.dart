@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -8,12 +9,16 @@ class PacienteResponderAtividadePage extends StatefulWidget {
   final String atividadePacienteId;
   final String titulo;
   final String descricao;
+  final int tipo;
+  final String conteudoJson;
 
   const PacienteResponderAtividadePage({
     super.key,
     required this.atividadePacienteId,
     required this.titulo,
     required this.descricao,
+    required this.tipo,
+    required this.conteudoJson,
   });
 
   @override
@@ -29,6 +34,29 @@ class _PacienteResponderAtividadePageState
   bool salvando = false;
   int notaHumor = 5;
 
+  List<String> perguntas = [];
+  List<bool> checklistStatus = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _parseConteudo();
+  }
+
+  void _parseConteudo() {
+    try {
+      if (widget.conteudoJson.isNotEmpty) {
+        final decoded = jsonDecode(widget.conteudoJson);
+        if (decoded is Map && decoded.containsKey('perguntas')) {
+          perguntas = List<String>.from(decoded['perguntas']);
+          if (widget.tipo == 4) {
+            checklistStatus = List.generate(perguntas.length, (_) => false);
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
   @override
   void dispose() {
     respostaController.dispose();
@@ -36,11 +64,25 @@ class _PacienteResponderAtividadePageState
   }
 
   Future<void> salvar() async {
-    if (respostaController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Escreva sua resposta antes de enviar.')),
-      );
-      return;
+    String respostaFinal = '';
+
+    if (widget.tipo == 4) {
+      // Checklist: serialize booleans or checked items
+      final mapResultado = {};
+      for (int i = 0; i < perguntas.length; i++) {
+        mapResultado[perguntas[i]] = checklistStatus[i];
+      }
+      respostaFinal = jsonEncode(mapResultado);
+
+      // Require at least something? Or maybe checklist can be saved empty.
+    } else {
+      respostaFinal = respostaController.text.trim();
+      if (respostaFinal.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Escreva sua resposta antes de enviar.')),
+        );
+        return;
+      }
     }
 
     try {
@@ -48,7 +90,7 @@ class _PacienteResponderAtividadePageState
 
       await service.responderAtividade(
         atividadePacienteId: widget.atividadePacienteId,
-        respostaTexto: respostaController.text.trim(),
+        respostaTexto: respostaFinal,
         notaHumor: notaHumor,
       );
 
@@ -70,6 +112,102 @@ class _PacienteResponderAtividadePageState
         setState(() => salvando = false);
       }
     }
+  }
+
+  Widget _buildChecklist() {
+    if (perguntas.isEmpty) {
+      return const Text('Esta atividade não possui itens.', style: TextStyle(color: AppColors.muted));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Marque os itens realizados',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: AppColors.text,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ...List.generate(perguntas.length, (index) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: checklistStatus[index] ? AppColors.secondary : AppColors.border),
+            ),
+            child: CheckboxListTile(
+              title: Text(
+                perguntas[index],
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  decoration: checklistStatus[index] ? TextDecoration.lineThrough : null,
+                  color: checklistStatus[index] ? AppColors.muted : AppColors.text,
+                ),
+              ),
+              value: checklistStatus[index],
+              activeColor: AppColors.secondary,
+              checkColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() {
+                    checklistStatus[index] = val;
+                  });
+                }
+              },
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildRespostaLivre() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Descreva a situação',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: AppColors.text,
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Conte sobre o que aconteceu.',
+          style: TextStyle(
+            fontSize: 14,
+            color: AppColors.muted,
+          ),
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: respostaController,
+          maxLines: 5,
+          decoration: InputDecoration(
+            hintText: 'Ex: Tive uma reunião importante e fiquei muito ansioso...',
+            hintStyle: const TextStyle(color: AppColors.muted),
+            alignLabelWithHint: true,
+            fillColor: Colors.white,
+            filled: true,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -100,42 +238,14 @@ class _PacienteResponderAtividadePageState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Descreva a situação',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.text,
+                  if (widget.descricao.isNotEmpty) ...[
+                    Text(
+                      widget.descricao,
+                      style: const TextStyle(fontSize: 15, color: AppColors.muted, height: 1.5),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Conte sobre o que aconteceu.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.muted,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: respostaController,
-                    maxLines: 5,
-                    decoration: InputDecoration(
-                      hintText: 'Ex: Tive uma reunião importante e fiquei muito ansioso...',
-                      hintStyle: const TextStyle(color: AppColors.muted),
-                      alignLabelWithHint: true,
-                      fillColor: Colors.white,
-                      filled: true,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: AppColors.border),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: AppColors.border),
-                      ),
-                    ),
-                  ),
+                    const SizedBox(height: 24),
+                  ],
+                  if (widget.tipo == 4) _buildChecklist() else _buildRespostaLivre(),
                   const SizedBox(height: 32),
                   const Text(
                     'Como você se sentiu?',

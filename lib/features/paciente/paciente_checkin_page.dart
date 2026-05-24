@@ -72,12 +72,14 @@ class _PacienteCheckinPageState extends State<PacienteCheckinPage> {
       setState(() {
         humor = 3;
         emocaoPrincipal = 'Calma';
-        jaFezHoje = true;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Check-in salvo com sucesso.')),
       );
+
+      final state = context.findAncestorStateOfType<PacienteHomePageState>();
+      state?.mudarPagina(0);
     } catch (e) {
       if (!mounted) return;
 
@@ -96,51 +98,6 @@ class _PacienteCheckinPageState extends State<PacienteCheckinPage> {
     if (carregandoStatus) {
       return const Center(
         child: CircularProgressIndicator(),
-      );
-    }
-
-    if (jaFezHoje) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                LucideIcons.circleCheck,
-                color: AppColors.success,
-                size: 84,
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Check-in concluído!',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.text,
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Você já registrou como está se sentindo hoje. Continue assim!',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.muted,
-                  fontSize: 14,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: () {
-                  final state = context.findAncestorStateOfType<PacienteHomePageState>();
-                  state?.setState(() => state.paginaAtual = 0);
-                },
-                child: const Text('Voltar para o Início'),
-              ),
-            ],
-          ),
-        ),
       );
     }
 

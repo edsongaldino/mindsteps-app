@@ -148,7 +148,7 @@ class _EnviarAtividadePageState extends State<EnviarAtividadePage> {
                           LucideIcons.brain,
                           LucideIcons.messageSquare,
                           LucideIcons.dumbbell,
-                          LucideIcons.checkSquare,
+                          LucideIcons.clipboardList,
                           LucideIcons.headphones,
                         ];
 

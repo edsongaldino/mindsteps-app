@@ -55,6 +55,7 @@ class AdminService {
     required String nome,
     required String email,
     required int perfil,
+    String? telefone,
   }) async {
     await ApiClient.dio.put(
       '/Usuarios/$id',
@@ -62,6 +63,7 @@ class AdminService {
         'nome': nome,
         'email': email,
         'perfil': perfil,
+        'telefone': telefone,
       },
     );
   }
@@ -71,6 +73,7 @@ class AdminService {
     required String email,
     required String senha,
     required String crp,
+    String? telefone,
     String? bio,
   }) async {
     await ApiClient.dio.post(
@@ -78,6 +81,7 @@ class AdminService {
       data: {
         'nome': nome,
         'email': email,
+        'telefone': telefone,
         'senha': senha,
         'crp': crp,
         'bio': bio,
@@ -90,6 +94,7 @@ class AdminService {
     required String nome,
     required String email,
     required String crp,
+    String? telefone,
     String? bio,
   }) async {
     await ApiClient.dio.put(
@@ -97,6 +102,7 @@ class AdminService {
       data: {
         'nome': nome,
         'email': email,
+        'telefone': telefone,
         'crp': crp,
         'bio': bio,
       },

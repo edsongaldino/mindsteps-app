@@ -6,13 +6,21 @@ import 'paciente_responder_atividade_page.dart';
 import 'services/paciente_service.dart';
 
 class PacienteAtividadesPage extends StatefulWidget {
-  const PacienteAtividadesPage({super.key});
+  final bool isActive;
+  const PacienteAtividadesPage({super.key, this.isActive = false});
 
   @override
   State<PacienteAtividadesPage> createState() => _PacienteAtividadesPageState();
 }
 
 class _PacienteAtividadesPageState extends State<PacienteAtividadesPage> {
+  @override
+  void didUpdateWidget(covariant PacienteAtividadesPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _recarregar();
+    }
+  }
   final service = PacienteService();
 
   late Future<List<dynamic>> atividadesFuture;
@@ -41,6 +49,8 @@ class _PacienteAtividadesPageState extends State<PacienteAtividadesPage> {
           descricao: atividade['atividade']?['descricao'] ??
               atividade['descricao'] ??
               'Sem descrição.',
+          tipo: atividade['atividade']?['tipo'] ?? atividade['tipo'] ?? 1,
+          conteudoJson: atividade['atividade']?['conteudo'] ?? atividade['conteudo'] ?? '',
         ),
       ),
     );
@@ -146,14 +156,16 @@ class _PacienteAtividadesPageState extends State<PacienteAtividadesPage> {
   }
 
   static bool _estaConcluida(dynamic status) {
-    return status == 2 ||
+    return status == 3 ||
+        status?.toString() == '3' ||
         status?.toString().toLowerCase() == 'concluida' ||
         status?.toString().toLowerCase() == 'concluído';
   }
 
   static String _statusTexto(dynamic status) {
     if (_estaConcluida(status)) return 'Concluída';
-    if (status == 1 || status?.toString().toLowerCase() == 'pendente') return 'Pendente';
+    if (status == 1 || status?.toString() == '1' || status?.toString().toLowerCase() == 'pendente') return 'Pendente';
+    if (status == 4 || status?.toString() == '4' || status?.toString().toLowerCase() == 'atrasada') return 'Atrasada';
     return 'Em andamento';
   }
 }

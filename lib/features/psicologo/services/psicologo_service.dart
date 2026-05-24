@@ -60,6 +60,14 @@ class PsicologoService {
     return List<dynamic>.from(response.data);
   }
 
+  Future<List<dynamic>> listarAtividadesPaciente(String pacienteId) async {
+    final response = await ApiClient.dio.get(
+      '/Atividades/paciente/$pacienteId',
+    );
+
+    return List<dynamic>.from(response.data);
+  }
+
   Future<Map<String, dynamic>> obterResumoDashboard() async {
     final pacientes = await listarPacientesDoPsicologo();
     final atividades = await listarAtividadesDoPsicologo();
@@ -70,7 +78,8 @@ class PsicologoService {
     for (var a in atividades) {
       final status = a['status'];
       totalAtividades++;
-      if (status == 2 ||
+      if (status == 3 ||
+          status?.toString() == '3' ||
           status?.toString().toLowerCase() == 'concluida' ||
           status?.toString().toLowerCase() == 'concluído') {
         totalConcluidas++;
@@ -89,25 +98,34 @@ class PsicologoService {
     };
   }
 
-  Future<void> criarAtividade({
+  Future<String> criarAtividade({
     required String titulo,
     required String descricao,
     required int tipo,
     String? conteudo,
+    Map<String, dynamic>? configuracoes,
   }) async {
     final psicologoId = await obterPsicologoId();
 
-    await ApiClient.dio.post(
+    final data = {
+      'psicologoId': psicologoId,
+      'titulo': titulo,
+      'descricao': descricao,
+      'tipo': tipo,
+      'conteudo': conteudo,
+      'ativo': true,
+    };
+
+    if (configuracoes != null) {
+      data.addAll(configuracoes);
+    }
+
+    final response = await ApiClient.dio.post(
       '/Atividades',
-      data: {
-        'psicologoId': psicologoId,
-        'titulo': titulo,
-        'descricao': descricao,
-        'tipo': tipo,
-        'conteudo': conteudo,
-        'ativo': true,
-      },
+      data: data,
     );
+    
+    return response.data['id'].toString();
   }
 
   Future<void> enviarAtividadeParaPaciente({
@@ -129,6 +147,7 @@ class PsicologoService {
     required String nome,
     required String email,
     required String senha,
+    String? telefone,
     DateTime? dataNascimento,
     String? genero,
   }) async {
@@ -140,6 +159,7 @@ class PsicologoService {
         'psicologoId': psicologoId,
         'nome': nome,
         'email': email,
+        'telefone': telefone,
         'senha': senha,
         'dataNascimento': dataNascimento?.toIso8601String(),
         'genero': genero,
@@ -151,6 +171,7 @@ class PsicologoService {
     required String id,
     required String nome,
     required String email,
+    String? telefone,
     DateTime? dataNascimento,
     String? genero,
   }) async {
@@ -159,6 +180,7 @@ class PsicologoService {
       data: {
         'nome': nome,
         'email': email,
+        'telefone': telefone,
         'dataNascimento': dataNascimento?.toIso8601String(),
         'genero': genero,
       },
@@ -167,5 +189,32 @@ class PsicologoService {
 
   Future<void> desativarPaciente(String id) async {
     await ApiClient.dio.delete('/Pacientes/$id');
+  }
+
+  Future<void> enviarMensagemMotivacional({
+    required String pacienteId,
+    required String conteudo,
+  }) async {
+    await ApiClient.dio.post(
+      '/Mensagens',
+      data: {
+        'pacienteId': pacienteId,
+        'conteudo': conteudo,
+      },
+    );
+  }
+
+  Future<List<dynamic>> listarMensagensPaciente(String pacienteId) async {
+    final response = await ApiClient.dio.get('/Mensagens/paciente/$pacienteId');
+    return List<dynamic>.from(response.data);
+  }
+
+  Future<void> atualizarAnotacoesPaciente(String pacienteId, String? anotacoes) async {
+    await ApiClient.dio.patch(
+      '/Pacientes/$pacienteId/anotacoes',
+      data: {
+        'anotacoes': anotacoes,
+      },
+    );
   }
 }

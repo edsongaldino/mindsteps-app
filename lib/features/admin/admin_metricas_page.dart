@@ -24,54 +24,85 @@ class _AdminMetricasPageState extends State<AdminMetricasPage> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>>(
-      future: resumoFuture,
-      builder: (context, snapshot) {
-        final dados = snapshot.data ?? {};
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text(
+          'Métricas',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(LucideIcons.arrowLeft),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: resumoFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Métricas',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.text,
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(22),
+                child: Text(
+                  'Erro ao carregar métricas: ${snapshot.error}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: AppColors.danger),
                 ),
               ),
-              const SizedBox(height: 6),
-              const Text(
-                'Visão geral da plataforma.',
-                style: TextStyle(color: AppColors.muted),
-              ),
-              const SizedBox(height: 20),
-              _MetricaCard(
-                titulo: 'Usuários totais',
-                valor: '${dados['usuarios'] ?? 0}',
-                icone: LucideIcons.users,
-              ),
-              _MetricaCard(
-                titulo: 'Psicólogos',
-                valor: '${dados['psicologos'] ?? 0}',
-                icone: LucideIcons.brain,
-              ),
-              _MetricaCard(
-                titulo: 'Pacientes',
-                valor: '${dados['pacientes'] ?? 0}',
-                icone: LucideIcons.heartPulse,
-              ),
-              _MetricaCard(
-                titulo: 'Status SaaS',
-                valor: 'MVP',
-                icone: LucideIcons.rocket,
-              ),
-            ],
-          ),
-        );
-      },
+            );
+          }
+
+          final dados = snapshot.data ?? {};
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Visão geral da plataforma',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.text,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Confira os números consolidados do MindSteps.',
+                  style: TextStyle(color: AppColors.muted),
+                ),
+                const SizedBox(height: 24),
+                _MetricaCard(
+                  titulo: 'Usuários totais',
+                  valor: '${dados['usuarios'] ?? 0}',
+                  icone: LucideIcons.users,
+                ),
+                _MetricaCard(
+                  titulo: 'Psicólogos',
+                  valor: '${dados['psicologos'] ?? 0}',
+                  icone: LucideIcons.brain,
+                ),
+                _MetricaCard(
+                  titulo: 'Pacientes',
+                  valor: '${dados['pacientes'] ?? 0}',
+                  icone: LucideIcons.heartPulse,
+                ),
+                _MetricaCard(
+                  titulo: 'Status SaaS',
+                  valor: 'MVP',
+                  icone: LucideIcons.rocket,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }
