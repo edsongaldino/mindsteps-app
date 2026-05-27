@@ -128,21 +128,24 @@ class _PacienteAtividadesPageState extends State<PacienteAtividadesPage> {
                     final titulo = atividade['atividade']?['titulo'] ?? atividade['titulo'] ?? 'Atividade';
                     final descricao = atividade['atividade']?['descricao'] ?? atividade['descricao'] ?? 'Descrição';
                     final status = atividade['status'];
+                    final tipo = atividade['atividade']?['tipo'] ?? atividade['tipo'] ?? 1;
                     
-                    final icones = [
-                      LucideIcons.brain,
-                      LucideIcons.footprints,
-                      LucideIcons.heartPulse,
-                      LucideIcons.sun,
-                      LucideIcons.calendarClock,
-                    ];
+                    final cardIcon = tipo == 7
+                        ? LucideIcons.gamepad2
+                        : [
+                            LucideIcons.brain,
+                            LucideIcons.footprints,
+                            LucideIcons.heartPulse,
+                            LucideIcons.sun,
+                            LucideIcons.calendarClock,
+                          ][index % 5];
 
                     return _AtividadePacienteCard(
                       titulo: titulo,
                       descricao: 'Segunda • 12/05', // Mock data from layout
                       status: _statusTexto(status),
                       concluida: _estaConcluida(status),
-                      icone: icones[index % icones.length],
+                      icone: cardIcon,
                       onTap: () => _abrirAtividade(atividade),
                     );
                   }),
