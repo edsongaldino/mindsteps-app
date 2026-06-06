@@ -92,7 +92,14 @@ class _PacienteEvolucaoPageState extends State<PacienteEvolucaoPage> with Single
             centerTitle: true,
             leading: IconButton(
               icon: const Icon(LucideIcons.arrowLeft),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                } else {
+                  final state = context.findAncestorStateOfType<PacienteHomePageState>();
+                  state?.mudarPagina(0);
+                }
+              },
             ),
           ),
           body: RefreshIndicator(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/app_theme.dart';
+import 'paciente_home_page.dart';
 import 'paciente_responder_atividade_page.dart';
 import 'services/paciente_service.dart';
 
@@ -90,7 +91,14 @@ class _PacienteAtividadesPageState extends State<PacienteAtividadesPage> {
             centerTitle: true,
             leading: IconButton(
               icon: const Icon(LucideIcons.arrowLeft),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                } else {
+                  final state = context.findAncestorStateOfType<PacienteHomePageState>();
+                  state?.mudarPagina(0);
+                }
+              },
             ),
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(24),
@@ -108,14 +116,22 @@ class _PacienteAtividadesPageState extends State<PacienteAtividadesPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      const _FiltroChip('Todas (5)', true),
-                      const _FiltroChip('Pendentes (2)', false),
-                      const _FiltroChip('Concluídas (3)', false),
-                    ],
+                  Builder(
+                    builder: (context) {
+                      final total = atividades.length;
+                      final concluidasCount = atividades.where((x) => _estaConcluida(x['status'])).length;
+                      final pendentesCount = total - concluidasCount;
+                      
+                      return Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _FiltroChip('Todas ($total)', true),
+                          _FiltroChip('Pendentes ($pendentesCount)', false),
+                          _FiltroChip('Concluídas ($concluidasCount)', false),
+                        ],
+                      );
+                    }
                   ),
                   const SizedBox(height: 24),
                   if (atividades.isEmpty)
@@ -126,7 +142,6 @@ class _PacienteAtividadesPageState extends State<PacienteAtividadesPage> {
                     final atividade = Map<String, dynamic>.from(entry.value);
 
                     final titulo = atividade['atividade']?['titulo'] ?? atividade['titulo'] ?? 'Atividade';
-                    final descricao = atividade['atividade']?['descricao'] ?? atividade['descricao'] ?? 'Descrição';
                     final status = atividade['status'];
                     final tipo = atividade['atividade']?['tipo'] ?? atividade['tipo'] ?? 1;
                     

@@ -1,5 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 
+import '../../main.dart';
+import '../../features/auth/login_page.dart';
 import '../auth/auth_storage.dart';
 
 class ApiClient {
@@ -23,8 +26,16 @@ class ApiClient {
 
           return handler.next(options);
         },
-        onError: (DioException error, handler) {
+        onError: (DioException error, handler) async {
           if (error.response?.statusCode == 401) {
+            final isLoginRequest = error.requestOptions.path.contains('/Auth/login');
+            if (!isLoginRequest) {
+              await AuthStorage.limpar();
+              navigatorKey.currentState?.pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const LoginPage()),
+                (route) => false,
+              );
+            }
             return handler.reject(
               DioException(
                 requestOptions: error.requestOptions,

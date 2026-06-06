@@ -67,6 +67,17 @@ class PacienteService {
     await ApiClient.dio.patch('/Mensagens/$mensagemId/ler');
   }
 
+  bool _estaConcluida(dynamic status) {
+    if (status == null) return false;
+    final s = status.toString().toLowerCase().trim();
+    return status == 3 ||
+        s == '3' ||
+        s == 'concluida' ||
+        s == 'concluido' ||
+        s == 'concluída' ||
+        s == 'concluído';
+  }
+
   Future<Map<String, dynamic>> obterResumoHome() async {
     final me = await obterMe();
     final atividades = await listarMinhasAtividades();
@@ -75,12 +86,7 @@ class PacienteService {
     final mensagens = await listarMinhasMensagens();
 
     final concluidas = atividades.where((x) {
-      final status = x['status'];
-
-      return status == 3 ||
-          status?.toString() == '3' ||
-          status?.toString() == 'Concluida' ||
-          status?.toString() == 'Concluído';
+      return _estaConcluida(x['status']);
     }).length;
 
     String humorMedio = '-';
@@ -104,6 +110,35 @@ class PacienteService {
       ultimaMensagem = Map<String, dynamic>.from(mensagens.first);
     }
 
+    final notificacoes = <Map<String, dynamic>>[];
+
+    // Atividades pendentes
+    final atividadesPendentesList = atividades.where((x) {
+      return !_estaConcluida(x['status']);
+    }).toList();
+
+    for (var act in atividadesPendentesList) {
+      notificacoes.add({
+        'id': act['id']?.toString() ?? '',
+        'titulo': 'Nova Atividade Recebida',
+        'conteudo': 'Você tem uma nova atividade: ${act['titulo']}',
+        'tipo': 'activity',
+        'data': act['dataEnvio'],
+      });
+    }
+
+    // Mensagens não lidas
+    final mensagensNaoLidas = mensagens.where((x) => x['lida'] == false).toList();
+    for (var msg in mensagensNaoLidas) {
+      notificacoes.add({
+        'id': msg['id']?.toString() ?? '',
+        'titulo': 'Nova Mensagem',
+        'conteudo': msg['conteudo'],
+        'tipo': 'message',
+        'data': msg['criadoEm'],
+      });
+    }
+
     return {
       'atividades': atividades.length,
       'concluidas': concluidas,
@@ -114,6 +149,7 @@ class PacienteService {
       'nivel': me['nivel'] ?? 1,
       'nome': me['nome'] ?? '',
       'mensagemMotivacional': ultimaMensagem,
+      'notificacoes': notificacoes,
     };
   }
 
