@@ -7,6 +7,7 @@ import 'paciente_checkin_page.dart';
 import 'paciente_evolucao_page.dart';
 import 'paciente_perfil_page.dart';
 import 'paciente_registro_pensamento_page.dart';
+import 'paciente_jogos_page.dart';
 import 'services/paciente_service.dart';
 
 class PacienteHomePage extends StatefulWidget {
@@ -26,8 +27,7 @@ class PacienteHomePageState extends State<PacienteHomePage> {
   List<Widget> get _paginas => [
     _DashboardPaciente(isActive: paginaAtual == 0),
     PacienteAtividadesPage(isActive: paginaAtual == 1),
-    const PacienteCheckinPage(),
-    PacienteEvolucaoPage(isActive: paginaAtual == 3),
+    PacienteEvolucaoPage(isActive: paginaAtual == 2),
     const PacientePerfilPage(),
   ];
 
@@ -56,12 +56,8 @@ class PacienteHomePageState extends State<PacienteHomePage> {
             label: 'Atividades',
           ),
           NavigationDestination(
-            icon: Icon(LucideIcons.heartPulse),
-            label: 'Check-in',
-          ),
-          NavigationDestination(
             icon: Icon(LucideIcons.chartNoAxesColumn),
-            label: 'Evolução',
+            label: 'Progresso',
           ),
           NavigationDestination(
             icon: Icon(LucideIcons.user),
@@ -104,9 +100,10 @@ class _DashboardPacienteState extends State<_DashboardPaciente> {
     try {
       final jaFez = await service.verificarCheckinHoje();
       if (!jaFez && mounted) {
-        // Redireciona para a página de check-in (índice 2)
-        final state = context.findAncestorStateOfType<PacienteHomePageState>();
-        state?.mudarPagina(2);
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PacienteCheckinPage()),
+        ).then((_) => _recarregar());
       }
     } catch (e) {
       debugPrint('Erro ao verificar check-in hoje: $e');
@@ -205,8 +202,10 @@ class _DashboardPacienteState extends State<_DashboardPaciente> {
                 _BotaoPrincipal(
                   texto: 'Fazer check-in agora',
                   onPressed: () {
-                    final state = context.findAncestorStateOfType<PacienteHomePageState>();
-                    state?.mudarPagina(2);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PacienteCheckinPage()),
+                    ).then((_) => _recarregar());
                   },
                 ),
               ],

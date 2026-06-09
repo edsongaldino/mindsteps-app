@@ -8,7 +8,7 @@ import '../auth/auth_storage.dart';
 class ApiClient {
   static final Dio dio = Dio(
     BaseOptions(
-      baseUrl: 'https://api.mindsteps.com.br/api',
+      baseUrl: 'https://localhost:7035/api',
       connectTimeout: const Duration(seconds: 20),
       receiveTimeout: const Duration(seconds: 20),
       headers: {

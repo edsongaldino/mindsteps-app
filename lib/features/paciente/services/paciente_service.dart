@@ -215,4 +215,52 @@ class PacienteService {
       },
     );
   }
+
+  Future<Map<String, dynamic>> registrarJogo({
+    required String jogoId,
+    required Map<String, dynamic> dadosPlay,
+    String? atividadePacienteId,
+  }) async {
+    final pacienteId = await obterPacienteId();
+    
+    // Import conversion is handled transitively or we can use local converters
+    final response = await ApiClient.dio.post(
+      '/Jogos/registrar',
+      data: {
+        'pacienteId': pacienteId,
+        'jogoId': jogoId,
+        'dadosPlay': _customJsonEncode(dadosPlay),
+        'atividadePacienteId': atividadePacienteId,
+      },
+    );
+    return Map<String, dynamic>.from(response.data);
+  }
+
+  Future<Map<String, dynamic>> obterDashboardTerapeutico() async {
+    final pacienteId = await obterPacienteId();
+    final response = await ApiClient.dio.get('/Jogos/dashboard/$pacienteId');
+    return Map<String, dynamic>.from(response.data);
+  }
+
+  String _customJsonEncode(Map<String, dynamic> map) {
+    // A simple manually constructed JSON to avoid requiring dart:convert imports if not present,
+    // though dart:convert is standard. Let's just use a basic string builder or import.
+    // Actually, let's write a standard JSON string.
+    final buffer = StringBuffer('{');
+    var first = true;
+    map.forEach((key, value) {
+      if (!first) buffer.write(',');
+      first = false;
+      buffer.write('"$key":');
+      if (value is String) {
+        buffer.write('"$value"');
+      } else if (value is num || value is bool) {
+        buffer.write(value.toString());
+      } else {
+        buffer.write('"$value"');
+      }
+    });
+    buffer.write('}');
+    return buffer.toString();
+  }
 }

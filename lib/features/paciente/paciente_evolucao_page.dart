@@ -43,12 +43,17 @@ class _PacienteEvolucaoPageState extends State<PacienteEvolucaoPage> with Single
     final checkins = await service.listarMeusCheckins();
     final registros = await service.listarMeusRegistrosPensamentos();
     final atividades = await service.listarMinhasAtividades();
+    Map<String, dynamic> dashboard = {};
+    try {
+      dashboard = await service.obterDashboardTerapeutico();
+    } catch (_) {}
 
     return {
       'me': me,
       'checkins': checkins,
       'registros': registros,
       'atividades': atividades,
+      'dashboard': dashboard,
     };
   }
 
@@ -84,6 +89,7 @@ class _PacienteEvolucaoPageState extends State<PacienteEvolucaoPage> with Single
         final checkins = List<dynamic>.from(dados['checkins'] ?? []);
         final registros = List<dynamic>.from(dados['registros'] ?? []);
         final atividades = List<dynamic>.from(dados['atividades'] ?? []);
+        final dashboard = Map<String, dynamic>.from(dados['dashboard'] ?? {});
 
         return Scaffold(
           backgroundColor: AppColors.background,
@@ -115,15 +121,16 @@ class _PacienteEvolucaoPageState extends State<PacienteEvolucaoPage> with Single
                   labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                   tabs: const [
+                    Tab(text: 'Clínico'),
                     Tab(text: 'Humor'),
-                    Tab(text: 'Atividades'),
-                    Tab(text: 'Sintomas'),
+                    Tab(text: 'XP & Conquistas'),
                   ],
                 ),
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
                     children: [
+                      _AbaDashboardClinico(dashboard: dashboard),
                       _AbaHumor(checkins: checkins),
                       _AbaAtividades(
                         atividades: atividades,
@@ -131,7 +138,6 @@ class _PacienteEvolucaoPageState extends State<PacienteEvolucaoPage> with Single
                         registros: registros,
                         me: me,
                       ),
-                      const Center(child: Text('Sintomas', style: TextStyle(color: AppColors.muted))),
                     ],
                   ),
                 ),
@@ -757,6 +763,246 @@ class _LinhaDetalhamentoXP extends StatelessWidget {
             fontSize: 13,
             fontWeight: FontWeight.w800,
             color: AppColors.primary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AbaDashboardClinico extends StatelessWidget {
+  final Map<String, dynamic> dashboard;
+
+  const _AbaDashboardClinico({required this.dashboard});
+
+  @override
+  Widget build(BuildContext context) {
+    final ansiedade = dashboard['ansiedade'] ?? {};
+    final autoestima = dashboard['autoestima'] ?? {};
+    final habSociais = dashboard['habilidadesSociais'] ?? {};
+    final exposicao = dashboard['exposicao'] ?? {};
+    final gatilhos = dashboard['gatilhos'] ?? {};
+    final sabotadores = dashboard['sabotadores'] ?? {};
+
+    final freqCatastrofes = ansiedade['frequenciaPensamentosCatastroficos'] ?? 0;
+    final intMedia = ansiedade['intensidadeMedia'] ?? 0.0;
+    final crencas = List<dynamic>.from(autoestima['crencasMaisEscolhidas'] ?? []);
+    
+    final assertivas = habSociais['respostasAssertivas'] ?? 0;
+    final passivas = habSociais['respostasPassivas'] ?? 0;
+    final agressivas = habSociais['respostasAgressivas'] ?? 0;
+    final totalSociais = assertivas + passivas + agressivas;
+
+    final expConcluidos = exposicao['desafiosConcluidos'] ?? 0;
+    final expDesistencia = exposicao['taxaDesistencia'] ?? 0.0;
+
+    final sabotadorMaisFreq = sabotadores['sabotadorMaisFrequente'] ?? 'Nenhum';
+
+    final mapaGatilhos = Map<String, dynamic>.from(gatilhos['mapaGatilhos'] ?? {});
+    final rankingGatilhos = List<dynamic>.from(gatilhos['rankingGatilhos'] ?? []);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Métricas Terapêuticas',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.text),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Acompanhe os dados de evolução gerados a partir dos seus jogos e check-ins.',
+            style: TextStyle(color: AppColors.muted, fontSize: 13),
+          ),
+          const SizedBox(height: 24),
+
+          // 1. CARD ANSIEDADE
+          _buildCardMetrica(
+            titulo: 'Ansiedade & Preocupação',
+            icone: LucideIcons.frown,
+            corIcone: Colors.red,
+            child: Column(
+              children: [
+                _buildRowInfo('Pensamentos catastróficos identificados:', '$freqCatastrofes'),
+                const SizedBox(height: 8),
+                _buildRowInfo('Intensidade média das crises:', '$intMedia / 10'),
+              ],
+            ),
+          ),
+
+          // 2. CARD AUTOESTIMA
+          _buildCardMetrica(
+            titulo: 'Autoestima & Crenças',
+            icone: LucideIcons.heart,
+            corIcone: Colors.pink,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Crenças negativas mais frequentes:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.textLight)),
+                const SizedBox(height: 10),
+                if (crencas.isEmpty)
+                  const Text('Nenhuma crença registrada nos jogos ainda.', style: TextStyle(fontSize: 12, color: AppColors.muted))
+                else
+                  ...crencas.map((c) => Padding(
+                        padding: const EdgeInsets.only(bottom: 6.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(child: Text('• "${c['crenca']}"', style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic))),
+                            Text('${c['quantidade']}x', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                          ],
+                        ),
+                      )),
+              ],
+            ),
+          ),
+
+          // 3. CARD HABILIDADES SOCIAIS
+          _buildCardMetrica(
+            titulo: 'Habilidades Sociais',
+            icone: LucideIcons.users,
+            corIcone: AppColors.secondary,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Estilo de respostas no Semáforo:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.textLight)),
+                const SizedBox(height: 12),
+                if (totalSociais == 0)
+                  const Text('Nenhuma resposta registrada no Semáforo Emocional ainda.', style: TextStyle(fontSize: 12, color: AppColors.muted))
+                else ...[
+                  _buildProgressoSocial('Assertivas (Saudáveis)', assertivas, totalSociais, AppColors.success),
+                  const SizedBox(height: 8),
+                  _buildProgressoSocial('Passivas (Inseguras)', passivas, totalSociais, AppColors.warning),
+                  const SizedBox(height: 8),
+                  _buildProgressoSocial('Agressivas (Impulsivas)', agressivas, totalSociais, AppColors.danger),
+                ],
+              ],
+            ),
+          ),
+
+          // 4. CARD EXPOSIÇÃO
+          _buildCardMetrica(
+            titulo: 'Exposição Gradual (Coragem)',
+            icone: LucideIcons.rocket,
+            corIcone: Colors.deepOrange,
+            child: Column(
+              children: [
+                _buildRowInfo('Desafios concluídos:', '$expConcluidos'),
+                const SizedBox(height: 8),
+                _buildRowInfo('Taxa de desistência:', '$expDesistencia%'),
+              ],
+            ),
+          ),
+
+          // 5. CARD GATILHOS
+          _buildCardMetrica(
+            titulo: 'Caçador de Gatilhos',
+            icone: LucideIcons.radar,
+            corIcone: Colors.amber,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Locais/Gatilhos mapeados:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.textLight)),
+                const SizedBox(height: 10),
+                if (mapaGatilhos.isEmpty)
+                  const Text('Nenhum gatilho caçado ainda.', style: TextStyle(fontSize: 12, color: AppColors.muted))
+                else
+                  ...mapaGatilhos.entries.map((e) => Padding(
+                        padding: const EdgeInsets.only(bottom: 6.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('• ${e.key}', style: const TextStyle(fontSize: 12)),
+                            Text('${e.value} ocorrências', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      )),
+              ],
+            ),
+          ),
+
+          // 6. CARD SABOTADORES
+          _buildCardMetrica(
+            titulo: 'Sabotadores Frequentes',
+            icone: LucideIcons.layers,
+            corIcone: Colors.purple,
+            child: Column(
+              children: [
+                _buildRowInfo('Sabotador mais ativo:', sabotadorMaisFreq),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCardMetrica({
+    required String titulo,
+    required IconData icone,
+    required Color corIcone,
+    required Widget child,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: corIcone.withOpacity(0.1), shape: BoxShape.circle),
+                child: Icon(icone, color: corIcone, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.text)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRowInfo(String label, String valor) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textLight)),
+        Text(valor, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.text)),
+      ],
+    );
+  }
+
+  Widget _buildProgressoSocial(String label, int valor, int total, Color cor) {
+    final pct = total > 0 ? valor / total : 0.0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textLight)),
+            Text('${(pct * 100).toInt()}%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: cor)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: pct,
+            minHeight: 6,
+            backgroundColor: AppColors.border,
+            valueColor: AlwaysStoppedAnimation(cor),
           ),
         ),
       ],
