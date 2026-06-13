@@ -111,74 +111,75 @@ class _LaboratorioMentalPageState extends State<LaboratorioMentalPage> {
 
   @override
   Widget build(BuildContext context) {
-    final darkBackground = const Color(0xFF0D1B2A);
-    final cardColor = const Color(0xFF1B263B);
-    final neonAccent = const Color(0xFF00E5FF);
+    final backgroundColor = AppColors.background;
+    final cardColor = Colors.white;
+    final accentColor = AppColors.secondary;
 
-    return Theme(
-      data: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: darkBackground,
-        colorScheme: ColorScheme.dark(
-          primary: neonAccent,
-          surface: cardColor,
+    return Scaffold(
+      backgroundColor: backgroundColor,
+      appBar: AppBar(
+        backgroundColor: backgroundColor,
+        elevation: 0,
+        title: const Text(
+          'LABORATÓRIO MENTAL',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: AppColors.text,
+            letterSpacing: 1.5,
+          ),
+        ),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(LucideIcons.arrowLeft, color: AppColors.text),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: darkBackground,
-          title: const Text('LABORATÓRIO MENTAL', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.5)),
-          centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(LucideIcons.arrowLeft),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: _buildConteudo(cardColor, neonAccent),
-                ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: _buildConteudo(cardColor, accentColor),
               ),
-              _buildBottomButton(neonAccent),
-            ],
-          ),
+            ),
+            _buildBottomButton(accentColor),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildConteudo(Color cardColor, Color neonAccent) {
+  Widget _buildConteudo(Color cardColor, Color accentColor) {
     switch (etapa) {
       case 0:
-        return _buildIntro(cardColor, neonAccent);
+        return _buildIntro(cardColor, accentColor);
       case 1:
-        return _buildGameplay("GATO", "PATO", cardColor, neonAccent);
+        return _buildGameplay("GATO", "PATO", cardColor, accentColor);
       case 2:
-        return _buildGameplay("PATO", "MATO", cardColor, neonAccent);
+        return _buildGameplay("PATO", "MATO", cardColor, accentColor);
       case 3:
-        return _buildSucesso(cardColor, neonAccent);
+        return _buildSucesso(cardColor, accentColor);
       default:
         return Container();
     }
   }
 
-  Widget _buildIntro(Color cardColor, Color neonAccent) {
+  Widget _buildIntro(Color cardColor, Color accentColor) {
     return Column(
       children: [
         const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.2),
+            color: AppColors.softGreen,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.green),
+            border: Border.all(color: AppColors.secondary.withOpacity(0.3)),
           ),
           child: const Text(
             'FLEXIBILIDADE COGNITIVA',
-            style: TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+            style: TextStyle(color: AppColors.secondary, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2),
           ),
         ),
         const SizedBox(height: 32),
@@ -188,15 +189,22 @@ class _LaboratorioMentalPageState extends State<LaboratorioMentalPage> {
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: neonAccent.withOpacity(0.3)),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              )
+            ],
           ),
           child: Column(
             children: [
-              Icon(LucideIcons.puzzle, size: 48, color: neonAccent),
+              Icon(LucideIcons.puzzle, size: 48, color: accentColor),
               const SizedBox(height: 18),
               const Text(
                 'Como jogar:',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(color: AppColors.text, fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               const Text(
@@ -204,7 +212,7 @@ class _LaboratorioMentalPageState extends State<LaboratorioMentalPage> {
                 'Exemplo: GATO ➔ PATO ➔ MATO.\n'
                 'Toque nas letras embaralhadas na ordem correta para soletrar a nova palavra.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 14, height: 1.4),
+                style: TextStyle(color: AppColors.textLight, fontSize: 14, height: 1.5),
               ),
             ],
           ),
@@ -212,13 +220,13 @@ class _LaboratorioMentalPageState extends State<LaboratorioMentalPage> {
         const SizedBox(height: 40),
         const Text(
           'Treine flexibilidade cognitiva e criatividade verbal.',
-          style: TextStyle(color: Colors.grey, fontSize: 14),
+          style: TextStyle(color: AppColors.muted, fontSize: 14),
         ),
       ],
     );
   }
 
-  Widget _buildGameplay(String dePalavra, String paraPalavra, Color cardColor, Color neonAccent) {
+  Widget _buildGameplay(String dePalavra, String paraPalavra, Color cardColor, Color accentColor) {
     return Column(
       children: [
         Row(
@@ -226,19 +234,18 @@ class _LaboratorioMentalPageState extends State<LaboratorioMentalPage> {
           children: [
             Text(
               dePalavra,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.grey, decoration: TextDecoration.lineThrough),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.muted, decoration: TextDecoration.lineThrough),
             ),
             const SizedBox(width: 20),
-            const Icon(LucideIcons.arrowRight, color: Colors.grey),
+            const Icon(LucideIcons.arrowRight, color: AppColors.muted),
             const SizedBox(width: 20),
             Text(
               paraPalavra,
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: neonAccent),
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: accentColor),
             ),
           ],
         ),
         const SizedBox(height: 48),
-        // Empty slots for current typing
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(paraPalavra.length, (index) {
@@ -253,12 +260,19 @@ class _LaboratorioMentalPageState extends State<LaboratorioMentalPage> {
                 decoration: BoxDecoration(
                   color: cardColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: temLetra ? neonAccent : Colors.white24, width: temLetra ? 2 : 1),
+                  border: Border.all(color: temLetra ? accentColor : AppColors.border, width: temLetra ? 2 : 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.01),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    )
+                  ],
                 ),
                 child: Center(
                   child: Text(
                     letra,
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: temLetra ? Colors.white : Colors.grey),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: temLetra ? AppColors.text : AppColors.muted),
                   ),
                 ),
               ),
@@ -268,10 +282,9 @@ class _LaboratorioMentalPageState extends State<LaboratorioMentalPage> {
         const SizedBox(height: 48),
         const Align(
           alignment: Alignment.centerLeft,
-          child: Text('Letras disponíveis:', style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.bold)),
+          child: Text('Letras disponíveis:', style: TextStyle(color: AppColors.textLight, fontSize: 13, fontWeight: FontWeight.bold)),
         ),
         const SizedBox(height: 12),
-        // Available letters selection
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: letrasDisponiveis.map((letra) {
@@ -282,9 +295,9 @@ class _LaboratorioMentalPageState extends State<LaboratorioMentalPage> {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: jaUsada ? Colors.white10 : cardColor,
+                  color: jaUsada ? Colors.transparent : cardColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: jaUsada ? Colors.transparent : Colors.white24),
+                  border: Border.all(color: jaUsada ? AppColors.border : AppColors.border),
                 ),
                 child: Center(
                   child: Text(
@@ -292,7 +305,7 @@ class _LaboratorioMentalPageState extends State<LaboratorioMentalPage> {
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: jaUsada ? Colors.white24 : Colors.white,
+                      color: jaUsada ? AppColors.muted : AppColors.text,
                     ),
                   ),
                 ),
@@ -304,7 +317,7 @@ class _LaboratorioMentalPageState extends State<LaboratorioMentalPage> {
     );
   }
 
-  Widget _buildSucesso(Color cardColor, Color neonAccent) {
+  Widget _buildSucesso(Color cardColor, Color accentColor) {
     return Column(
       children: [
         const SizedBox(height: 40),
@@ -312,13 +325,13 @@ class _LaboratorioMentalPageState extends State<LaboratorioMentalPage> {
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: neonAccent.withOpacity(0.1),
+              color: accentColor.withOpacity(0.12),
               shape: BoxShape.circle,
-              border: Border.all(color: neonAccent, width: 2),
+              border: Border.all(color: accentColor, width: 2),
             ),
             child: Icon(
               LucideIcons.award,
-              color: neonAccent,
+              color: accentColor,
               size: 56,
             ),
           ),
@@ -326,7 +339,7 @@ class _LaboratorioMentalPageState extends State<LaboratorioMentalPage> {
         const SizedBox(height: 32),
         const Text(
           'Laboratório Concluído!',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.text),
         ),
         const SizedBox(height: 12),
         const Padding(
@@ -335,21 +348,21 @@ class _LaboratorioMentalPageState extends State<LaboratorioMentalPage> {
             'Incrível! Você reestruturou as conexões de letras rapidamente. '
             'Exercitar a flexibilidade cognitiva verbal ajuda a encontrar soluções alternativas diante de problemas cotidianos bloqueados.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey, fontSize: 14, height: 1.4),
+            style: TextStyle(color: AppColors.textLight, fontSize: 14, height: 1.5),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildBottomButton(Color neonAccent) {
+  Widget _buildBottomButton(Color accentColor) {
     if (etapa == 3) {
       return Container(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
         child: ElevatedButton(
           onPressed: () => Navigator.pop(context, true),
           style: ElevatedButton.styleFrom(
-            backgroundColor: neonAccent,
+            backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 56),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -365,7 +378,7 @@ class _LaboratorioMentalPageState extends State<LaboratorioMentalPage> {
         child: ElevatedButton(
           onPressed: iniciarFase1,
           style: ElevatedButton.styleFrom(
-            backgroundColor: neonAccent,
+            backgroundColor: accentColor,
             foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 56),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -375,7 +388,6 @@ class _LaboratorioMentalPageState extends State<LaboratorioMentalPage> {
       );
     }
 
-    // Gameplay phases: verify button
     final pronto = letrasUsuario.length == letrasDisponiveis.length;
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
@@ -385,6 +397,8 @@ class _LaboratorioMentalPageState extends State<LaboratorioMentalPage> {
             child: OutlinedButton(
               onPressed: limparLetras,
               style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.text,
+                side: const BorderSide(color: AppColors.border),
                 minimumSize: const Size(0, 56),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
@@ -396,7 +410,7 @@ class _LaboratorioMentalPageState extends State<LaboratorioMentalPage> {
             child: ElevatedButton(
               onPressed: pronto ? verificarResposta : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: neonAccent,
+                backgroundColor: accentColor,
                 foregroundColor: Colors.white,
                 minimumSize: const Size(0, 56),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

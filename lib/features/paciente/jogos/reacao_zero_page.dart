@@ -143,40 +143,29 @@ class _ReacaoZeroPageState extends State<ReacaoZeroPage> {
 
   @override
   Widget build(BuildContext context) {
-    final darkBackground = const Color(0xFF0D1B2A);
-    final cardColor = const Color(0xFF1B263B);
-    final neonAccent = const Color(0xFF00E5FF);
+    final cardColor = AppColors.card;
+    final accentColor = AppColors.secondary;
 
-    return Theme(
-      data: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: darkBackground,
-        colorScheme: ColorScheme.dark(
-          primary: neonAccent,
-          surface: cardColor,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('REAÇÃO ZERO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.5)),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(LucideIcons.arrowLeft),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: darkBackground,
-          title: const Text('REAÇÃO ZERO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.5)),
-          centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(LucideIcons.arrowLeft),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: _buildConteudo(cardColor, neonAccent),
-                ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: _buildConteudo(cardColor, accentColor),
               ),
-              _buildBottomButton(neonAccent),
-            ],
-          ),
+            ),
+            _buildBottomButton(accentColor),
+          ],
         ),
       ),
     );
@@ -202,9 +191,9 @@ class _ReacaoZeroPageState extends State<ReacaoZeroPage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.2),
+            color: Colors.red.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.redAccent),
+            border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
           ),
           child: const Text(
             'CONTROLE INIBITÓRIO',
@@ -218,7 +207,14 @@ class _ReacaoZeroPageState extends State<ReacaoZeroPage> {
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: neonAccent.withOpacity(0.3)),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             children: [
@@ -226,7 +222,7 @@ class _ReacaoZeroPageState extends State<ReacaoZeroPage> {
               const SizedBox(height: 18),
               const Text(
                 'Como jogar:',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(color: AppColors.text, fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               const Text(
@@ -236,7 +232,7 @@ class _ReacaoZeroPageState extends State<ReacaoZeroPage> {
                 '• Se aparecer CONGELAR! (Azul): Fique congelado!\n\n'
                 'Teste seu tempo de reação motora.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 14, height: 1.4),
+                style: TextStyle(color: AppColors.textLight, fontSize: 14, height: 1.4),
               ),
             ],
           ),
@@ -244,7 +240,7 @@ class _ReacaoZeroPageState extends State<ReacaoZeroPage> {
         const SizedBox(height: 40),
         const Text(
           'Treine inibição de reações motoras automáticas.',
-          style: TextStyle(color: Colors.grey, fontSize: 14),
+          style: TextStyle(color: AppColors.muted, fontSize: 14),
         ),
       ],
     );
@@ -259,7 +255,7 @@ class _ReacaoZeroPageState extends State<ReacaoZeroPage> {
           children: [
             Text(
               'Sinal $rodadaAtual / $totalRodadas',
-              style: const TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 14, color: AppColors.textLight, fontWeight: FontWeight.bold),
             ),
             Text(
               'Acurácia: ${(acertos / max(1, rodadaAtual - 1) * 100).round()}%',
@@ -275,12 +271,12 @@ class _ReacaoZeroPageState extends State<ReacaoZeroPage> {
             color: cardColor,
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
-              color: respondeuRodada ? Colors.white10 : corComando,
+              color: respondeuRodada ? AppColors.border : corComando,
               width: 2.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: corComando.withOpacity(0.2),
+                color: corComando.withOpacity(0.1),
                 blurRadius: 25,
               ),
             ],
@@ -312,13 +308,13 @@ class _ReacaoZeroPageState extends State<ReacaoZeroPage> {
               shape: BoxShape.circle,
               border: Border.all(color: neonAccent, width: 3),
               boxShadow: [
-                BoxShadow(color: neonAccent.withOpacity(0.25), blurRadius: 20),
+                BoxShadow(color: neonAccent.withOpacity(0.15), blurRadius: 20),
               ],
             ),
             child: const Center(
               child: Text(
                 'TOQUE!',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 1.5),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 1.5, color: AppColors.text),
               ),
             ),
           ),
@@ -350,7 +346,7 @@ class _ReacaoZeroPageState extends State<ReacaoZeroPage> {
         const SizedBox(height: 32),
         const Text(
           'Reação Concluída!',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.text),
         ),
         const SizedBox(height: 28),
         Container(
@@ -358,17 +354,17 @@ class _ReacaoZeroPageState extends State<ReacaoZeroPage> {
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white10),
+            border: Border.all(color: AppColors.border),
           ),
           child: Column(
             children: [
               const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Desempenho Motor', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  Text('Desempenho Motor', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.text)),
                 ],
               ),
-              const Divider(height: 24, color: Colors.white12),
+              const Divider(height: 24, color: AppColors.border),
               _buildMetricRow('Acertos/Sinais corretos', '$acertos / $totalRodadas'),
               const SizedBox(height: 12),
               _buildMetricRow('Erros/Reações falsas', '$erros'),
@@ -385,8 +381,8 @@ class _ReacaoZeroPageState extends State<ReacaoZeroPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-        Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: valueColor ?? Colors.white)),
+        Text(label, style: const TextStyle(color: AppColors.textLight, fontSize: 13)),
+        Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: valueColor ?? AppColors.text)),
       ],
     );
   }

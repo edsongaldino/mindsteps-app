@@ -93,40 +93,29 @@ class _SharkMindPageState extends State<SharkMindPage> {
 
   @override
   Widget build(BuildContext context) {
-    final darkBackground = const Color(0xFF0D1B2A);
-    final cardColor = const Color(0xFF1B263B);
-    final neonAccent = const Color(0xFF00E5FF);
+    final cardColor = AppColors.card;
+    final accentColor = AppColors.secondary;
 
-    return Theme(
-      data: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: darkBackground,
-        colorScheme: ColorScheme.dark(
-          primary: neonAccent,
-          surface: cardColor,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('SHARK MIND', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.5)),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(LucideIcons.arrowLeft),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: darkBackground,
-          title: const Text('SHARK MIND', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.5)),
-          centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(LucideIcons.arrowLeft),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: _buildConteudo(cardColor, neonAccent),
-                ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: _buildConteudo(cardColor, accentColor),
               ),
-              _buildBottomButton(neonAccent),
-            ],
-          ),
+            ),
+            _buildBottomButton(accentColor),
+          ],
         ),
       ),
     );
@@ -152,9 +141,9 @@ class _SharkMindPageState extends State<SharkMindPage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.2),
+            color: Colors.green.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.green),
+            border: Border.all(color: Colors.green.withOpacity(0.5)),
           ),
           child: const Text(
             'FLEXIBILIDADE COGNITIVA',
@@ -168,7 +157,14 @@ class _SharkMindPageState extends State<SharkMindPage> {
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: neonAccent.withOpacity(0.3)),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             children: [
@@ -176,14 +172,14 @@ class _SharkMindPageState extends State<SharkMindPage> {
               const SizedBox(height: 18),
               const Text(
                 'Como jogar:',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(color: AppColors.text, fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               const Text(
                 'Você terá o desafio de vender um produto totalmente comum para um comprador inusitado.\n\n'
                 'Isso exige criar argumentos criativos e alternativos fora do padrão. Grave seu pitch de 30 segundos usando o microfone.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 14, height: 1.4),
+                style: TextStyle(color: AppColors.textLight, fontSize: 14, height: 1.4),
               ),
             ],
           ),
@@ -191,7 +187,7 @@ class _SharkMindPageState extends State<SharkMindPage> {
         const SizedBox(height: 40),
         const Text(
           'Treine fluência verbal, criatividade e persuasão.',
-          style: TextStyle(color: Colors.grey, fontSize: 14),
+          style: TextStyle(color: AppColors.muted, fontSize: 14),
         ),
       ],
     );
@@ -208,13 +204,20 @@ class _SharkMindPageState extends State<SharkMindPage> {
                 decoration: BoxDecoration(
                   color: cardColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white12),
+                  border: Border.all(color: AppColors.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Column(
                   children: [
-                    const Text('PRODUTO', style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
+                    const Text('PRODUTO', style: TextStyle(color: AppColors.textLight, fontSize: 11, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 6),
-                    Text(produto, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                    Text(produto, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.text)),
                   ],
                 ),
               ),
@@ -226,13 +229,20 @@ class _SharkMindPageState extends State<SharkMindPage> {
                 decoration: BoxDecoration(
                   color: cardColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white12),
+                  border: Border.all(color: AppColors.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Column(
                   children: [
-                    const Text('VENDA PARA', style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
+                    const Text('VENDA PARA', style: TextStyle(color: AppColors.textLight, fontSize: 11, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 6),
-                    Text(comprador, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                    Text(comprador, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.text)),
                   ],
                 ),
               ),
@@ -247,7 +257,7 @@ class _SharkMindPageState extends State<SharkMindPage> {
         const SizedBox(height: 8),
         Text(
           'Tempo: ${segundosRestantes}s',
-          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.text),
         ),
         const SizedBox(height: 32),
         GestureDetector(
@@ -256,12 +266,12 @@ class _SharkMindPageState extends State<SharkMindPage> {
             width: 96,
             height: 96,
             decoration: BoxDecoration(
-              color: gravando ? Colors.redAccent.withOpacity(0.2) : neonAccent.withOpacity(0.15),
+              color: gravando ? Colors.redAccent.withOpacity(0.1) : neonAccent.withOpacity(0.1),
               shape: BoxShape.circle,
               border: Border.all(color: gravando ? Colors.redAccent : neonAccent, width: 3),
               boxShadow: [
                 BoxShadow(
-                  color: (gravando ? Colors.redAccent : neonAccent).withOpacity(0.3),
+                  color: (gravando ? Colors.redAccent : neonAccent).withOpacity(0.2),
                   blurRadius: 15,
                 ),
               ],
@@ -276,7 +286,7 @@ class _SharkMindPageState extends State<SharkMindPage> {
         const SizedBox(height: 24),
         Text(
           statusGravacao,
-          style: TextStyle(color: gravando ? Colors.redAccent : Colors.grey, fontSize: 14),
+          style: TextStyle(color: gravando ? Colors.redAccent : AppColors.textLight, fontSize: 14),
           textAlign: TextAlign.center,
         ),
       ],
@@ -305,7 +315,7 @@ class _SharkMindPageState extends State<SharkMindPage> {
         const SizedBox(height: 32),
         const Text(
           'Pitch Gravado com Sucesso!',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.text),
         ),
         const SizedBox(height: 12),
         const Padding(
@@ -314,7 +324,7 @@ class _SharkMindPageState extends State<SharkMindPage> {
             'Excelente! Você encontrou usos inovadores e inusitados para um clip simples. '
             'Exercitar o pensamento alternativo ajuda a superar a rigidez mental e redefinir problemas difíceis em oportunidades.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey, fontSize: 14, height: 1.4),
+            style: TextStyle(color: AppColors.textLight, fontSize: 14, height: 1.4),
           ),
         ),
       ],
@@ -329,7 +339,7 @@ class _SharkMindPageState extends State<SharkMindPage> {
           onPressed: () => Navigator.pop(context, true),
           style: ElevatedButton.styleFrom(
             backgroundColor: neonAccent,
-            foregroundColor: Colors.black,
+            foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 56),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
@@ -345,7 +355,7 @@ class _SharkMindPageState extends State<SharkMindPage> {
           onPressed: () => setState(() => etapa = 1),
           style: ElevatedButton.styleFrom(
             backgroundColor: neonAccent,
-            foregroundColor: Colors.black,
+            foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 56),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
@@ -362,12 +372,12 @@ class _SharkMindPageState extends State<SharkMindPage> {
         onPressed: (gravou && !salvando) ? finalizarJogo : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: neonAccent,
-          foregroundColor: Colors.black,
+          foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
         child: salvando
-            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
             : const Text('Enviar Pitch de Vendas', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
     );

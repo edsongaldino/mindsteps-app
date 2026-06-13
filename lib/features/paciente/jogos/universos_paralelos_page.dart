@@ -59,40 +59,29 @@ class _UniversosParalelosPageState extends State<UniversosParalelosPage> {
 
   @override
   Widget build(BuildContext context) {
-    final darkBackground = const Color(0xFF0D1B2A);
-    final cardColor = const Color(0xFF1B263B);
-    final neonAccent = const Color(0xFF00E5FF);
+    final cardColor = AppColors.card;
+    final accentColor = AppColors.secondary;
 
-    return Theme(
-      data: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: darkBackground,
-        colorScheme: ColorScheme.dark(
-          primary: neonAccent,
-          surface: cardColor,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('UNIVERSOS PARALELOS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.5)),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(LucideIcons.arrowLeft),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: darkBackground,
-          title: const Text('UNIVERSOS PARALELOS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.5)),
-          centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(LucideIcons.arrowLeft),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: _buildConteudo(cardColor, neonAccent),
-                ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: _buildConteudo(cardColor, accentColor),
               ),
-              _buildBottomButton(neonAccent),
-            ],
-          ),
+            ),
+            _buildBottomButton(accentColor),
+          ],
         ),
       ),
     );
@@ -118,9 +107,9 @@ class _UniversosParalelosPageState extends State<UniversosParalelosPage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.2),
+            color: Colors.green.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.green),
+            border: Border.all(color: Colors.green.withOpacity(0.5)),
           ),
           child: const Text(
             'FLEXIBILIDADE COGNITIVA',
@@ -134,7 +123,14 @@ class _UniversosParalelosPageState extends State<UniversosParalelosPage> {
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: neonAccent.withOpacity(0.3)),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             children: [
@@ -142,7 +138,7 @@ class _UniversosParalelosPageState extends State<UniversosParalelosPage> {
               const SizedBox(height: 18),
               const Text(
                 'Como jogar:',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(color: AppColors.text, fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               const Text(
@@ -150,7 +146,7 @@ class _UniversosParalelosPageState extends State<UniversosParalelosPage> {
                 'Seu objetivo é usar sua criatividade divergente para reimaginar esse universo alternativo.\n\n'
                 'Você pode descrever escrevendo, gravando áudio ou esboçando um desenho.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 14, height: 1.4),
+                style: TextStyle(color: AppColors.textLight, fontSize: 14, height: 1.4),
               ),
             ],
           ),
@@ -158,7 +154,7 @@ class _UniversosParalelosPageState extends State<UniversosParalelosPage> {
         const SizedBox(height: 40),
         const Text(
           'Treine pensamento divergente, criatividade e originalidade.',
-          style: TextStyle(color: Colors.grey, fontSize: 14),
+          style: TextStyle(color: AppColors.muted, fontSize: 14),
         ),
       ],
     );
@@ -170,18 +166,18 @@ class _UniversosParalelosPageState extends State<UniversosParalelosPage> {
       children: [
         const Text(
           'HISTÓRIA ALTERNATIVA',
-          style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.2),
+          style: TextStyle(color: AppColors.textLight, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.2),
         ),
         const SizedBox(height: 10),
         Text(
           cenario,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.text),
         ),
         const SizedBox(height: 32),
         if (metodoSelecionado == null) ...[
           const Text(
             'Escolha como criar sua versão:',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textLight),
           ),
           const SizedBox(height: 12),
           _buildOpcaoMetodo("Escrever", LucideIcons.penTool, cardColor, neonAccent),
@@ -197,7 +193,7 @@ class _UniversosParalelosPageState extends State<UniversosParalelosPage> {
               ),
               TextButton(
                 onPressed: () => setState(() => metodoSelecionado = null),
-                child: const Text('Alterar', style: TextStyle(color: Colors.grey)),
+                child: const Text('Alterar', style: TextStyle(color: AppColors.muted)),
               ),
             ],
           ),
@@ -206,23 +202,36 @@ class _UniversosParalelosPageState extends State<UniversosParalelosPage> {
             TextField(
               controller: textoController,
               maxLines: 6,
+              style: const TextStyle(color: AppColors.text),
               decoration: InputDecoration(
                 hintText: 'Escreva como seria esse universo alternativo...',
+                hintStyle: const TextStyle(color: AppColors.muted),
                 filled: true,
                 fillColor: cardColor,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: AppColors.primary),
+                ),
               ),
             )
           else if (metodoSelecionado == "Gravar Áudio")
             Container(
               padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(
+                color: cardColor,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.border),
+              ),
               child: const Center(
                 child: Column(
                   children: [
                     Icon(LucideIcons.mic, size: 40, color: Colors.redAccent),
                     SizedBox(height: 12),
-                    Text('Gravando áudio... (Toque para parar)', style: TextStyle(color: Colors.grey)),
+                    Text('Gravando áudio... (Toque para parar)', style: TextStyle(color: AppColors.textLight)),
                   ],
                 ),
               ),
@@ -230,13 +239,17 @@ class _UniversosParalelosPageState extends State<UniversosParalelosPage> {
           else
             Container(
               padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(
+                color: cardColor,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.border),
+              ),
               child: const Center(
                 child: Column(
                   children: [
                     Icon(LucideIcons.palette, size: 40, color: Colors.purpleAccent),
                     SizedBox(height: 12),
-                    Text('Canvas de desenho aberto (Toque para salvar)', style: TextStyle(color: Colors.grey)),
+                    Text('Canvas de desenho aberto (Toque para salvar)', style: TextStyle(color: AppColors.textLight)),
                   ],
                 ),
               ),
@@ -255,15 +268,22 @@ class _UniversosParalelosPageState extends State<UniversosParalelosPage> {
         decoration: BoxDecoration(
           color: cardColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white24),
+          border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
             Icon(icone, color: neonAccent, size: 24),
             const SizedBox(width: 16),
-            Text(nome, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            Text(nome, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.text)),
             const Spacer(),
-            const Icon(LucideIcons.chevronRight, color: Colors.grey),
+            const Icon(LucideIcons.chevronRight, color: AppColors.muted),
           ],
         ),
       ),
@@ -292,7 +312,7 @@ class _UniversosParalelosPageState extends State<UniversosParalelosPage> {
         const SizedBox(height: 32),
         const Text(
           'Universo Criado!',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.text),
         ),
         const SizedBox(height: 12),
         const Padding(
@@ -301,7 +321,7 @@ class _UniversosParalelosPageState extends State<UniversosParalelosPage> {
             'Incrível! Sua mente conseguiu quebrar a lógica estabelecida e criar um novo caminho. '
             'Exercitar a criatividade divergente abre portas neurais para lidar com problemas reais de forma muito mais ampla.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey, fontSize: 14, height: 1.4),
+            style: TextStyle(color: AppColors.textLight, fontSize: 14, height: 1.4),
           ),
         ),
       ],
@@ -316,7 +336,7 @@ class _UniversosParalelosPageState extends State<UniversosParalelosPage> {
           onPressed: () => Navigator.pop(context, true),
           style: ElevatedButton.styleFrom(
             backgroundColor: neonAccent,
-            foregroundColor: Colors.black,
+            foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 56),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
@@ -332,7 +352,7 @@ class _UniversosParalelosPageState extends State<UniversosParalelosPage> {
           onPressed: () => setState(() => etapa = 1),
           style: ElevatedButton.styleFrom(
             backgroundColor: neonAccent,
-            foregroundColor: Colors.black,
+            foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 56),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
@@ -349,12 +369,12 @@ class _UniversosParalelosPageState extends State<UniversosParalelosPage> {
         onPressed: (podeEnviar && !salvando) ? finalizarJogo : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: neonAccent,
-          foregroundColor: Colors.black,
+          foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
         child: salvando
-            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
             : const Text('Enviar Universo Alternativo', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
     );

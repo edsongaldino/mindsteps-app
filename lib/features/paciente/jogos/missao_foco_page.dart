@@ -142,72 +142,73 @@ class _MissaoFocoPageState extends State<MissaoFocoPage> {
 
   @override
   Widget build(BuildContext context) {
-    final darkBackground = const Color(0xFF0D1B2A);
-    final cardColor = const Color(0xFF1B263B);
-    final neonAccent = const Color(0xFF00E5FF);
+    final backgroundColor = AppColors.background;
+    final cardColor = Colors.white;
+    final accentColor = AppColors.secondary;
 
-    return Theme(
-      data: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: darkBackground,
-        colorScheme: ColorScheme.dark(
-          primary: neonAccent,
-          surface: cardColor,
+    return Scaffold(
+      backgroundColor: backgroundColor,
+      appBar: AppBar(
+        backgroundColor: backgroundColor,
+        elevation: 0,
+        title: const Text(
+          'MISSÃO FOCO',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: AppColors.text,
+            letterSpacing: 1.5,
+          ),
+        ),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(LucideIcons.arrowLeft, color: AppColors.text),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: darkBackground,
-          title: const Text('MISSAO FOCO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.5)),
-          centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(LucideIcons.arrowLeft),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: _buildConteudo(cardColor, neonAccent),
-                ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: _buildConteudo(cardColor, accentColor),
               ),
-              _buildBottomButton(neonAccent),
-            ],
-          ),
+            ),
+            _buildBottomButton(accentColor),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildConteudo(Color cardColor, Color neonAccent) {
+  Widget _buildConteudo(Color cardColor, Color accentColor) {
     switch (etapa) {
       case 0:
-        return _buildIntro(cardColor, neonAccent);
+        return _buildIntro(cardColor, accentColor);
       case 1:
-        return _buildGameplay(cardColor, neonAccent);
+        return _buildGameplay(cardColor, accentColor);
       case 2:
-        return _buildSucesso(cardColor, neonAccent);
+        return _buildSucesso(cardColor, accentColor);
       default:
         return Container();
     }
   }
 
-  Widget _buildIntro(Color cardColor, Color neonAccent) {
+  Widget _buildIntro(Color cardColor, Color accentColor) {
     return Column(
       children: [
         const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.2),
+            color: AppColors.danger.withOpacity(0.12),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.redAccent),
+            border: Border.all(color: AppColors.danger),
           ),
           child: const Text(
             'CONTROLE INIBITÓRIO',
-            style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+            style: TextStyle(color: AppColors.danger, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2),
           ),
         ),
         const SizedBox(height: 32),
@@ -217,15 +218,22 @@ class _MissaoFocoPageState extends State<MissaoFocoPage> {
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: neonAccent.withOpacity(0.3)),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              )
+            ],
           ),
           child: Column(
             children: [
-              Icon(LucideIcons.shieldAlert, size: 48, color: neonAccent),
+              Icon(LucideIcons.shieldAlert, size: 48, color: accentColor),
               const SizedBox(height: 18),
               const Text(
                 'Como jogar:',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(color: AppColors.text, fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               const Text(
@@ -234,7 +242,7 @@ class _MissaoFocoPageState extends State<MissaoFocoPage> {
                 '• Se aparecer IGNORE: Não faça nada, espere o tempo passar.\n\n'
                 'Evite agir no impulso!',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 14, height: 1.4),
+                style: TextStyle(color: AppColors.textLight, fontSize: 14, height: 1.5),
               ),
             ],
           ),
@@ -242,13 +250,13 @@ class _MissaoFocoPageState extends State<MissaoFocoPage> {
         const SizedBox(height: 40),
         const Text(
           'Treine foco e inibição de impulsos.',
-          style: TextStyle(color: Colors.grey, fontSize: 14),
+          style: TextStyle(color: AppColors.muted, fontSize: 14),
         ),
       ],
     );
   }
 
-  Widget _buildGameplay(Color cardColor, Color neonAccent) {
+  Widget _buildGameplay(Color cardColor, Color accentColor) {
     return Column(
       children: [
         const SizedBox(height: 10),
@@ -257,11 +265,11 @@ class _MissaoFocoPageState extends State<MissaoFocoPage> {
           children: [
             Text(
               'Rodada $rodadaAtual / $totalRodadas',
-              style: const TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 14, color: AppColors.textLight, fontWeight: FontWeight.bold),
             ),
             Text(
               'Foco: ${(acertos / max(1, rodadaAtual - 1) * 100).round()}%',
-              style: TextStyle(fontSize: 14, color: neonAccent, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 14, color: accentColor, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -273,12 +281,12 @@ class _MissaoFocoPageState extends State<MissaoFocoPage> {
             color: cardColor,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: respondeuRodada ? Colors.white10 : (comandoAtual == "EXECUTE" ? neonAccent : Colors.redAccent),
+              color: respondeuRodada ? AppColors.border : (comandoAtual == "EXECUTE" ? accentColor : AppColors.danger),
               width: 2,
             ),
             boxShadow: [
               BoxShadow(
-                color: (comandoAtual == "EXECUTE" ? neonAccent : Colors.redAccent).withOpacity(0.15),
+                color: (comandoAtual == "EXECUTE" ? accentColor : AppColors.danger).withOpacity(0.08),
                 blurRadius: 20,
               ),
             ],
@@ -291,13 +299,13 @@ class _MissaoFocoPageState extends State<MissaoFocoPage> {
                   fontSize: 36,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 2,
-                  color: comandoAtual == "IGNORE" ? Colors.redAccent : neonAccent,
+                  color: comandoAtual == "IGNORE" ? AppColors.danger : accentColor,
                 ),
               ),
               const SizedBox(height: 12),
               Text(
                 'CLIQUE NO $corAlvo',
-                style: const TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 15, color: AppColors.text, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -317,9 +325,9 @@ class _MissaoFocoPageState extends State<MissaoFocoPage> {
                   color: cor,
                   shape: BoxShape.circle,
                   boxShadow: [
-                    BoxShadow(color: cor.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4)),
+                    BoxShadow(color: cor.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4)),
                   ],
-                  border: Border.all(color: Colors.white24, width: 2),
+                  border: Border.all(color: Colors.white, width: 2),
                 ),
               ),
             );
@@ -329,7 +337,7 @@ class _MissaoFocoPageState extends State<MissaoFocoPage> {
     );
   }
 
-  Widget _buildSucesso(Color cardColor, Color neonAccent) {
+  Widget _buildSucesso(Color cardColor, Color accentColor) {
     final percentual = (acertos / totalRodadas * 100).round();
     return Column(
       children: [
@@ -338,13 +346,13 @@ class _MissaoFocoPageState extends State<MissaoFocoPage> {
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: neonAccent.withOpacity(0.1),
+              color: accentColor.withOpacity(0.12),
               shape: BoxShape.circle,
-              border: Border.all(color: neonAccent, width: 2),
+              border: Border.all(color: accentColor, width: 2),
             ),
             child: Icon(
               LucideIcons.target,
-              color: neonAccent,
+              color: accentColor,
               size: 56,
             ),
           ),
@@ -352,7 +360,7 @@ class _MissaoFocoPageState extends State<MissaoFocoPage> {
         const SizedBox(height: 32),
         const Text(
           'Missão Concluída!',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.text),
         ),
         const SizedBox(height: 28),
         Container(
@@ -360,22 +368,29 @@ class _MissaoFocoPageState extends State<MissaoFocoPage> {
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white10),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.015),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ],
           ),
           child: Column(
             children: [
               const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Desempenho de Foco', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  Text('Desempenho de Foco', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.text)),
                 ],
               ),
-              const Divider(height: 24, color: Colors.white12),
+              const Divider(height: 24, color: AppColors.border),
               _buildMetricRow('Acertos', '$acertos / $totalRodadas'),
               const SizedBox(height: 12),
               _buildMetricRow('Erros/Impulsos', '$erros'),
               const SizedBox(height: 12),
-              _buildMetricRow('Precisão de Foco', '$percentual%', valueColor: neonAccent),
+              _buildMetricRow('Precisão de Foco', '$percentual%', valueColor: accentColor),
             ],
           ),
         ),
@@ -387,20 +402,20 @@ class _MissaoFocoPageState extends State<MissaoFocoPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-        Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: valueColor ?? Colors.white)),
+        Text(label, style: const TextStyle(color: AppColors.textLight, fontSize: 13)),
+        Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: valueColor ?? AppColors.text)),
       ],
     );
   }
 
-  Widget _buildBottomButton(Color neonAccent) {
+  Widget _buildBottomButton(Color accentColor) {
     if (etapa == 2) {
       return Container(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
         child: ElevatedButton(
           onPressed: () => Navigator.pop(context, true),
           style: ElevatedButton.styleFrom(
-            backgroundColor: neonAccent,
+            backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 56),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -416,7 +431,7 @@ class _MissaoFocoPageState extends State<MissaoFocoPage> {
         child: ElevatedButton(
           onPressed: iniciarJogo,
           style: ElevatedButton.styleFrom(
-            backgroundColor: neonAccent,
+            backgroundColor: accentColor,
             foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 56),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -426,7 +441,6 @@ class _MissaoFocoPageState extends State<MissaoFocoPage> {
       );
     }
 
-    // Gameplay
     return Container();
   }
 }

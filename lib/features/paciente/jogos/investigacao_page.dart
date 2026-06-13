@@ -64,74 +64,75 @@ class _InvestigacaoPageState extends State<InvestigacaoPage> {
 
   @override
   Widget build(BuildContext context) {
-    final darkBackground = const Color(0xFF0D1B2A);
-    final cardColor = const Color(0xFF1B263B);
-    final neonAccent = const Color(0xFF00E5FF);
+    final backgroundColor = AppColors.background;
+    final cardColor = Colors.white;
+    final accentColor = AppColors.secondary;
 
-    return Theme(
-      data: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: darkBackground,
-        colorScheme: ColorScheme.dark(
-          primary: neonAccent,
-          surface: cardColor,
+    return Scaffold(
+      backgroundColor: backgroundColor,
+      appBar: AppBar(
+        backgroundColor: backgroundColor,
+        elevation: 0,
+        title: const Text(
+          'INVESTIGAÇÃO',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: AppColors.text,
+            letterSpacing: 1.5,
+          ),
+        ),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(LucideIcons.arrowLeft, color: AppColors.text),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: darkBackground,
-          title: const Text('INVESTIGAÇÃO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.5)),
-          centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(LucideIcons.arrowLeft),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: _buildConteudo(cardColor, neonAccent),
-                ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: _buildConteudo(cardColor, accentColor),
               ),
-              _buildBottomButton(neonAccent),
-            ],
-          ),
+            ),
+            _buildBottomButton(accentColor),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildConteudo(Color cardColor, Color neonAccent) {
+  Widget _buildConteudo(Color cardColor, Color accentColor) {
     switch (etapa) {
       case 0:
-        return _buildIntro(cardColor, neonAccent);
+        return _buildIntro(cardColor, accentColor);
       case 1:
-        return _buildCaso(cardColor, neonAccent);
+        return _buildCaso(cardColor, accentColor);
       case 2:
-        return _buildPergunta(cardColor, neonAccent);
+        return _buildPergunta(cardColor, accentColor);
       case 3:
-        return _buildSucesso(cardColor, neonAccent);
+        return _buildSucesso(cardColor, accentColor);
       default:
         return Container();
     }
   }
 
-  Widget _buildIntro(Color cardColor, Color neonAccent) {
+  Widget _buildIntro(Color cardColor, Color accentColor) {
     return Column(
       children: [
         const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.2),
+            color: AppColors.softBlue,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.blueAccent),
+            border: Border.all(color: AppColors.primary.withOpacity(0.3)),
           ),
           child: const Text(
             'MEMÓRIA OPERACIONAL',
-            style: TextStyle(color: Colors.blueAccent, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+            style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2),
           ),
         ),
         const SizedBox(height: 32),
@@ -141,22 +142,29 @@ class _InvestigacaoPageState extends State<InvestigacaoPage> {
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: neonAccent.withOpacity(0.3)),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              )
+            ],
           ),
           child: Column(
             children: [
-              Icon(LucideIcons.fileSearch, size: 48, color: neonAccent),
+              Icon(LucideIcons.fileSearch, size: 48, color: accentColor),
               const SizedBox(height: 18),
               const Text(
                 'Como jogar:',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(color: AppColors.text, fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               const Text(
                 'Leia o depoimento do caso com bastante atenção aos detalhes de nomes, lugares e ações.\n\n'
                 'Depois, você terá que responder a uma pergunta secreta sobre o caso, testando sua memória operacional verbal.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 14, height: 1.4),
+                style: TextStyle(color: AppColors.textLight, fontSize: 14, height: 1.5),
               ),
             ],
           ),
@@ -164,13 +172,13 @@ class _InvestigacaoPageState extends State<InvestigacaoPage> {
         const SizedBox(height: 40),
         const Text(
           'Treine foco e memória verbal sob distração.',
-          style: TextStyle(color: Colors.grey, fontSize: 14),
+          style: TextStyle(color: AppColors.muted, fontSize: 14),
         ),
       ],
     );
   }
 
-  Widget _buildCaso(Color cardColor, Color neonAccent) {
+  Widget _buildCaso(Color cardColor, Color accentColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -179,9 +187,9 @@ class _InvestigacaoPageState extends State<InvestigacaoPage> {
           children: [
             Text(
               casoTitulo,
-              style: TextStyle(color: neonAccent, fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.5),
+              style: TextStyle(color: accentColor, fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.5),
             ),
-            const Icon(LucideIcons.bookOpen, color: Colors.grey, size: 20),
+            const Icon(LucideIcons.bookOpen, color: AppColors.textLight, size: 20),
           ],
         ),
         const SizedBox(height: 24),
@@ -191,34 +199,41 @@ class _InvestigacaoPageState extends State<InvestigacaoPage> {
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white12),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.015),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ],
           ),
           child: Text(
             casoTexto,
-            style: const TextStyle(fontSize: 16, height: 1.6, color: Colors.white),
+            style: const TextStyle(fontSize: 16, height: 1.6, color: AppColors.text),
           ),
         ),
         const SizedBox(height: 20),
         const Text(
           'Leia com atenção antes de continuar. Você não poderá voltar a ler o caso.',
-          style: TextStyle(color: Colors.grey, fontSize: 13, fontStyle: FontStyle.italic),
+          style: TextStyle(color: AppColors.muted, fontSize: 13, fontStyle: FontStyle.italic),
         ),
       ],
     );
   }
 
-  Widget _buildPergunta(Color cardColor, Color neonAccent) {
+  Widget _buildPergunta(Color cardColor, Color accentColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
           'PERGUNTA DE MEMÓRIA',
-          style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1.2),
+          style: TextStyle(color: AppColors.textLight, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1.2),
         ),
         const SizedBox(height: 12),
         Text(
           pergunta,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.text),
         ),
         const SizedBox(height: 28),
         ...alternativas.map((alt) {
@@ -233,9 +248,19 @@ class _InvestigacaoPageState extends State<InvestigacaoPage> {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: selecionada ? neonAccent.withOpacity(0.15) : cardColor,
+                color: selecionada ? accentColor.withOpacity(0.12) : cardColor,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: selecionada ? neonAccent : Colors.white24, width: selecionada ? 2 : 1),
+                border: Border.all(
+                  color: selecionada ? accentColor : AppColors.border, 
+                  width: selecionada ? 2 : 1
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.01),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  )
+                ],
               ),
               child: Row(
                 children: [
@@ -245,12 +270,12 @@ class _InvestigacaoPageState extends State<InvestigacaoPage> {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: selecionada ? FontWeight.bold : FontWeight.normal,
-                        color: selecionada ? Colors.white : Colors.white70,
+                        color: selecionada ? accentColor : AppColors.text,
                       ),
                     ),
                   ),
                   if (selecionada)
-                    Icon(LucideIcons.circleCheck, color: neonAccent, size: 20),
+                    Icon(LucideIcons.circleCheck, color: accentColor, size: 20),
                 ],
               ),
             ),
@@ -260,7 +285,7 @@ class _InvestigacaoPageState extends State<InvestigacaoPage> {
     );
   }
 
-  Widget _buildSucesso(Color cardColor, Color neonAccent) {
+  Widget _buildSucesso(Color cardColor, Color accentColor) {
     final acerto = respostaSelecionada == respostaCorreta;
     return Column(
       children: [
@@ -269,13 +294,13 @@ class _InvestigacaoPageState extends State<InvestigacaoPage> {
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: acerto ? Colors.teal.withOpacity(0.15) : Colors.red.withOpacity(0.15),
+              color: acerto ? AppColors.success.withOpacity(0.12) : AppColors.danger.withOpacity(0.12),
               shape: BoxShape.circle,
-              border: Border.all(color: acerto ? Colors.teal : Colors.red, width: 2),
+              border: Border.all(color: acerto ? AppColors.success : AppColors.danger, width: 2),
             ),
             child: Icon(
               acerto ? LucideIcons.check : LucideIcons.x,
-              color: acerto ? Colors.tealAccent : Colors.redAccent,
+              color: acerto ? AppColors.success : AppColors.danger,
               size: 56,
             ),
           ),
@@ -283,7 +308,7 @@ class _InvestigacaoPageState extends State<InvestigacaoPage> {
         const SizedBox(height: 32),
         Text(
           acerto ? 'Investigação Correta!' : 'Dica de Investigador',
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.text),
         ),
         const SizedBox(height: 12),
         Padding(
@@ -293,25 +318,25 @@ class _InvestigacaoPageState extends State<InvestigacaoPage> {
                 ? 'Muito bem! Você se lembrou de que o Professor entrou na sala depois e viu a mochila em cima da mesa (portanto, foi o último a vê-la).'
                 : 'Não foi dessa vez. O professor viu a mochila por último na mesa. Rafael falou de Bianca, Bianca citou Lucas, mas o professor encerrou o fluxo do depoimento. Treine sua atenção verbal!',
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.grey, fontSize: 14, height: 1.4),
+            style: const TextStyle(color: AppColors.textLight, fontSize: 14, height: 1.5),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildBottomButton(Color neonAccent) {
+  Widget _buildBottomButton(Color accentColor) {
     if (etapa == 3) {
       return Container(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
         child: ElevatedButton(
-          onPressed: () => Navigator.pop(context, true),
           style: ElevatedButton.styleFrom(
-            backgroundColor: neonAccent,
-            foregroundColor: Colors.black,
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 56),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
+          onPressed: () => Navigator.pop(context, true),
           child: const Text('Concluir Investigação', style: TextStyle(fontWeight: FontWeight.bold)),
         ),
       );
@@ -321,13 +346,13 @@ class _InvestigacaoPageState extends State<InvestigacaoPage> {
       return Container(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
         child: ElevatedButton(
-          onPressed: () => setState(() => etapa = 1),
           style: ElevatedButton.styleFrom(
-            backgroundColor: neonAccent,
-            foregroundColor: Colors.black,
+            backgroundColor: accentColor,
+            foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 56),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
+          onPressed: () => setState(() => etapa = 1),
           child: const Text('Iniciar Análise de Depoimento', style: TextStyle(fontWeight: FontWeight.bold)),
         ),
       );
@@ -337,13 +362,13 @@ class _InvestigacaoPageState extends State<InvestigacaoPage> {
       return Container(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
         child: ElevatedButton(
-          onPressed: () => setState(() => etapa = 2),
           style: ElevatedButton.styleFrom(
-            backgroundColor: neonAccent,
-            foregroundColor: Colors.black,
+            backgroundColor: accentColor,
+            foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 56),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
+          onPressed: () => setState(() => etapa = 2),
           child: const Text('Ir para Pergunta', style: TextStyle(fontWeight: FontWeight.bold)),
         ),
       );
@@ -354,15 +379,15 @@ class _InvestigacaoPageState extends State<InvestigacaoPage> {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
       child: ElevatedButton(
-        onPressed: (podeEnviar && !salvando) ? finalizarJogo : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: neonAccent,
-          foregroundColor: Colors.black,
+          backgroundColor: accentColor,
+          foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
+        onPressed: (podeEnviar && !salvando) ? finalizarJogo : null,
         child: salvando
-            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
             : const Text('Enviar Resposta', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
