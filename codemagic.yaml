@@ -9,7 +9,7 @@ workflows:
     scripts:
       - flutter clean
       - flutter pub get
-      - flutter build ios
+      - flutter build ios --release --no-codesign
 
     artifacts:
       - build/ios/**/*
