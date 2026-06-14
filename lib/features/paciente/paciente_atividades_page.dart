@@ -1,9 +1,30 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/app_theme.dart';
+import 'paciente_home_page.dart';
 import 'paciente_responder_atividade_page.dart';
 import 'services/paciente_service.dart';
+import 'jogos/detetive_pensamentos_page.dart';
+import 'jogos/tribunal_pensamentos_page.dart';
+import 'jogos/cacador_gatilhos_page.dart';
+import 'jogos/missao_coragem_page.dart';
+import 'jogos/monstro_ansiedade_page.dart';
+import 'jogos/ilha_emocoes_page.dart';
+import 'jogos/decisao_pressao_page.dart';
+import 'jogos/missao_foco_page.dart';
+import 'jogos/memoria_tatica_page.dart';
+import 'jogos/investigacao_page.dart';
+import 'jogos/modo_piloto_page.dart';
+import 'jogos/laboratorio_mental_page.dart';
+import 'jogos/mente_flexivel_page.dart';
+import 'jogos/shark_mind_page.dart';
+import 'jogos/universos_paralelos_page.dart';
+import 'jogos/reacao_zero_page.dart';
+import 'jogos/cartas_sabotadores_page.dart';
+import 'jogos/escape_room_page.dart';
+import 'jogos/heroi_interior_page.dart';
 
 class PacienteAtividadesPage extends StatefulWidget {
   final bool isActive;
@@ -38,6 +59,106 @@ class _PacienteAtividadesPageState extends State<PacienteAtividadesPage> {
   }
 
   Future<void> _abrirAtividade(Map<String, dynamic> atividade) async {
+    final tipo = atividade['atividade']?['tipo'] ?? atividade['tipo'] ?? 1;
+    final conteudo = atividade['atividade']?['conteudo'] ?? atividade['conteudo'] ?? '';
+
+    if (tipo == 7) {
+      String nomeJogo = 'Memória Tática';
+      try {
+        if (conteudo.isNotEmpty) {
+          final decoded = jsonDecode(conteudo);
+          nomeJogo = decoded['tipoJogo'] ?? 'Memória Tática';
+        }
+      } catch (_) {}
+
+      Widget gamePage;
+      final atividadeId = atividade['id']?.toString() ?? '';
+
+      switch (nomeJogo) {
+        case 'Decisão Sob Pressão':
+        case 'Semáforo das Emoções':
+        case 'Semáforo Emocional':
+          gamePage = DecisaoSobPressaoPage(atividadePacienteId: atividadeId);
+          break;
+        case 'Missão Foco':
+          gamePage = MissaoFocoPage(atividadePacienteId: atividadeId);
+          break;
+        case 'Memória Tática':
+        case 'Caçador de Memórias':
+        case 'Jogo de Memória':
+          gamePage = MemoriaTaticaPage(atividadePacienteId: atividadeId);
+          break;
+        case 'Investigação':
+          gamePage = InvestigacaoPage(atividadePacienteId: atividadeId);
+          break;
+        case 'Modo Piloto':
+          gamePage = ModoPilotoPage(atividadePacienteId: atividadeId);
+          break;
+        case 'Laboratório Mental':
+          gamePage = LaboratorioMentalPage(atividadePacienteId: atividadeId);
+          break;
+        case 'Mente Flexível':
+        case 'Mudança de Planos':
+          gamePage = MenteFlexivelPage(atividadePacienteId: atividadeId);
+          break;
+        case 'Shark Mind':
+          gamePage = SharkMindPage(atividadePacienteId: atividadeId);
+          break;
+        case 'Universos Paralelos':
+          gamePage = UniversosParalelosPage(atividadePacienteId: atividadeId);
+          break;
+        case 'Reação Zero':
+          gamePage = ReacaoZeroPage(atividadePacienteId: atividadeId);
+          break;
+        case 'Detetive dos Pensamentos':
+          gamePage = DetetivePensamentosPage(atividadePacienteId: atividadeId);
+          break;
+        case 'Tribunal dos Pensamentos':
+          gamePage = TribunalPensamentosPage(atividadePacienteId: atividadeId);
+          break;
+        case 'Caçador de Gatilhos':
+          gamePage = CacadorGatilhosPage(atividadePacienteId: atividadeId);
+          break;
+        case 'Missão Coragem':
+          gamePage = MissaoCoragemPage(atividadePacienteId: atividadeId);
+          break;
+        case 'O Monstro da Ansiedade':
+          gamePage = MonstroAnsiedadePage(atividadePacienteId: atividadeId);
+          break;
+        case 'Ilha das Emoções':
+          gamePage = IlhaEmocoesPage(atividadePacienteId: atividadeId);
+          break;
+        case 'Cartas dos Sabotadores':
+          gamePage = CartasSabotadoresPage(atividadePacienteId: atividadeId);
+          break;
+        case 'Escape Room Terapêutico':
+          gamePage = EscapeRoomPage(atividadePacienteId: atividadeId);
+          break;
+        case 'Jornada do Herói Interior':
+          gamePage = HeroiInteriorPage(atividadePacienteId: atividadeId);
+          break;
+        default:
+          gamePage = PacienteResponderAtividadePage(
+            atividadePacienteId: atividadeId,
+            titulo: atividade['atividade']?['titulo'] ?? atividade['titulo'] ?? 'Jogo de Memória',
+            descricao: atividade['atividade']?['descricao'] ?? atividade['descricao'] ?? 'Realize a atividade do jogo de memória.',
+            tipo: 7,
+            conteudoJson: conteudo,
+          );
+          break;
+      }
+
+      final resultado = await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => gamePage),
+      );
+
+      if (resultado == true) {
+        await _recarregar();
+      }
+      return;
+    }
+
     final resultado = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -49,8 +170,8 @@ class _PacienteAtividadesPageState extends State<PacienteAtividadesPage> {
           descricao: atividade['atividade']?['descricao'] ??
               atividade['descricao'] ??
               'Sem descrição.',
-          tipo: atividade['atividade']?['tipo'] ?? atividade['tipo'] ?? 1,
-          conteudoJson: atividade['atividade']?['conteudo'] ?? atividade['conteudo'] ?? '',
+          tipo: tipo,
+          conteudoJson: conteudo,
         ),
       ),
     );
@@ -90,7 +211,14 @@ class _PacienteAtividadesPageState extends State<PacienteAtividadesPage> {
             centerTitle: true,
             leading: IconButton(
               icon: const Icon(LucideIcons.arrowLeft),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                } else {
+                  final state = context.findAncestorStateOfType<PacienteHomePageState>();
+                  state?.mudarPagina(0);
+                }
+              },
             ),
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(24),
@@ -108,14 +236,22 @@ class _PacienteAtividadesPageState extends State<PacienteAtividadesPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      const _FiltroChip('Todas (5)', true),
-                      const _FiltroChip('Pendentes (2)', false),
-                      const _FiltroChip('Concluídas (3)', false),
-                    ],
+                  Builder(
+                    builder: (context) {
+                      final total = atividades.length;
+                      final concluidasCount = atividades.where((x) => _estaConcluida(x['status'])).length;
+                      final pendentesCount = total - concluidasCount;
+                      
+                      return Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _FiltroChip('Todas ($total)', true),
+                          _FiltroChip('Pendentes ($pendentesCount)', false),
+                          _FiltroChip('Concluídas ($concluidasCount)', false),
+                        ],
+                      );
+                    }
                   ),
                   const SizedBox(height: 24),
                   if (atividades.isEmpty)
@@ -126,23 +262,25 @@ class _PacienteAtividadesPageState extends State<PacienteAtividadesPage> {
                     final atividade = Map<String, dynamic>.from(entry.value);
 
                     final titulo = atividade['atividade']?['titulo'] ?? atividade['titulo'] ?? 'Atividade';
-                    final descricao = atividade['atividade']?['descricao'] ?? atividade['descricao'] ?? 'Descrição';
                     final status = atividade['status'];
+                    final tipo = atividade['atividade']?['tipo'] ?? atividade['tipo'] ?? 1;
                     
-                    final icones = [
-                      LucideIcons.brain,
-                      LucideIcons.footprints,
-                      LucideIcons.heartPulse,
-                      LucideIcons.sun,
-                      LucideIcons.calendarClock,
-                    ];
+                    final cardIcon = tipo == 7
+                        ? LucideIcons.gamepad2
+                        : [
+                            LucideIcons.brain,
+                            LucideIcons.footprints,
+                            LucideIcons.heartPulse,
+                            LucideIcons.sun,
+                            LucideIcons.calendarClock,
+                          ][index % 5];
 
                     return _AtividadePacienteCard(
                       titulo: titulo,
                       descricao: 'Segunda • 12/05', // Mock data from layout
                       status: _statusTexto(status),
                       concluida: _estaConcluida(status),
-                      icone: icones[index % icones.length],
+                      icone: cardIcon,
                       onTap: () => _abrirAtividade(atividade),
                     );
                   }),

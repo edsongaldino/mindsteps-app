@@ -1,11 +1,14 @@
+import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 
+import '../../main.dart';
+import '../../features/auth/login_page.dart';
 import '../auth/auth_storage.dart';
 
 class ApiClient {
   static final Dio dio = Dio(
     BaseOptions(
-      baseUrl: 'https://api.mindsteps.com.br/api',
+      baseUrl: 'https://localhost:7035/api',
       connectTimeout: const Duration(seconds: 20),
       receiveTimeout: const Duration(seconds: 20),
       headers: {
@@ -23,8 +26,16 @@ class ApiClient {
 
           return handler.next(options);
         },
-        onError: (DioException error, handler) {
+        onError: (DioException error, handler) async {
           if (error.response?.statusCode == 401) {
+            final isLoginRequest = error.requestOptions.path.contains('/Auth/login');
+            if (!isLoginRequest) {
+              await AuthStorage.limpar();
+              navigatorKey.currentState?.pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const LoginPage()),
+                (route) => false,
+              );
+            }
             return handler.reject(
               DioException(
                 requestOptions: error.requestOptions,

@@ -498,6 +498,147 @@ class _PacientePerfilPageState extends State<PacientePerfilPage> {
     );
   }
 
+  void _mostrarMensagensDialog(BuildContext context) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Mensagens',
+      barrierColor: Colors.black.withOpacity(0.5),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (ctx, anim1, anim2) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return Align(
+              alignment: Alignment.centerRight,
+              child: Material(
+                color: AppColors.background,
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 0.85,
+                  height: double.infinity,
+                  decoration: const BoxDecoration(
+                    border: Border(left: BorderSide(color: AppColors.border, width: 1)),
+                  ),
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Mensagens recebidas',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.text,
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(LucideIcons.x, color: AppColors.muted),
+                                onPressed: () => Navigator.pop(ctx),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          Expanded(
+                            child: FutureBuilder<List<dynamic>>(
+                              future: service.listarMinhasMensagens(),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                  return const Center(child: CircularProgressIndicator());
+                                }
+                                if (snapshot.hasError) {
+                                  return Center(child: Text('Erro: ${snapshot.error}', style: const TextStyle(fontSize: 12)));
+                                }
+                                final mensagens = snapshot.data ?? [];
+                                if (mensagens.isEmpty) {
+                                  return const Center(
+                                    child: Text(
+                                      'Nenhuma mensagem recebida.',
+                                      style: TextStyle(color: AppColors.muted),
+                                    ),
+                                  );
+                                }
+                                return ListView.builder(
+                                  itemCount: mensagens.length,
+                                  itemBuilder: (context, index) {
+                                    final msg = Map<String, dynamic>.from(mensagens[index]);
+                                    final lida = msg['lida'] ?? true;
+                                    return Container(
+                                      margin: const EdgeInsets.only(bottom: 12),
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: lida ? AppColors.card : AppColors.softPurple,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(color: AppColors.border),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                'Dra. ${msg['psicologoNome'] ?? 'Psicóloga'}',
+                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                              ),
+                                              if (!lida)
+                                                GestureDetector(
+                                                  onTap: () async {
+                                                    await service.marcarMensagemComoLida(msg['id'].toString());
+                                                    setStateDialog(() {});
+                                                  },
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                    decoration: BoxDecoration(
+                                                      color: AppColors.primary,
+                                                      borderRadius: BorderRadius.circular(8),
+                                                    ),
+                                                    child: const Text(
+                                                      'Lida',
+                                                      style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            msg['conteudo'] ?? '',
+                                            style: const TextStyle(fontSize: 12, height: 1.4, color: AppColors.text),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
+        );
+      },
+      transitionBuilder: (ctx, anim1, anim2, child) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(1, 0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(parent: anim1, curve: Curves.easeOut)),
+          child: child,
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>>(
@@ -540,6 +681,11 @@ class _PacientePerfilPageState extends State<PacientePerfilPage> {
                 titulo: 'Meus dados',
                 icone: LucideIcons.user,
                 onTap: () => _abrirMeusDados(me),
+              ),
+              _OpcaoPerfil(
+                titulo: 'Mensagens da Psicóloga',
+                icone: LucideIcons.messageSquare,
+                onTap: () => _mostrarMensagensDialog(context),
               ),
               _OpcaoPerfil(
                 titulo: 'Privacidade',

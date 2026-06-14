@@ -78,8 +78,12 @@ class _PacienteCheckinPageState extends State<PacienteCheckinPage> {
         const SnackBar(content: Text('Check-in salvo com sucesso.')),
       );
 
-      final state = context.findAncestorStateOfType<PacienteHomePageState>();
-      state?.mudarPagina(0);
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      } else {
+        final state = context.findAncestorStateOfType<PacienteHomePageState>();
+        state?.mudarPagina(0);
+      }
     } catch (e) {
       if (!mounted) return;
 
@@ -112,13 +116,23 @@ class _PacienteCheckinPageState extends State<PacienteCheckinPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Check-in de hoje',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.text,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Check-in de hoje',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.text,
+                          ),
+                        ),
+                        if (Navigator.canPop(context))
+                          IconButton(
+                            icon: const Icon(LucideIcons.x, color: AppColors.muted),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 6),
                     const Text(

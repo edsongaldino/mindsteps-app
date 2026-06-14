@@ -3,6 +3,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/app_theme.dart';
 import 'auth_service.dart';
 import '../../core/auth/auth_storage.dart';
+import '../../core/notifications/notification_manager.dart';
 import '../admin/admin_home_page.dart';
 import '../psicologo/psicologo_home_page.dart';
 import '../paciente/paciente_home_page.dart';
@@ -46,6 +47,7 @@ class _LoginPageState extends State<LoginPage> {
 
         await AuthStorage.salvarToken(token);
         await AuthStorage.salvarPerfil(perfil);
+        NotificationManager().sincronizarToken();
 
         if (!mounted) return;
 

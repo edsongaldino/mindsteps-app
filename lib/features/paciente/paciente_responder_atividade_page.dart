@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -37,10 +38,161 @@ class _PacienteResponderAtividadePageState
   List<String> perguntas = [];
   List<bool> checklistStatus = [];
 
+  // --- Estados do Jogo de Memória ---
+  List<Map<String, dynamic>> cartas = []; // Cada item: {'id': int, 'valor': String, 'revelada': bool, 'combinada': bool}
+  int? indexPrimeiraCarta;
+  bool bloqueado = false;
+  int movimentos = 0;
+  int paresEncontrados = 0;
+  int totalPares = 0;
+  
+  // Cronômetro
+  Timer? _timerJogo;
+  int segundosJogo = 0;
+  bool jogoConcluido = false;
+  String? dificuldadeEfetiva;
+
+  int pacienteNivel = 1;
+  bool carregandoInfoPaciente = false;
+
   @override
   void initState() {
     super.initState();
     _parseConteudo();
+    if (widget.tipo == 7) {
+      _carregarNivelPaciente();
+    }
+  }
+
+  Future<void> _carregarNivelPaciente() async {
+    setState(() => carregandoInfoPaciente = true);
+    try {
+      final me = await service.obterMe();
+      pacienteNivel = me['nivel'] ?? 1;
+    } catch (_) {
+      // Fallback para nível 1
+    } finally {
+      if (mounted) {
+        setState(() {
+          carregandoInfoPaciente = false;
+          _iniciarJogoDeMemoria(pacienteNivel);
+        });
+      }
+    }
+  }
+
+  void _iniciarJogoDeMemoria(int nivelDoPaciente) {
+    // 1. Obter config do JSON
+    String modo = 'Imagens';
+    String tema = 'Expressões/Emoções';
+    String dificuldade = 'Evolutivo';
+    List<dynamic>? palavrasPersonalizadas;
+
+    try {
+      if (widget.conteudoJson.isNotEmpty) {
+        final decoded = jsonDecode(widget.conteudoJson);
+        modo = decoded['modo'] ?? 'Imagens';
+        tema = decoded['tema'] ?? 'Expressões/Emoções';
+        dificuldade = decoded['dificuldade'] ?? 'Evolutivo';
+        if (decoded['palavrasPersonalizadas'] is List) {
+          palavrasPersonalizadas = decoded['palavrasPersonalizadas'];
+        }
+      }
+    } catch (_) {}
+
+    // 2. Determinar dificuldade e número de pares
+    int paresCount = 4; // Padrão médio
+    if (dificuldade == 'Fácil') {
+      paresCount = 3; // 6 cartas
+      dificuldadeEfetiva = 'Fácil';
+    } else if (dificuldade == 'Médio') {
+      paresCount = 6; // 12 cartas
+      dificuldadeEfetiva = 'Médio';
+    } else if (dificuldade == 'Difícil') {
+      paresCount = 8; // 16 cartas
+      dificuldadeEfetiva = 'Difícil';
+    } else {
+      // Evolutivo: depende do nível do paciente
+      dificuldadeEfetiva = 'Evolutivo (Nível $nivelDoPaciente)';
+      if (nivelDoPaciente <= 1) {
+        paresCount = 3;
+      } else if (nivelDoPaciente == 2) {
+        paresCount = 4;
+      } else if (nivelDoPaciente == 3) {
+        paresCount = 6;
+      } else if (nivelDoPaciente == 4) {
+        paresCount = 8;
+      } else {
+        paresCount = 10;
+      }
+    }
+
+    totalPares = paresCount;
+
+    // 3. Escolher o pool de itens
+    List<String> pool = [];
+    if (modo == 'Imagens') {
+      if (tema == 'Natureza') {
+        pool = ['🌸', '🌲', '☀️', '🌧️', '🍄', '🍁', '🌊', '🌋', '🍀', '🌻'];
+      } else if (tema == 'Animais') {
+        pool = ['🐶', '🐱', '🦊', '🦁', '🐯', '🐸', '🐵', '🐔', '🐙', '🐝'];
+      } else {
+        // Expressões/Emoções
+        pool = ['😊', '😢', '😡', '😱', '🤢', '😲', '😎', '😴', '🥳', '😕'];
+      }
+    } else {
+      // Palavras
+      if (tema == 'Animais') {
+        pool = ['Cão', 'Gato', 'Leão', 'Tigre', 'Urso', 'Sapo', 'Macaco', 'Peixe', 'Polvo', 'Abelha'];
+      } else if (tema == 'Personalizado' && palavrasPersonalizadas != null && palavrasPersonalizadas.isNotEmpty) {
+        pool = List<String>.from(palavrasPersonalizadas);
+      } else {
+        // Sentimentos/Emoções
+        pool = ['Alegria', 'Tristeza', 'Raiva', 'Medo', 'Nojo', 'Surpresa', 'Calma', 'Ansiedade', 'Orgulho', 'Amor'];
+      }
+    }
+
+    // Garantir que temos elementos suficientes no pool
+    while (pool.length < paresCount) {
+      pool.add('Item ${pool.length + 1}');
+    }
+
+    // Selecionar os primeiros N elementos e duplicá-los
+    List<String> selecionados = pool.take(paresCount).toList();
+    List<String> itensDuplicados = [...selecionados, ...selecionados];
+
+    // Embaralhar
+    itensDuplicados.shuffle();
+
+    // Criar as cartas
+    cartas = List.generate(itensDuplicados.length, (index) {
+      return {
+        'id': index,
+        'valor': itensDuplicados[index],
+        'revelada': false,
+        'combinada': false,
+      };
+    });
+
+    // Reset de variáveis de jogo
+    movimentos = 0;
+    paresEncontrados = 0;
+    jogoConcluido = false;
+    segundosJogo = 0;
+    indexPrimeiraCarta = null;
+    bloqueado = false;
+
+    // Iniciar cronômetro
+    _timerJogo?.cancel();
+    _timerJogo = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        segundosJogo++;
+      });
+    });
   }
 
   void _parseConteudo() {
@@ -60,13 +212,30 @@ class _PacienteResponderAtividadePageState
   @override
   void dispose() {
     respostaController.dispose();
+    _timerJogo?.cancel();
     super.dispose();
   }
 
   Future<void> salvar() async {
     String respostaFinal = '';
 
-    if (widget.tipo == 4) {
+    if (widget.tipo == 7) {
+      if (!jogoConcluido) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Por favor, encontre todos os pares antes de salvar.')),
+        );
+        return;
+      }
+      final minutos = (segundosJogo ~/ 60).toString().padLeft(2, '0');
+      final segundos = (segundosJogo % 60).toString().padLeft(2, '0');
+      respostaFinal = jsonEncode({
+        'jogo': 'Jogo de Memória',
+        'movimentos': movimentos,
+        'tempoSegundos': segundosJogo,
+        'tempo': '$minutos:$segundos',
+        'dificuldade': dificuldadeEfetiva,
+      });
+    } else if (widget.tipo == 4) {
       // Checklist: serialize booleans or checked items
       final mapResultado = {};
       for (int i = 0; i < perguntas.length; i++) {
@@ -210,6 +379,238 @@ class _PacienteResponderAtividadePageState
     );
   }
 
+  void _selecionarCarta(int index) {
+    if (bloqueado || cartas[index]['revelada'] || cartas[index]['combinada']) {
+      return;
+    }
+
+    setState(() {
+      cartas[index]['revelada'] = true;
+    });
+
+    if (indexPrimeiraCarta == null) {
+      indexPrimeiraCarta = index;
+    } else {
+      movimentos++;
+      final indexSegundaCarta = index;
+      final val1 = cartas[indexPrimeiraCarta!]['valor'];
+      final val2 = cartas[indexSegundaCarta]['valor'];
+
+      if (val1 == val2) {
+        // Combinado!
+        setState(() {
+          cartas[indexPrimeiraCarta!]['combinada'] = true;
+          cartas[indexSegundaCarta]['combinada'] = true;
+          paresEncontrados++;
+          indexPrimeiraCarta = null;
+        });
+
+        if (paresEncontrados == totalPares) {
+          _timerJogo?.cancel();
+          setState(() {
+            jogoConcluido = true;
+          });
+        }
+      } else {
+        // Não combina
+        bloqueado = true;
+        Timer(const Duration(milliseconds: 1000), () {
+          if (!mounted) return;
+          setState(() {
+            cartas[indexPrimeiraCarta!]['revelada'] = false;
+            cartas[indexSegundaCarta]['revelada'] = false;
+            indexPrimeiraCarta = null;
+            bloqueado = false;
+          });
+        });
+      }
+    }
+  }
+
+  Widget _buildMemoryGame() {
+    if (carregandoInfoPaciente) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (cartas.isEmpty) {
+      return const Center(child: Text('Erro ao carregar o jogo.', style: TextStyle(color: AppColors.danger)));
+    }
+
+    final minutos = (segundosJogo ~/ 60).toString().padLeft(2, '0');
+    final segundos = (segundosJogo % 60).toString().padLeft(2, '0');
+
+    // Determinar o grid de acordo com o número de cartas
+    // 6 cartas: 2x3 ou 3x2. 8 cartas: 2x4. 12 cartas: 3x4. 16 cartas: 4x4. 20 cartas: 4x5.
+    int crossAxisCount = 3;
+    if (cartas.length <= 8) {
+      crossAxisCount = 2;
+    } else if (cartas.length <= 12) {
+      crossAxisCount = 3;
+    } else {
+      crossAxisCount = 4;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Painel de Status (Cronômetro e Movimentos)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(LucideIcons.timer, color: AppColors.primary, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    '$minutos:$segundos',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.text),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  const Icon(LucideIcons.dices, color: AppColors.secondary, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Jogadas: $movimentos',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.text),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.softGreen,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  dificuldadeEfetiva ?? 'Normal',
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.secondary),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Grid de Cartas
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 1.0,
+          ),
+          itemCount: cartas.length,
+          itemBuilder: (context, index) {
+            final carta = cartas[index];
+            final revelada = carta['revelada'] as bool;
+            final combinada = carta['combinada'] as bool;
+            final valor = carta['valor'] as String;
+
+            final isEmoji = valor.runes.length == 1 || (valor.length == 2 && valor.runes.first > 255);
+
+            return GestureDetector(
+              onTap: () => _selecionarCarta(index),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                decoration: BoxDecoration(
+                  color: combinada 
+                      ? AppColors.softGreen 
+                      : (revelada ? Colors.white : AppColors.primary),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: combinada 
+                        ? AppColors.secondary 
+                        : (revelada ? AppColors.primary : Colors.transparent),
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: (revelada || combinada)
+                        ? Text(
+                            valor,
+                            key: ValueKey('value_$index'),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: isEmoji ? 36 : 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.text,
+                            ),
+                          )
+                        : Icon(
+                            LucideIcons.circleQuestionMark,
+                            key: ValueKey('question_$index'),
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+
+        if (jogoConcluido) ...[
+          const SizedBox(height: 24),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.softGreen,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.secondary),
+            ),
+            child: Column(
+              children: [
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(LucideIcons.sparkles, color: AppColors.secondary, size: 24),
+                    SizedBox(width: 10),
+                    Text(
+                      'Excelente Trabalho!',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.primary),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Você concluiu o jogo de memória em $minutos:$segundos com apenas $movimentos jogadas!',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 13, color: AppColors.text, height: 1.4),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -245,7 +646,12 @@ class _PacienteResponderAtividadePageState
                     ),
                     const SizedBox(height: 24),
                   ],
-                  if (widget.tipo == 4) _buildChecklist() else _buildRespostaLivre(),
+                  if (widget.tipo == 7)
+                    _buildMemoryGame()
+                  else if (widget.tipo == 4)
+                    _buildChecklist()
+                  else
+                    _buildRespostaLivre(),
                   const SizedBox(height: 32),
                   const Text(
                     'Como você se sentiu?',

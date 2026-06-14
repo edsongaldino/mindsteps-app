@@ -87,7 +87,13 @@ class AtividadesPageState extends State<AtividadesPage> {
                             color: AppColors.softGreen,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(LucideIcons.clipboardList, color: AppColors.primary, size: 22),
+                          child: Icon(
+                            atividade['tipo']?.toString() == '7'
+                                ? LucideIcons.gamepad2
+                                : LucideIcons.clipboardList,
+                            color: AppColors.primary,
+                            size: 22,
+                          ),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -285,6 +291,8 @@ class AtividadesPageState extends State<AtividadesPage> {
         return 'Áudio';
       case '6':
         return 'Leitura';
+      case '7':
+        return 'Jogo';
       default:
         return 'Reflexão';
     }
@@ -403,8 +411,10 @@ class _AtividadeCard extends StatelessWidget {
                 color: AppColors.softGreen,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Icon(
-                LucideIcons.clipboardList,
+              child: Icon(
+                tipo.toLowerCase() == 'jogo'
+                    ? LucideIcons.gamepad2
+                    : LucideIcons.clipboardList,
                 color: AppColors.primary,
               ),
             ),

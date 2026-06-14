@@ -3,6 +3,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/app_theme.dart';
 import 'services/psicologo_service.dart';
+import 'enviar_atividade_page.dart';
 
 class PacienteDetalhePage extends StatefulWidget {
   final String pacienteId;
@@ -27,6 +28,7 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(() => setState(() {}));
     dadosFuture = _carregarDados();
   }
 
@@ -216,6 +218,28 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
           );
         },
       ),
+      floatingActionButton: _tabController.index == 1
+          ? FloatingActionButton.extended(
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => EnviarAtividadePage(
+                      pacienteId: widget.pacienteId,
+                      pacienteNome: widget.nome,
+                    ),
+                  ),
+                );
+                if (result == true) {
+                  _recarregar();
+                }
+              },
+              icon: const Icon(LucideIcons.plus),
+              label: const Text('Prescrever Atividade/Jogo'),
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            )
+          : null,
     );
   }
 }

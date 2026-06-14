@@ -67,6 +67,17 @@ class PacienteService {
     await ApiClient.dio.patch('/Mensagens/$mensagemId/ler');
   }
 
+  bool _estaConcluida(dynamic status) {
+    if (status == null) return false;
+    final s = status.toString().toLowerCase().trim();
+    return status == 3 ||
+        s == '3' ||
+        s == 'concluida' ||
+        s == 'concluido' ||
+        s == 'concluída' ||
+        s == 'concluído';
+  }
+
   Future<Map<String, dynamic>> obterResumoHome() async {
     final me = await obterMe();
     final atividades = await listarMinhasAtividades();
@@ -75,12 +86,7 @@ class PacienteService {
     final mensagens = await listarMinhasMensagens();
 
     final concluidas = atividades.where((x) {
-      final status = x['status'];
-
-      return status == 3 ||
-          status?.toString() == '3' ||
-          status?.toString() == 'Concluida' ||
-          status?.toString() == 'Concluído';
+      return _estaConcluida(x['status']);
     }).length;
 
     String humorMedio = '-';
@@ -104,6 +110,35 @@ class PacienteService {
       ultimaMensagem = Map<String, dynamic>.from(mensagens.first);
     }
 
+    final notificacoes = <Map<String, dynamic>>[];
+
+    // Atividades pendentes
+    final atividadesPendentesList = atividades.where((x) {
+      return !_estaConcluida(x['status']);
+    }).toList();
+
+    for (var act in atividadesPendentesList) {
+      notificacoes.add({
+        'id': act['id']?.toString() ?? '',
+        'titulo': 'Nova Atividade Recebida',
+        'conteudo': 'Você tem uma nova atividade: ${act['titulo']}',
+        'tipo': 'activity',
+        'data': act['dataEnvio'],
+      });
+    }
+
+    // Mensagens não lidas
+    final mensagensNaoLidas = mensagens.where((x) => x['lida'] == false).toList();
+    for (var msg in mensagensNaoLidas) {
+      notificacoes.add({
+        'id': msg['id']?.toString() ?? '',
+        'titulo': 'Nova Mensagem',
+        'conteudo': msg['conteudo'],
+        'tipo': 'message',
+        'data': msg['criadoEm'],
+      });
+    }
+
     return {
       'atividades': atividades.length,
       'concluidas': concluidas,
@@ -114,6 +149,7 @@ class PacienteService {
       'nivel': me['nivel'] ?? 1,
       'nome': me['nome'] ?? '',
       'mensagemMotivacional': ultimaMensagem,
+      'notificacoes': notificacoes,
     };
   }
 
@@ -178,5 +214,53 @@ class PacienteService {
         'intensidadeFinal': intensidadeFinal,
       },
     );
+  }
+
+  Future<Map<String, dynamic>> registrarJogo({
+    required String jogoId,
+    required Map<String, dynamic> dadosPlay,
+    String? atividadePacienteId,
+  }) async {
+    final pacienteId = await obterPacienteId();
+    
+    // Import conversion is handled transitively or we can use local converters
+    final response = await ApiClient.dio.post(
+      '/Jogos/registrar',
+      data: {
+        'pacienteId': pacienteId,
+        'jogoId': jogoId,
+        'dadosPlay': _customJsonEncode(dadosPlay),
+        'atividadePacienteId': atividadePacienteId,
+      },
+    );
+    return Map<String, dynamic>.from(response.data);
+  }
+
+  Future<Map<String, dynamic>> obterDashboardTerapeutico() async {
+    final pacienteId = await obterPacienteId();
+    final response = await ApiClient.dio.get('/Jogos/dashboard/$pacienteId');
+    return Map<String, dynamic>.from(response.data);
+  }
+
+  String _customJsonEncode(Map<String, dynamic> map) {
+    // A simple manually constructed JSON to avoid requiring dart:convert imports if not present,
+    // though dart:convert is standard. Let's just use a basic string builder or import.
+    // Actually, let's write a standard JSON string.
+    final buffer = StringBuffer('{');
+    var first = true;
+    map.forEach((key, value) {
+      if (!first) buffer.write(',');
+      first = false;
+      buffer.write('"$key":');
+      if (value is String) {
+        buffer.write('"$value"');
+      } else if (value is num || value is bool) {
+        buffer.write(value.toString());
+      } else {
+        buffer.write('"$value"');
+      }
+    });
+    buffer.write('}');
+    return buffer.toString();
   }
 }

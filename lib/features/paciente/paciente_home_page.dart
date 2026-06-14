@@ -7,6 +7,7 @@ import 'paciente_checkin_page.dart';
 import 'paciente_evolucao_page.dart';
 import 'paciente_perfil_page.dart';
 import 'paciente_registro_pensamento_page.dart';
+import 'paciente_jogos_page.dart';
 import 'services/paciente_service.dart';
 
 class PacienteHomePage extends StatefulWidget {
@@ -26,8 +27,7 @@ class PacienteHomePageState extends State<PacienteHomePage> {
   List<Widget> get _paginas => [
     _DashboardPaciente(isActive: paginaAtual == 0),
     PacienteAtividadesPage(isActive: paginaAtual == 1),
-    const PacienteCheckinPage(),
-    PacienteEvolucaoPage(isActive: paginaAtual == 3),
+    PacienteEvolucaoPage(isActive: paginaAtual == 2),
     const PacientePerfilPage(),
   ];
 
@@ -56,12 +56,8 @@ class PacienteHomePageState extends State<PacienteHomePage> {
             label: 'Atividades',
           ),
           NavigationDestination(
-            icon: Icon(LucideIcons.heartPulse),
-            label: 'Check-in',
-          ),
-          NavigationDestination(
             icon: Icon(LucideIcons.chartNoAxesColumn),
-            label: 'Evolução',
+            label: 'Progresso',
           ),
           NavigationDestination(
             icon: Icon(LucideIcons.user),
@@ -104,9 +100,10 @@ class _DashboardPacienteState extends State<_DashboardPaciente> {
     try {
       final jaFez = await service.verificarCheckinHoje();
       if (!jaFez && mounted) {
-        // Redireciona para a página de check-in (índice 2)
-        final state = context.findAncestorStateOfType<PacienteHomePageState>();
-        state?.mudarPagina(2);
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PacienteCheckinPage()),
+        ).then((_) => _recarregar());
       }
     } catch (e) {
       debugPrint('Erro ao verificar check-in hoje: $e');
@@ -152,7 +149,11 @@ class _DashboardPacienteState extends State<_DashboardPaciente> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _TopoPaciente(nome: resumo['nome'] ?? ''),
+                _TopoPaciente(
+                  nome: resumo['nome'] ?? '',
+                  notificacoes: resumo['notificacoes'] ?? [],
+                  onRefresh: _recarregar,
+                ),
                 const SizedBox(height: 22),
                 _CardGamificacao(
                   pontos: resumo['pontos'] ?? 0,
@@ -201,8 +202,10 @@ class _DashboardPacienteState extends State<_DashboardPaciente> {
                 _BotaoPrincipal(
                   texto: 'Fazer check-in agora',
                   onPressed: () {
-                    final state = context.findAncestorStateOfType<PacienteHomePageState>();
-                    state?.mudarPagina(2);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PacienteCheckinPage()),
+                    ).then((_) => _recarregar());
                   },
                 ),
               ],
@@ -216,8 +219,145 @@ class _DashboardPacienteState extends State<_DashboardPaciente> {
 
 class _TopoPaciente extends StatelessWidget {
   final String nome;
+  final List<dynamic> notificacoes;
+  final VoidCallback onRefresh;
 
-  const _TopoPaciente({required this.nome});
+  const _TopoPaciente({
+    required this.nome,
+    required this.notificacoes,
+    required this.onRefresh,
+  });
+
+  void _mostrarNotificacoes(BuildContext context) {
+    final homeState = context.findAncestorStateOfType<PacienteHomePageState>();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Notificações',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.text,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(LucideIcons.x, color: AppColors.muted),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (notificacoes.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 32.0),
+                  child: Center(
+                    child: Text(
+                      'Nenhuma notificação nova no momento.',
+                      style: TextStyle(color: AppColors.muted),
+                    ),
+                  ),
+                )
+              else
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: notificacoes.length,
+                    itemBuilder: (context, index) {
+                      final item = notificacoes[index];
+                      final isMessage = item['tipo'] == 'message';
+                      
+                      final action = () async {
+                        Navigator.pop(context);
+                        if (isMessage) {
+                          // Mark as read and reload
+                          await PacienteService().marcarMensagemComoLida(item['id']);
+                        } else {
+                          // Direct to activities tab
+                          homeState?.mudarPagina(1);
+                        }
+                        onRefresh();
+                      };
+
+                      return GestureDetector(
+                        onTap: action,
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.card,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: isMessage ? AppColors.softPurple : AppColors.softGreen,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  isMessage ? LucideIcons.messageSquare : LucideIcons.clipboardCheck,
+                                  color: AppColors.primary,
+                                  size: 18,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item['titulo'] ?? '',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.text,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      item['conteudo'] ?? '',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.muted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(LucideIcons.chevronRight, size: 18, color: AppColors.primary),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -246,12 +386,43 @@ class _TopoPaciente extends StatelessWidget {
             ],
           ),
         ),
-        IconButton(
-          onPressed: null,
-          icon: Icon(
-            LucideIcons.bell,
-            color: AppColors.text,
-          ),
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            IconButton(
+              onPressed: () => _mostrarNotificacoes(context),
+              icon: const Icon(
+                LucideIcons.bell,
+                color: AppColors.text,
+                size: 26,
+              ),
+            ),
+            if (notificacoes.isNotEmpty)
+              Positioned(
+                right: 4,
+                top: 4,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: Text(
+                    '${notificacoes.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
         ),
       ],
     );
