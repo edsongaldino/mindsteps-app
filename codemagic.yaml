@@ -13,9 +13,13 @@ workflows:
     environment:
       flutter: stable
       xcode: latest
+
       ios_signing:
         distribution_type: app_store
         bundle_identifier: br.com.mindsteps.app
+
+      android_signing:
+        - MINDSTEPS_ANDROID_KEYSTORE
 
     scripts:
       - flutter clean
