@@ -28,6 +28,14 @@ workflows:
       - flutter build ipa --release
       - flutter build appbundle --release
 
-    artifacts:
+        artifacts:
       - build/ios/ipa/*.ipa
       - build/app/outputs/bundle/release/*.aab
+
+    integrations:
+      app_store_connect: Codemagic
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
