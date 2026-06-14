@@ -20,10 +20,10 @@ workflows:
     scripts:
       - flutter clean
       - flutter pub get
+      - xcode-project use-profiles
       - flutter build ipa --release
       - flutter build appbundle --release
 
     artifacts:
       - build/ios/ipa/*.ipa
       - build/app/outputs/bundle/release/*.aab
-      
