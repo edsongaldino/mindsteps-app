@@ -72,6 +72,7 @@ class PsicologoService {
     final me = await obterMe();
     final nome = me['nome'] ?? 'Psicólogo';
     final aprovado = me['aprovado'] ?? true;
+    final plano = me['plano'] ?? 'Starter';
 
     final pacientes = await listarPacientesDoPsicologo();
     final atividades = await listarAtividadesDoPsicologo();
@@ -97,6 +98,7 @@ class PsicologoService {
     return {
       'nome': nome,
       'aprovado': aprovado,
+      'plano': plano,
       'pacientesAtivos': pacientes.length,
       'atividadesEnviadas': totalAtividades,
       'pendencias': pendencias,

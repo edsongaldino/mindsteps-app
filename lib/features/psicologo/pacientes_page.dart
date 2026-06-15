@@ -385,12 +385,28 @@ class PacientesPageState extends State<PacientesPage> {
           );
           _recarregar();
         } catch (e) {
+          String errMsg = 'Erro ao cadastrar paciente.';
+          try {
+            final dynamic err = e;
+            if (err.response?.data != null) {
+              final data = err.response.data;
+              if (data is Map && data.containsKey('message')) {
+                errMsg = data['message'].toString();
+              }
+            } else {
+              errMsg = e.toString();
+            }
+          } catch (_) {
+            errMsg = e.toString();
+          }
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Erro: $e')),
+              SnackBar(
+                content: Text(errMsg),
+                backgroundColor: AppColors.danger,
+              ),
             );
           }
-          rethrow;
         }
       },
     );

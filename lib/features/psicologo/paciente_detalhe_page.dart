@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/auth/auth_storage.dart';
 import 'services/psicologo_service.dart';
 import 'enviar_atividade_page.dart';
+import '../../core/api/api_client.dart';
 
 class PacienteDetalhePage extends StatefulWidget {
   final String pacienteId;
@@ -54,6 +55,25 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
     final registros = await service.listarRegistrosPensamentosPaciente(widget.pacienteId);
     final atividades = await service.listarAtividadesPaciente(widget.pacienteId);
     final mensagens = await service.listarMensagensPaciente(widget.pacienteId);
+    
+    // Dados de plano e bloqueio de IA
+    final me = await service.obterMe();
+    final plano = me['plano'] ?? 'Starter';
+    final isIaLocked = plano.toString().toLowerCase() != 'profissional' && plano.toString().toLowerCase() != 'clinica';
+
+    List<dynamic> iaInsights = [];
+    String? iaError;
+
+    if (!isIaLocked) {
+      try {
+        final res = await ApiClient.dio.get('/Pacientes/${widget.pacienteId}/ia-insights');
+        if (res.data is List) {
+          iaInsights = res.data;
+        }
+      } catch (e) {
+        iaError = 'Não foi possível carregar insights de IA.';
+      }
+    }
 
     return {
       'paciente': paciente,
@@ -61,6 +81,10 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
       'registros': registros,
       'atividades': atividades,
       'mensagens': mensagens,
+      'isIaLocked': isIaLocked,
+      'plano': plano,
+      'iaInsights': iaInsights,
+      'iaError': iaError,
     };
   }
 
@@ -374,6 +398,10 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
                         atividades: atividades,
                         checkins: checkins,
                         registros: registros,
+                        isIaLocked: dados['isIaLocked'] ?? true,
+                        plano: dados['plano'] ?? 'Starter',
+                        iaInsights: dados['iaInsights'] ?? [],
+                        iaError: dados['iaError'],
                       ),
                       _AbaAnotacoes(
                         pacienteId: widget.pacienteId,
@@ -1553,12 +1581,20 @@ class _AbaEvolucao extends StatelessWidget {
   final List<dynamic> atividades;
   final List<dynamic> checkins;
   final List<dynamic> registros;
+  final bool isIaLocked;
+  final String plano;
+  final List<dynamic> iaInsights;
+  final String? iaError;
 
   const _AbaEvolucao({
     required this.paciente,
     required this.atividades,
     required this.checkins,
     required this.registros,
+    required this.isIaLocked,
+    required this.plano,
+    required this.iaInsights,
+    this.iaError,
   });
 
   @override
@@ -1841,6 +1877,169 @@ class _AbaEvolucao extends StatelessWidget {
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          const SizedBox(height: 24),
+          const Text(
+            'Análise de Evolução por IA',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.text,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (isIaLocked)
+            Container(
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF8E2DE2),
+                    Color(0xFF4A00E0),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF4A00E0).withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          LucideIcons.sparkles,
+                          color: Colors.amber,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Insights Clínicos por IA',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    'Análises automáticas sobre humor, engajamento e flexibilidade cognitiva com recomendações clínicas de TCC.\n\nDisponível no plano Profissional.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white.withOpacity(0.9),
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withOpacity(0.2)),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'Faça upgrade no Painel Web',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else if (iaError != null)
+            Container(
+              padding: const EdgeInsets.all(18),
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Center(
+                child: Text(
+                  iaError!,
+                  style: const TextStyle(color: AppColors.danger, fontSize: 13),
+                ),
+              ),
+            )
+          else if (iaInsights.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(24),
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: const Center(
+                child: Text(
+                  'Nenhum insight disponível ainda para este paciente.',
+                  style: TextStyle(color: AppColors.muted, fontSize: 13),
+                ),
+              ),
+            )
+          else
+            ...iaInsights.map((insight) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.card,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: AppColors.softGreen,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        LucideIcons.sparkles,
+                        color: AppColors.secondary,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        insight.toString(),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.text,
+                          height: 1.4,
                         ),
                       ),
                     ),

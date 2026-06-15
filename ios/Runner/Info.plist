@@ -66,5 +66,7 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Precisamos de acesso ao Face ID para realizar seu login de forma rápida e segura.</string>
 </dict>
 </plist>

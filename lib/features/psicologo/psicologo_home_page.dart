@@ -178,6 +178,8 @@ class _DashboardPsicologoState extends State<_DashboardPsicologo> {
 
         final resumo = snapshot.data ?? {};
         final bool isAprovado = resumo['aprovado'] ?? true;
+        final String plano = resumo['plano'] ?? 'Starter';
+        final int pacientesAtivos = resumo['pacientesAtivos'] ?? 0;
 
         return RefreshIndicator(
           onRefresh: _recarregar,
@@ -188,6 +190,8 @@ class _DashboardPsicologoState extends State<_DashboardPsicologo> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _TopoDashboard(nome: resumo['nome'] ?? 'Psicólogo'),
+                const SizedBox(height: 16),
+                _CardInfoPlano(plano: plano, pacientesAtivos: pacientesAtivos),
                 if (!isAprovado) ...[
                   const SizedBox(height: 24),
                   Container(
@@ -592,6 +596,117 @@ class _CardHumorSemana extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CardInfoPlano extends StatelessWidget {
+  final String plano;
+  final int pacientesAtivos;
+
+  const _CardInfoPlano({
+    required this.plano,
+    required this.pacientesAtivos,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final String nomePlanoFormatado = plano[0].toUpperCase() + plano.substring(1).toLowerCase();
+    
+    int? limitePacientes;
+    if (plano.toLowerCase() == 'starter') {
+      limitePacientes = 5;
+    } else if (plano.toLowerCase() == 'essencial') {
+      limitePacientes = 20;
+    }
+
+    final bool atingiuLimite = limitePacientes != null && pacientesAtivos >= limitePacientes;
+    final String progressoText = limitePacientes != null 
+        ? '$pacientesAtivos de $limitePacientes ativos' 
+        : '$pacientesAtivos ativos (Sem limite)';
+        
+    final double percent = limitePacientes != null 
+        ? (pacientesAtivos / limitePacientes).clamp(0.0, 1.0) 
+        : 1.0;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: atingiuLimite ? const Color(0xFFFFF4F4) : AppColors.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: atingiuLimite ? AppColors.danger.withOpacity(0.3) : AppColors.border,
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    atingiuLimite ? LucideIcons.circleAlert : LucideIcons.shieldCheck,
+                    color: atingiuLimite ? AppColors.danger : AppColors.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Plano $nomePlanoFormatado',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: atingiuLimite ? AppColors.danger : AppColors.text,
+                    ),
+                  ),
+                ],
+              ),
+              if (limitePacientes != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: atingiuLimite ? AppColors.danger.withOpacity(0.1) : AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    progressoText,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: atingiuLimite ? AppColors.danger : AppColors.primary,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (limitePacientes != null) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: percent,
+                backgroundColor: AppColors.border,
+                color: atingiuLimite ? AppColors.danger : AppColors.primary,
+                minHeight: 6,
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          Text(
+            atingiuLimite 
+                ? 'Você atingiu o limite de pacientes ativos do seu plano. Para cadastrar novos pacientes, faça o upgrade.'
+                : 'Para alterar seu plano, realizar pagamentos ou gerenciar sua assinatura, acesse o painel web.',
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.muted,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

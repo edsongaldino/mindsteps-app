@@ -9,6 +9,7 @@ import '../admin/admin_home_page.dart';
 import '../psicologo/psicologo_home_page.dart';
 import '../paciente/paciente_home_page.dart';
 import 'recuperar_senha_page.dart';
+import '../../core/auth/biometric_service.dart';
 
 
 class LoginPage extends StatefulWidget {
@@ -26,6 +27,91 @@ class _LoginPageState extends State<LoginPage> {
   bool carregando = false;
 
   final authService = AuthService();
+  final _biometricService = BiometricService();
+  bool biometriaDisponivel = false;
+  bool biometriaHabilitada = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checarBiometria();
+  }
+
+  Future<void> _checarBiometria() async {
+    final disponivel = await _biometricService.isBiometricAvailable();
+    final habilitada = await _biometricService.isBiometricEnabled();
+    if (mounted) {
+      setState(() {
+        biometriaDisponivel = disponivel;
+        biometriaHabilitada = habilitada;
+      });
+      if (disponivel && habilitada) {
+        // Delay slightly to let the build finish before spawning biometric prompt
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted && !carregando) {
+            _autenticarComBiometria();
+          }
+        });
+      }
+    }
+  }
+
+  Future<void> _autenticarComBiometria() async {
+    final autenticado = await _biometricService.authenticate();
+    if (!autenticado) return;
+
+    final credenciais = await _biometricService.getSavedCredentials();
+    if (credenciais == null) return;
+
+    try {
+      setState(() => carregando = true);
+      final response = await authService.login(
+        email: credenciais['email']!,
+        senha: credenciais['senha']!,
+      );
+
+      final token = response['token'];
+      final perfil = response['perfil'];
+      final aprovado = response['aprovado'] ?? true;
+
+      await AuthStorage.salvarToken(token);
+      await AuthStorage.salvarPerfil(perfil);
+      await AuthStorage.salvarAprovado(aprovado);
+      NotificationManager().sincronizarToken();
+
+      if (!mounted) return;
+
+      Widget destino;
+      switch (perfil) {
+        case 'Administrador':
+          destino = AdminHomePage();
+          break;
+        case 'Psicologo':
+          destino = PsicologoHomePage();
+          break;
+        case 'Paciente':
+          destino = PacienteHomePage();
+          break;
+        default:
+          throw Exception('Perfil de usuário inválido.');
+      }
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => destino),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Falha ao autenticar: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => carregando = false);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -38,9 +124,12 @@ class _LoginPageState extends State<LoginPage> {
     try {
         setState(() => carregando = true);
 
+        final email = emailController.text.trim();
+        final senha = senhaController.text;
+
         final response = await authService.login(
-        email: emailController.text.trim(),
-        senha: senhaController.text,
+          email: email,
+          senha: senha,
         );
 
         final token = response['token'];
@@ -51,6 +140,43 @@ class _LoginPageState extends State<LoginPage> {
         await AuthStorage.salvarPerfil(perfil);
         await AuthStorage.salvarAprovado(aprovado);
         NotificationManager().sincronizarToken();
+
+        if (biometriaDisponivel && !biometriaHabilitada) {
+          if (mounted) {
+            final desejaHabilitar = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                title: const Row(
+                  children: [
+                    Icon(LucideIcons.sparkles, color: AppColors.secondary),
+                    SizedBox(width: 8),
+                    Text('Entrar mais rápido?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                content: const Text('Gostaria de habilitar o reconhecimento facial/digital para os próximos acessos?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Agora não', style: TextStyle(color: AppColors.muted)),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.secondary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: const Text('Sim, habilitar'),
+                  ),
+                ],
+              ),
+            );
+
+            if (desejaHabilitar == true) {
+              await _biometricService.saveCredentials(email, senha);
+            }
+          }
+        }
 
         if (!mounted) return;
 
@@ -86,6 +212,7 @@ class _LoginPageState extends State<LoginPage> {
         }
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -270,26 +397,50 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 24),
                   
-                  // Button Entrar (Teal & full width)
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: carregando ? null : entrar,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.secondary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                  // Button Entrar (Teal & full width, with Biometrics if available)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: carregando ? null : entrar,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.secondary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          child: carregando
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                                )
+                              : const Text('Entrar'),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: carregando
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                            )
-                          : const Text('Entrar'),
-                    ),
+                      if (biometriaDisponivel) ...[
+                        const SizedBox(width: 12),
+                        InkWell(
+                          onPressed: carregando ? null : _autenticarComBiometria,
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            height: 52,
+                            width: 52,
+                            decoration: BoxDecoration(
+                              color: AppColors.secondary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppColors.secondary.withOpacity(0.2)),
+                            ),
+                            child: const Icon(
+                              LucideIcons.fingerprint,
+                              color: AppColors.secondary,
+                              size: 26,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 32),
                   

@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'biometric_service.dart';
 
 class AuthStorage {
 
@@ -33,6 +34,7 @@ class AuthStorage {
   }
 
   static Future<void> limpar() async {
+    await BiometricService().clearCredentials();
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
   }
