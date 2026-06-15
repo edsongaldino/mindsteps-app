@@ -422,7 +422,7 @@ class _LoginPageState extends State<LoginPage> {
                       if (biometriaDisponivel) ...[
                         const SizedBox(width: 12),
                         InkWell(
-                          onPressed: carregando ? null : _autenticarComBiometria,
+                          onTap: carregando ? null : _autenticarComBiometria,
                           borderRadius: BorderRadius.circular(16),
                           child: Container(
                             height: 52,
