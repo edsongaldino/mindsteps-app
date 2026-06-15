@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/app_theme.dart';
+import 'auth_service.dart';
 
 class RecuperarSenhaPage extends StatefulWidget {
   const RecuperarSenhaPage({super.key});
@@ -13,6 +14,7 @@ class _RecuperarSenhaPageState extends State<RecuperarSenhaPage> {
   final emailController = TextEditingController();
   bool carregando = false;
   bool enviado = false;
+  final authService = AuthService();
 
   @override
   void dispose() {
@@ -31,17 +33,26 @@ class _RecuperarSenhaPageState extends State<RecuperarSenhaPage> {
 
     setState(() => carregando = true);
 
-    // Simula uma chamada de API de 1.5 segundos
-    await Future.delayed(const Duration(milliseconds: 1500));
-
-    if (mounted) {
-      setState(() {
-        carregando = false;
-        enviado = true;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('E-mail de recuperação enviado!')),
-      );
+    try {
+      await authService.recuperarSenha(email);
+      if (mounted) {
+        setState(() {
+          enviado = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('E-mail de recuperação enviado!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => carregando = false);
+      }
     }
   }
 

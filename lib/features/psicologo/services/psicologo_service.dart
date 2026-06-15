@@ -69,6 +69,10 @@ class PsicologoService {
   }
 
   Future<Map<String, dynamic>> obterResumoDashboard() async {
+    final me = await obterMe();
+    final nome = me['nome'] ?? 'Psicólogo';
+    final aprovado = me['aprovado'] ?? true;
+
     final pacientes = await listarPacientesDoPsicologo();
     final atividades = await listarAtividadesDoPsicologo();
 
@@ -91,6 +95,8 @@ class PsicologoService {
         totalAtividades > 0 ? (totalConcluidas / totalAtividades * 100).round() : 0;
 
     return {
+      'nome': nome,
+      'aprovado': aprovado,
       'pacientesAtivos': pacientes.length,
       'atividadesEnviadas': totalAtividades,
       'pendencias': pendencias,

@@ -19,12 +19,12 @@ class _MemoriaTaticaPageState extends State<MemoriaTaticaPage> {
   int etapa = 0; // 0: Intro, 1: Memorizar, 2: Identificar, 3: Resultado
 
   final List<Map<String, dynamic>> arquivos = [
-    {"nome": "Contratos", "icone": LucideIcons.fileText},
-    {"nome": "Fotos", "icone": LucideIcons.image},
-    {"nome": "Vídeos", "icone": LucideIcons.video},
-    {"nome": "Mensagens", "icone": LucideIcons.messageSquare},
-    {"nome": "Backup", "icone": LucideIcons.database},
-    {"nome": "Finanças", "icone": LucideIcons.banknote},
+    {"nome": "Chave", "icone": LucideIcons.shield},
+    {"nome": "Livro", "icone": LucideIcons.scale},
+    {"nome": "Planta", "icone": LucideIcons.palmtree},
+    {"nome": "Café", "icone": LucideIcons.zap},
+    {"nome": "Relógio", "icone": LucideIcons.target},
+    {"nome": "Flor", "icone": LucideIcons.star},
   ];
 
   List<Map<String, dynamic>> itensAtivos = [];
@@ -177,7 +177,7 @@ class _MemoriaTaticaPageState extends State<MemoriaTaticaPage> {
             border: Border.all(color: AppColors.primary.withOpacity(0.3)),
           ),
           child: const Text(
-            'MEMÓRIA OPERACIONAL',
+            'MEMÓRIA VISUAL',
             style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2),
           ),
         ),
@@ -207,9 +207,9 @@ class _MemoriaTaticaPageState extends State<MemoriaTaticaPage> {
               ),
               const SizedBox(height: 12),
               const Text(
-                '1. Memorize a grade de arquivos por alguns segundos.\n'
-                '2. Um dos arquivos irá sumir da grade e aparecerá como "?".\n'
-                '3. Indique qual foi o arquivo removido.',
+                '1. Observe os objetos exibidos por alguns segundos.\n'
+                '2. Um dos objetos irá desaparecer e ser substituído por "?".\n'
+                '3. Identifique qual objeto sumiu da cena.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppColors.textLight, fontSize: 14, height: 1.5),
               ),
@@ -218,7 +218,7 @@ class _MemoriaTaticaPageState extends State<MemoriaTaticaPage> {
         ),
         const SizedBox(height: 40),
         const Text(
-          'Treine sua memória de trabalho visual.',
+          'Treine sua atenção e memória visual.',
           style: TextStyle(color: AppColors.muted, fontSize: 14),
         ),
       ],
@@ -229,12 +229,12 @@ class _MemoriaTaticaPageState extends State<MemoriaTaticaPage> {
     return Column(
       children: [
         const Text(
-          'MEMORIZE OS ARQUIVOS',
+          'OBSERVE OS OBJETOS',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.text, letterSpacing: 1.2),
         ),
         const SizedBox(height: 6),
         Text(
-          'Preste muita atenção. Sumindo em ${segundosRestantes}s...',
+          'Memorize bem. Sumindo em ${segundosRestantes}s...',
           style: TextStyle(color: accentColor, fontSize: 14, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 40),
@@ -281,12 +281,12 @@ class _MemoriaTaticaPageState extends State<MemoriaTaticaPage> {
     return Column(
       children: [
         const Text(
-          'QUAL ARQUIVO SUMIU?',
+          'QUAL OBJETO DESAPARECEU?',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.text, letterSpacing: 1.2),
         ),
         const SizedBox(height: 6),
         const Text(
-          'Selecione a opção correta abaixo.',
+          'Selecione o objeto que sumiu da cena.',
           style: TextStyle(color: AppColors.textLight, fontSize: 14),
         ),
         const SizedBox(height: 32),
@@ -400,7 +400,7 @@ class _MemoriaTaticaPageState extends State<MemoriaTaticaPage> {
         ),
         const SizedBox(height: 32),
         Text(
-          acerto ? 'Acurácia: 100%' : 'Mais atenção na próxima!',
+          acerto ? 'Memória afiada! 🎯' : 'Continue treinando!',
           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.text),
         ),
         const SizedBox(height: 12),
@@ -408,8 +408,8 @@ class _MemoriaTaticaPageState extends State<MemoriaTaticaPage> {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Text(
             acerto
-                ? 'Excelente! Você registrou o sumiço do arquivo "$arquivoSumido" perfeitamente na sua memória.'
-                : 'O arquivo que sumiu era o "$arquivoSumido", mas você selecionou "$arquivoSelecionado". Tente se concentrar nos detalhes visuais da próxima vez.',
+                ? 'Ótimo! Você percebeu que o "$arquivoSumido" desapareceu. Sua memória visual está em excelente forma!'
+                : 'O objeto que sumiu era "$arquivoSumido", mas você escolheu "$arquivoSelecionado". Na próxima, observe cada detalhe com mais calma.',
             textAlign: TextAlign.center,
             style: const TextStyle(color: AppColors.textLight, fontSize: 14, height: 1.5),
           ),
@@ -446,7 +446,7 @@ class _MemoriaTaticaPageState extends State<MemoriaTaticaPage> {
             minimumSize: const Size(double.infinity, 56),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
-          child: const Text('Entrar no Servidor', style: TextStyle(fontWeight: FontWeight.bold)),
+          child: const Text('Iniciar Jogo', style: TextStyle(fontWeight: FontWeight.bold)),
         ),
       );
     }

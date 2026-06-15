@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/auth/auth_storage.dart';
 import 'services/psicologo_service.dart';
 import 'enviar_atividade_page.dart';
 
@@ -23,6 +24,7 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
   final service = PsicologoService();
   late Future<Map<String, dynamic>> dadosFuture;
   late TabController _tabController;
+  bool aprovado = true;
 
   @override
   void initState() {
@@ -30,6 +32,14 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
     _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(() => setState(() {}));
     dadosFuture = _carregarDados();
+    _carregarAprovado();
+  }
+
+  Future<void> _carregarAprovado() async {
+    final status = await AuthStorage.obterAprovado();
+    if (mounted) {
+      setState(() => aprovado = status);
+    }
   }
 
   @override
@@ -62,67 +72,226 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
 
   void _exibirDialogMensagem(BuildContext context) {
     final textController = TextEditingController();
-    showDialog(
+
+    _exibirPainelLateral(
       context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text(
-            'Mensagem Motivacional',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Envie uma mensagem especial para motivar o paciente esta semana:',
-                style: TextStyle(fontSize: 13, color: AppColors.muted),
+      titulo: 'Enviar Motivação',
+      textoConfirmar: 'Enviar',
+      campos: [
+        const Text(
+          'Envie uma mensagem especial para motivar o paciente esta semana:',
+          style: TextStyle(fontSize: 13, color: AppColors.muted),
+        ),
+        const SizedBox(height: 20),
+        _buildTextAreaField(
+          controller: textController,
+          label: 'Mensagem',
+          hintText: 'Ex: Muito orgulhosa de ver sua dedicação esta semana! Continue firme...',
+        ),
+      ],
+      onConfirmar: () async {
+        final conteudo = textController.text.trim();
+        if (conteudo.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Por favor, escreva uma mensagem.')),
+          );
+          throw Exception('Mensagem vazia');
+        }
+        try {
+          await service.enviarMensagemMotivacional(
+            pacienteId: widget.pacienteId,
+            conteudo: conteudo,
+          );
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Mensagem motivacional enviada com sucesso!'),
+                backgroundColor: AppColors.secondary,
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: textController,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  hintText: 'Ex: Muito orgulhosa de ver sua dedicação esta semana! Continue firme...',
-                  border: OutlineInputBorder(),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Erro ao enviar mensagem: $e')),
+            );
+          }
+          rethrow;
+        }
+      },
+    );
+  }
+
+  Widget _buildTextAreaField({
+    required TextEditingController controller,
+    required String label,
+    required String hintText,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.text),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          maxLines: 6,
+          style: const TextStyle(fontSize: 14, color: AppColors.text),
+          decoration: InputDecoration(
+            contentPadding: const EdgeInsets.all(16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: AppColors.border.withOpacity(0.5)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: AppColors.border.withOpacity(0.5)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+            ),
+            hintText: hintText,
+            hintStyle: const TextStyle(color: AppColors.muted, fontSize: 13),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _exibirPainelLateral({
+    required BuildContext context,
+    required String titulo,
+    required List<Widget> campos,
+    required Future<void> Function() onConfirmar,
+    required String textoConfirmar,
+  }) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: '',
+      barrierColor: Colors.black.withOpacity(0.4),
+      transitionDuration: const Duration(milliseconds: 250),
+      pageBuilder: (ctx, anim1, anim2) {
+        bool salvando = false;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Align(
+              alignment: Alignment.centerRight,
+              child: Material(
+                color: AppColors.background,
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 0.85,
+                  height: double.infinity,
+                  decoration: const BoxDecoration(
+                    border: Border(left: BorderSide(color: AppColors.border, width: 1)),
+                  ),
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                titulo,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.text,
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(LucideIcons.x, color: AppColors.muted),
+                                onPressed: () => Navigator.pop(ctx),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: campos,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: salvando ? null : () => Navigator.pop(ctx),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                  child: const Text('Cancelar'),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: salvando
+                                      ? null
+                                      : () async {
+                                          setDialogState(() => salvando = true);
+                                          try {
+                                            await onConfirmar();
+                                            if (ctx.mounted) {
+                                              Navigator.pop(ctx);
+                                            }
+                                          } catch (_) {
+                                            // Error is handled inside onConfirmar
+                                          } finally {
+                                            setDialogState(() => salvando = false);
+                                          }
+                                        },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                  child: salvando
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.5,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        )
+                                      : Text(textoConfirmar),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final conteudo = textController.text.trim();
-                if (conteudo.isEmpty) return;
-                try {
-                  await service.enviarMensagemMotivacional(
-                    pacienteId: widget.pacienteId,
-                    conteudo: conteudo,
-                  );
-                  if (ctx.mounted) {
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Mensagem motivacional enviada com sucesso!'),
-                        backgroundColor: AppColors.secondary,
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  if (ctx.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Erro ao enviar mensagem: $e')),
-                    );
-                  }
-                }
-              },
-              child: const Text('Enviar'),
-            ),
-          ],
+            );
+          }
+        );
+      },
+      transitionBuilder: (ctx, anim1, anim2, child) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(1, 0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(parent: anim1, curve: Curves.easeOut)),
+          child: child,
         );
       },
     );
@@ -170,6 +339,7 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
                   nome: widget.nome,
                   nivel: dados['paciente']?['nivel'] ?? 1,
                   pontos: dados['paciente']?['pontos'] ?? 0,
+                  aprovado: aprovado,
                   onEnviarMensagem: () => _exibirDialogMensagem(context),
                 ),
                 const SizedBox(height: 24),
@@ -218,7 +388,7 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
           );
         },
       ),
-      floatingActionButton: _tabController.index == 1
+      floatingActionButton: _tabController.index == 1 && aprovado
           ? FloatingActionButton.extended(
               onPressed: () async {
                 final result = await Navigator.push(
@@ -248,12 +418,14 @@ class _CabecalhoPaciente extends StatelessWidget {
   final String nome;
   final int nivel;
   final int pontos;
+  final bool aprovado;
   final VoidCallback onEnviarMensagem;
 
   const _CabecalhoPaciente({
     required this.nome,
     required this.nivel,
     required this.pontos,
+    required this.aprovado,
     required this.onEnviarMensagem,
   });
 
@@ -314,12 +486,12 @@ class _CabecalhoPaciente extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             ElevatedButton.icon(
-              onPressed: onEnviarMensagem,
+              onPressed: aprovado ? onEnviarMensagem : null,
               icon: const Icon(LucideIcons.messageSquareHeart, size: 14),
               label: const Text('Enviar Motivação'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.softPurple,
-                foregroundColor: AppColors.primary,
+                backgroundColor: aprovado ? AppColors.softPurple : Colors.grey.shade200,
+                foregroundColor: aprovado ? AppColors.primary : Colors.grey.shade500,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 elevation: 0,
                 minimumSize: Size.zero,

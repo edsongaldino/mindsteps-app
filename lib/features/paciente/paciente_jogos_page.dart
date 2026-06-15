@@ -10,6 +10,7 @@ import 'jogos/ilha_emocoes_page.dart';
 import 'jogos/decisao_pressao_page.dart';
 import 'jogos/missao_foco_page.dart';
 import 'jogos/memoria_tatica_page.dart';
+import 'jogos/jogo_memoria_page.dart';
 import 'jogos/investigacao_page.dart';
 import 'jogos/modo_piloto_page.dart';
 import 'jogos/laboratorio_mental_page.dart';
@@ -51,7 +52,7 @@ class _PacienteJogosPageState extends State<PacienteJogosPage> {
     {
       'id': 'memoria_tatica',
       'titulo': 'Memória Tática',
-      'subtitulo': 'Encontrar o arquivo desaparecido',
+      'subtitulo': 'Observe e identifique o objeto que desapareceu',
       'icone': LucideIcons.folderHeart,
       'corFundo': const Color(0xFF0F4C5C),
       'builder': (context) => const MemoriaTaticaPage(),
@@ -111,6 +112,86 @@ class _PacienteJogosPageState extends State<PacienteJogosPage> {
       'icone': LucideIcons.zap,
       'corFundo': const Color(0xFF00F5D4),
       'builder': (context) => const ReacaoZeroPage(),
+    },
+    {
+      'id': 'detetive_pensamentos',
+      'titulo': 'Detetive dos Pensamentos',
+      'subtitulo': 'Identificar e reestruturar pensamentos',
+      'icone': LucideIcons.search,
+      'corFundo': const Color(0xFF0D9488),
+      'builder': (context) => const DetetivePensamentosPage(),
+    },
+    {
+      'id': 'tribunal_pensamentos',
+      'titulo': 'Tribunal dos Pensamentos',
+      'subtitulo': 'Julgar pensamentos com base em evidências',
+      'icone': LucideIcons.scale,
+      'corFundo': const Color(0xFF4F46E5),
+      'builder': (context) => const TribunalPensamentosPage(),
+    },
+    {
+      'id': 'cacador_gatilhos',
+      'titulo': 'Caçador de Gatilhos',
+      'subtitulo': 'Identificar gatilhos situacionais e físicos',
+      'icone': LucideIcons.radar,
+      'corFundo': const Color(0xFFE11D48),
+      'builder': (context) => const CacadorGatilhosPage(),
+    },
+    {
+      'id': 'missao_coragem',
+      'titulo': 'Missão Coragem',
+      'subtitulo': 'Enfrentar medos através de exposição',
+      'icone': LucideIcons.shieldAlert,
+      'corFundo': const Color(0xFFD97706),
+      'builder': (context) => const MissaoCoragemPage(),
+    },
+    {
+      'id': 'monstro_ansiedade',
+      'titulo': 'O Monstro da Ansiedade',
+      'subtitulo': 'Externalizar e desenhar sua ansiedade',
+      'icone': LucideIcons.ghost,
+      'corFundo': const Color(0xFF7C3AED),
+      'builder': (context) => const MonstroAnsiedadePage(),
+    },
+    {
+      'id': 'ilha_emocoes',
+      'titulo': 'Ilha das Emoções',
+      'subtitulo': 'Classificar sentimentos navegando em ilhas',
+      'icone': LucideIcons.palmtree,
+      'corFundo': const Color(0xFF059669),
+      'builder': (context) => const IlhaEmocoesPage(),
+    },
+    {
+      'id': 'cartas_sabotadores',
+      'titulo': 'Cartas dos Sabotadores',
+      'subtitulo': 'Identificar pensamentos e condutas sabotadoras',
+      'icone': LucideIcons.copy,
+      'corFundo': const Color(0xFFDB2777),
+      'builder': (context) => const CartasSabotadoresPage(),
+    },
+    {
+      'id': 'escape_room',
+      'titulo': 'Escape Room Terapêutico',
+      'subtitulo': 'Decifrar distorções cognitivas em enigmas',
+      'icone': LucideIcons.doorOpen,
+      'corFundo': const Color(0xFF4B5563),
+      'builder': (context) => const EscapeRoomPage(),
+    },
+    {
+      'id': 'heroi_interior',
+      'titulo': 'Jornada do Herói Interior',
+      'subtitulo': 'Traçar metas e virtudes em uma jornada',
+      'icone': LucideIcons.compass,
+      'corFundo': const Color(0xFF2563EB),
+      'builder': (context) => const HeroiInteriorPage(),
+    },
+    {
+      'id': 'jogo_memoria',
+      'titulo': 'Jogo de Memória',
+      'subtitulo': 'Encontre todos os pares de cartas e emoções',
+      'icone': LucideIcons.grid,
+      'corFundo': const Color(0xFF0F766E),
+      'builder': (context) => const JogoMemoriaPage(),
     },
   ];
 

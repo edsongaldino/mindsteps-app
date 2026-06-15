@@ -246,32 +246,9 @@ class _DecisaoSobPressaoPageState extends State<DecisaoSobPressaoPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Gif de respiração
-              Image.asset(
-                'assets/images/respiracao.gif',
-                width: 220,
-                height: 220,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: 220,
-                    height: 220,
-                    decoration: BoxDecoration(
-                      color: AppColors.border.withOpacity(0.3),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Text(
-                          'Adicione seu GIF em\nassets/images/respiracao.gif',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: AppColors.textLight, fontSize: 13),
-                        ),
-                      ),
-                    ),
-                  );
-                },
+              BreathingLungsAnimation(
+                isInspiring: isInspiring,
+                isActive: respirando,
               ),
               const SizedBox(height: 32),
               Row(
@@ -480,3 +457,320 @@ class _DecisaoSobPressaoPageState extends State<DecisaoSobPressaoPage> {
     );
   }
 }
+
+class BreathingLungsAnimation extends StatefulWidget {
+  final bool isInspiring;
+  final bool isActive;
+
+  const BreathingLungsAnimation({
+    super.key,
+    required this.isInspiring,
+    this.isActive = true,
+  });
+
+  @override
+  State<BreathingLungsAnimation> createState() => _BreathingLungsAnimationState();
+}
+
+class _BreathingLungsAnimationState extends State<BreathingLungsAnimation> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _glowAnimation;
+  late Animation<Color?> _colorAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    // 4 seconds duration to align with segundosRespiracao (4)
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.82, end: 1.18).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOutQuad,
+      ),
+    );
+
+    _glowAnimation = Tween<double>(begin: 8.0, end: 24.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOutQuad,
+      ),
+    );
+
+    _colorAnimation = ColorTween(
+      begin: const Color(0xFF80CBC4), // Soothing soft teal
+      end: AppColors.secondary,       // Brand Sea Green
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOutQuad,
+    ));
+
+    if (widget.isActive) {
+      if (widget.isInspiring) {
+        _controller.forward();
+      } else {
+        _controller.value = 1.0;
+        _controller.reverse();
+      }
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant BreathingLungsAnimation oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive) {
+      if (widget.isInspiring != oldWidget.isInspiring) {
+        if (widget.isInspiring) {
+          _controller.forward();
+        } else {
+          _controller.reverse();
+        }
+      }
+    } else {
+      _controller.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final scale = _scaleAnimation.value;
+        final color = _colorAnimation.value ?? AppColors.secondary;
+        final glow = _glowAnimation.value;
+
+        return SizedBox(
+          width: 240,
+          height: 240,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Outer pulse ring 2
+              Container(
+                width: 220 * (scale * 1.05),
+                height: 220 * (scale * 1.05),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color.withOpacity(0.02),
+                  border: Border.all(
+                    color: color.withOpacity(0.06),
+                    width: 1.0,
+                  ),
+                ),
+              ),
+              // Outer pulse ring 1
+              Container(
+                width: 190 * scale,
+                height: 190 * scale,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color.withOpacity(0.04),
+                  border: Border.all(
+                    color: color.withOpacity(0.12),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withOpacity(0.1),
+                      blurRadius: glow * 1.2,
+                      spreadRadius: glow * 0.1,
+                    ),
+                  ],
+                ),
+              ),
+              // Inner guide ring
+              Container(
+                width: 140 * scale,
+                height: 140 * scale,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: color.withOpacity(0.18),
+                    width: 1.0,
+                  ),
+                ),
+              ),
+              // Lungs drawing with scale
+              Transform.scale(
+                scale: scale,
+                child: SizedBox(
+                  width: 130,
+                  height: 130,
+                  child: CustomPaint(
+                    painter: LungPainter(
+                      animationValue: _controller.value,
+                      color: color,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class LungPainter extends CustomPainter {
+  final double animationValue; // 0.0 to 1.0
+  final Color color;
+
+  LungPainter({required this.animationValue, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true;
+
+    final outlinePaint = Paint()
+      ..color = color.withOpacity(0.7)
+      ..strokeWidth = 2.0
+      ..style = PaintingStyle.stroke
+      ..isAntiAlias = true;
+
+    final tracheaPaint = Paint()
+      ..color = color.withOpacity(0.5)
+      ..strokeWidth = 3.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..isAntiAlias = true;
+
+    final width = size.width;
+    final height = size.height;
+    final centerX = width / 2;
+
+    // Draw Trachea (windpipe)
+    final tracheaPath = Path();
+    tracheaPath.moveTo(centerX, height * 0.12);
+    tracheaPath.lineTo(centerX, height * 0.40);
+    // Left bronchus
+    tracheaPath.moveTo(centerX, height * 0.40);
+    tracheaPath.quadraticBezierTo(centerX - width * 0.05, height * 0.45, centerX - width * 0.15, height * 0.48);
+    // Right bronchus
+    tracheaPath.moveTo(centerX, height * 0.40);
+    tracheaPath.quadraticBezierTo(centerX + width * 0.05, height * 0.45, centerX + width * 0.15, height * 0.48);
+    
+    canvas.drawPath(tracheaPath, tracheaPaint);
+
+    // Left Lung Lobe
+    final leftLobePath = Path();
+    leftLobePath.moveTo(centerX - width * 0.05, height * 0.40);
+    // Curve up to apex of left lung
+    leftLobePath.cubicTo(
+      centerX - width * 0.15, height * 0.32,
+      centerX - width * 0.35, height * 0.32,
+      centerX - width * 0.45, height * 0.32,
+    );
+    // Curve down outer edge
+    leftLobePath.cubicTo(
+      centerX - width * 0.52, height * 0.48,
+      centerX - width * 0.48, height * 0.72,
+      centerX - width * 0.32, height * 0.80,
+    );
+    // Curve along bottom diaphragm edge
+    leftLobePath.quadraticBezierTo(
+      centerX - width * 0.22, height * 0.83,
+      centerX - width * 0.12, height * 0.74,
+    );
+    // Curve up along inner edge
+    leftLobePath.cubicTo(
+      centerX - width * 0.10, height * 0.65,
+      centerX - width * 0.08, height * 0.50,
+      centerX - width * 0.05, height * 0.40,
+    );
+    leftLobePath.close();
+
+    // Right Lung Lobe (symmetrical to left)
+    final rightLobePath = Path();
+    rightLobePath.moveTo(centerX + width * 0.05, height * 0.40);
+    // Curve up to apex of right lung
+    rightLobePath.cubicTo(
+      centerX + width * 0.15, height * 0.32,
+      centerX + width * 0.35, height * 0.32,
+      centerX + width * 0.45, height * 0.32,
+    );
+    // Curve down outer edge
+    rightLobePath.cubicTo(
+      centerX + width * 0.52, height * 0.48,
+      centerX + width * 0.48, height * 0.72,
+      centerX + width * 0.32, height * 0.80,
+    );
+    // Curve along bottom diaphragm edge
+    rightLobePath.quadraticBezierTo(
+      centerX + width * 0.22, height * 0.83,
+      centerX + width * 0.12, height * 0.74,
+    );
+    // Curve up along inner edge
+    rightLobePath.cubicTo(
+      centerX + width * 0.10, height * 0.65,
+      centerX + width * 0.08, height * 0.50,
+      centerX + width * 0.05, height * 0.40,
+    );
+    rightLobePath.close();
+
+    // Fill lobes with a radial gradient representing oxygenation
+    final gradient = RadialGradient(
+      center: Alignment.center,
+      radius: 0.85,
+      colors: [
+        color.withOpacity(0.85),
+        color.withOpacity(0.40),
+      ],
+    );
+    
+    paint.shader = gradient.createShader(Rect.fromLTWH(0, 0, width, height));
+
+    // Draw lobes
+    canvas.drawPath(leftLobePath, paint);
+    canvas.drawPath(leftLobePath, outlinePaint);
+    canvas.drawPath(rightLobePath, paint);
+    canvas.drawPath(rightLobePath, outlinePaint);
+
+    // Inner bronchial tree details (stylized lines)
+    final branchPaint = Paint()
+      ..color = color.withOpacity(0.25)
+      ..strokeWidth = 1.8
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..isAntiAlias = true;
+
+    final branchesPath = Path();
+    // Left lung inner branches
+    branchesPath.moveTo(centerX - width * 0.15, height * 0.48);
+    branchesPath.quadraticBezierTo(centerX - width * 0.28, height * 0.55, centerX - width * 0.38, height * 0.58);
+    branchesPath.moveTo(centerX - width * 0.22, height * 0.51);
+    branchesPath.quadraticBezierTo(centerX - width * 0.28, height * 0.43, centerX - width * 0.35, height * 0.39);
+    branchesPath.moveTo(centerX - width * 0.28, height * 0.55);
+    branchesPath.quadraticBezierTo(centerX - width * 0.32, height * 0.66, centerX - width * 0.34, height * 0.70);
+
+    // Right lung inner branches
+    branchesPath.moveTo(centerX + width * 0.15, height * 0.48);
+    branchesPath.quadraticBezierTo(centerX + width * 0.28, height * 0.55, centerX + width * 0.38, height * 0.58);
+    branchesPath.moveTo(centerX + width * 0.22, height * 0.51);
+    branchesPath.quadraticBezierTo(centerX + width * 0.28, height * 0.43, centerX + width * 0.35, height * 0.39);
+    branchesPath.moveTo(centerX + width * 0.28, height * 0.55);
+    branchesPath.quadraticBezierTo(centerX + width * 0.32, height * 0.66, centerX + width * 0.34, height * 0.70);
+
+    canvas.drawPath(branchesPath, branchPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant LungPainter oldDelegate) {
+    return oldDelegate.animationValue != animationValue || oldDelegate.color != color;
+  }
+}
+

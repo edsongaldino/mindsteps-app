@@ -22,6 +22,16 @@ class AuthStorage {
     return prefs.getString('perfil');
   }
 
+  static Future<void> salvarAprovado(bool aprovado) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('aprovado', aprovado);
+  }
+
+  static Future<bool> obterAprovado() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('aprovado') ?? true;
+  }
+
   static Future<void> limpar() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
 import 'auth_service.dart';
 import '../../core/auth/auth_storage.dart';
@@ -44,9 +45,11 @@ class _LoginPageState extends State<LoginPage> {
 
         final token = response['token'];
         final perfil = response['perfil'];
+        final aprovado = response['aprovado'] ?? true;
 
         await AuthStorage.salvarToken(token);
         await AuthStorage.salvarPerfil(perfil);
+        await AuthStorage.salvarAprovado(aprovado);
         NotificationManager().sincronizarToken();
 
         if (!mounted) return;
@@ -130,17 +133,6 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Botão de voltar
-                  IconButton(
-                    icon: const Icon(LucideIcons.arrowLeft, color: AppColors.text, size: 24),
-                    onPressed: () {
-                      if (Navigator.canPop(context)) {
-                        Navigator.pop(context);
-                      }
-                    },
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
                   const SizedBox(height: 20),
                   
                   // Logo
@@ -301,39 +293,6 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 32),
                   
-                  const Center(
-                    child: Text(
-                      'ou continue com',
-                      style: TextStyle(color: AppColors.muted, fontSize: 13, fontWeight: FontWeight.w500),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Social buttons (circular)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _socialButton(
-                        const Text(
-                          'G',
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.red),
-                        ),
-                        onTap: () {},
-                      ),
-                      const SizedBox(width: 20),
-                      _socialButton(
-                        const Icon(Icons.apple, color: Colors.black, size: 26),
-                        onTap: () {},
-                      ),
-                      const SizedBox(width: 20),
-                      _socialButton(
-                        const Icon(LucideIcons.mail, color: AppColors.text, size: 22),
-                        onTap: () {},
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 48),
-                  
                   // Não tem uma conta? Criar conta
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -343,7 +302,20 @@ class _LoginPageState extends State<LoginPage> {
                         style: TextStyle(color: AppColors.muted, fontSize: 14),
                       ),
                       GestureDetector(
-                        onTap: () {},
+                        onTap: () async {
+                          final Uri url = Uri.parse('http://localhost:4200');
+                          try {
+                            if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+                              throw Exception('Não foi possível abrir a página de cadastro.');
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Erro ao abrir navegador: $e')),
+                              );
+                            }
+                          }
+                        },
                         child: const Text(
                           'Criar conta',
                           style: TextStyle(

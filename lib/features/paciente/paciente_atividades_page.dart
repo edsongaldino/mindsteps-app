@@ -15,6 +15,7 @@ import 'jogos/ilha_emocoes_page.dart';
 import 'jogos/decisao_pressao_page.dart';
 import 'jogos/missao_foco_page.dart';
 import 'jogos/memoria_tatica_page.dart';
+import 'jogos/jogo_memoria_page.dart';
 import 'jogos/investigacao_page.dart';
 import 'jogos/modo_piloto_page.dart';
 import 'jogos/laboratorio_mental_page.dart';
@@ -85,8 +86,33 @@ class _PacienteAtividadesPageState extends State<PacienteAtividadesPage> {
           break;
         case 'Memória Tática':
         case 'Caçador de Memórias':
-        case 'Jogo de Memória':
           gamePage = MemoriaTaticaPage(atividadePacienteId: atividadeId);
+          break;
+        case 'Jogo de Memória':
+          {
+            String jogoModo = 'Imagens';
+            String jogoTema = 'Expressões/Emoções';
+            String jogoDificuldade = 'Médio';
+            List<String>? jogoPalavras;
+            try {
+              if (conteudo.isNotEmpty) {
+                final dec = jsonDecode(conteudo);
+                jogoModo = dec['modo'] ?? 'Imagens';
+                jogoTema = dec['tema'] ?? 'Expressões/Emoções';
+                jogoDificuldade = dec['dificuldade'] ?? 'Médio';
+                if (dec['palavrasPersonalizadas'] is List) {
+                  jogoPalavras = List<String>.from(dec['palavrasPersonalizadas']);
+                }
+              }
+            } catch (_) {}
+            gamePage = JogoMemoriaPage(
+              atividadePacienteId: atividadeId,
+              modo: jogoModo,
+              tema: jogoTema,
+              dificuldade: jogoDificuldade,
+              palavrasPersonalizadas: jogoPalavras,
+            );
+          }
           break;
         case 'Investigação':
           gamePage = InvestigacaoPage(atividadePacienteId: atividadeId);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/auth/auth_storage.dart';
 import 'services/psicologo_service.dart';
 import 'criar_atividade_wizard_page.dart';
 
@@ -19,11 +20,21 @@ class AtividadesPageState extends State<AtividadesPage> {
   List<dynamic> todosPacientes = [];
   bool carregandoPacientes = false;
 
+  bool aprovado = true;
+
   @override
   void initState() {
     super.initState();
     atividadesFuture = service.listarAtividadesDoPsicologo();
     _carregarPacientes();
+    _carregarAprovado();
+  }
+
+  Future<void> _carregarAprovado() async {
+    final status = await AuthStorage.obterAprovado();
+    if (mounted) {
+      setState(() => aprovado = status);
+    }
   }
 
   Future<void> _carregarPacientes() async {
@@ -215,7 +226,7 @@ class AtividadesPageState extends State<AtividadesPage> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: reenviando || pacienteSelecionadoId == null
+                        onPressed: reenviando || pacienteSelecionadoId == null || !aprovado
                             ? null
                             : () async {
                                 setModalState(() => reenviando = true);
@@ -257,13 +268,13 @@ class AtividadesPageState extends State<AtividadesPage> {
                                 }
                               },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.secondary,
+                          backgroundColor: aprovado ? AppColors.secondary : Colors.grey.shade400,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                         child: reenviando
                             ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                            : const Text('Reenviar Atividade'),
+                            : Text(!aprovado ? 'Aguardando validação da conta' : 'Reenviar Atividade'),
                       ),
                     ),
                   ],

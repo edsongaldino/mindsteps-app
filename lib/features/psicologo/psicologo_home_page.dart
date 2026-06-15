@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../core/auth/auth_storage.dart';
 import '../../core/theme/app_theme.dart';
 import 'atividades_page.dart';
 import 'mais_page.dart';
@@ -17,6 +18,7 @@ class PsicologoHomePage extends StatefulWidget {
 
 class _PsicologoHomePageState extends State<PsicologoHomePage> {
   int paginaAtual = 0;
+  bool aprovado = true;
 
   final pacientesKey = GlobalKey<PacientesPageState>();
   final atividadesKey = GlobalKey<AtividadesPageState>();
@@ -26,12 +28,28 @@ class _PsicologoHomePageState extends State<PsicologoHomePage> {
   @override
   void initState() {
     super.initState();
+    _carregarAprovado();
     paginas = [
       const _DashboardPsicologo(),
       PacientesPage(key: pacientesKey),
       AtividadesPage(key: atividadesKey),
       const MaisPage(),
     ];
+  }
+
+  Future<void> _carregarAprovado() async {
+    final status = await AuthStorage.obterAprovado();
+    if (mounted) {
+      setState(() => aprovado = status);
+    }
+    try {
+      final me = await PsicologoService().obterMe();
+      final apiStatus = me['aprovado'] ?? true;
+      if (apiStatus != status && mounted) {
+        await AuthStorage.salvarAprovado(apiStatus);
+        setState(() => aprovado = apiStatus);
+      }
+    } catch (_) {}
   }
 
   void _onFabPressed() {
@@ -44,7 +62,7 @@ class _PsicologoHomePageState extends State<PsicologoHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool temFab = paginaAtual == 1 || paginaAtual == 3;
+    final bool temFab = (paginaAtual == 1 || paginaAtual == 3) && aprovado;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -159,6 +177,7 @@ class _DashboardPsicologoState extends State<_DashboardPsicologo> {
         }
 
         final resumo = snapshot.data ?? {};
+        final bool isAprovado = resumo['aprovado'] ?? true;
 
         return RefreshIndicator(
           onRefresh: _recarregar,
@@ -168,7 +187,35 @@ class _DashboardPsicologoState extends State<_DashboardPsicologo> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _TopoDashboard(),
+                _TopoDashboard(nome: resumo['nome'] ?? 'Psicólogo'),
+                if (!isAprovado) ...[
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(LucideIcons.circleAlert, color: AppColors.warning, size: 24),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Text(
+                            'Sua conta de psicólogo está aguardando aprovação pelo administrador. Recursos de cadastro de pacientes e de novas atividades estão desabilitados até a validação do seu CRP.',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.text.withOpacity(0.8),
+                              fontWeight: FontWeight.w600,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 32),
                 _GridResumo(
                   pacientesAtivos: resumo['pacientesAtivos'] ?? 0,
@@ -245,27 +292,28 @@ class _ErroDashboard extends StatelessWidget {
 }
 
 class _TopoDashboard extends StatelessWidget {
-  const _TopoDashboard();
+  final String nome;
+  const _TopoDashboard({required this.nome});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Olá, Ana! 👋',
-                style: TextStyle(
+                'Olá, $nome! 👋',
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                   color: AppColors.text,
                   letterSpacing: -0.5,
                 ),
               ),
-              SizedBox(height: 4),
-              Text(
+              const SizedBox(height: 4),
+              const Text(
                 'Aqui está o resumo da sua clínica.',
                 style: TextStyle(fontSize: 14, color: AppColors.muted),
               ),

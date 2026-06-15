@@ -35,7 +35,7 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
   final novaPerguntaController = TextEditingController();
 
   // Passo 2 (Jogo): Conteúdo Jogo
-  String jogoSelecionado = 'Caçador de Memórias';
+  String jogoSelecionado = 'Memória Tática';
   String modoJogo = 'Imagens'; // 'Imagens' ou 'Palavras'
   String temaJogo = 'Expressões/Emoções'; // Expressões/Emoções, Animais, Natureza
   String dificuldadeJogo = 'Evolutivo'; // Fácil, Médio, Difícil, Evolutivo
@@ -162,10 +162,11 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
         tipoResposta = 'Texto (resposta livre)';
         break;
       case 7: // Jogo
-        tituloController.text = 'Caçador de Memórias';
-        descricaoController.text = 'Pratique a memória de trabalho com sequências ordenadas e desafios de cálculo mental.';
+        tituloController.text = 'Memória Tática';
+        descricaoController.text = 'Observe objetos do cotidiano, identifique qual sumiu e exercite sua atenção e memória visual.';
         perguntasGuiadas = [];
         tipoResposta = 'Jogo';
+        jogoSelecionado = 'Memória Tática';
         break;
     }
     _sincronizarControllersPerguntas();
@@ -1373,7 +1374,7 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
       case 'Missão Foco':
         return 'Treina o controle inibitório e atenção seletiva. O jogador deve responder rapidamente apenas aos comandos "EXECUTE", ignorando comandos "IGNORE".';
       case 'Memória Tática':
-        return 'Treino de memória operacional visual. O paciente memoriza uma grade de pastas e arquivos, descobre qual deles sumiu e o identifica na lista.';
+        return 'Treino de memória operacional visual. O paciente observa uma grade de objetos do cotidiano, descobre qual deles sumiu e o identifica na lista. Exercita atenção, foco e memória visual.';
       case 'Investigação':
         return 'Treino de memória operacional verbal. O paciente lê um depoimento textual de um mistério, entende as declarações e responde a uma pergunta surpresa de compreensão de detalhes.';
       case 'Modo Piloto':
@@ -1418,7 +1419,7 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
       case 'Missão Foco':
         return '• Precisão de foco (% acertos)\n• Tempo de reação e impulsividade';
       case 'Memória Tática':
-        return '• Acurácia na identificação do arquivo sumido\n• Capacidade de memorização e retenção visual';
+        return '• Acurácia na identificação do objeto sumido\n• Capacidade de memorização e retenção visual';
       case 'Investigação':
         return '• Taxa de acertos em detalhes do depoimento\n• Retenção e compreensão de informações verbais';
       case 'Modo Piloto':
@@ -1502,14 +1503,23 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
                 'Ilha das Emoções',
                 'Cartas dos Sabotadores',
                 'Escape Room Terapêutico',
-                'Jornada do Herói Interior'
+                'Jornada do Herói Interior',
+                'Jogo de Memória'
               ].map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
               onChanged: (val) {
                 if (val != null) {
                   setState(() {
                     jogoSelecionado = val;
-                    tituloController.text = val;
-                    descricaoController.text = 'Realize a atividade terapêutica do jogo: $val';
+                    if (val == 'Jogo de Memória') {
+                      tituloController.text = 'Jogo de Memória';
+                      descricaoController.text = 'Treine sua memória de trabalho encontrando os pares de cartas.';
+                    } else if (val == 'Memória Tática') {
+                      tituloController.text = 'Memória Tática';
+                      descricaoController.text = 'Treino de memória operacional visual. Observe objetos do cotidiano, identifique qual sumiu e exercite sua atenção e memória visual.';
+                    } else {
+                      tituloController.text = val;
+                      descricaoController.text = 'Realize a atividade terapêutica do jogo: $val';
+                    }
                   });
                 }
               },
@@ -1518,7 +1528,7 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
         ),
         const SizedBox(height: 16),
 
-        if (jogoSelecionado == 'Memória Tática') ...[
+        if (jogoSelecionado == 'Memória Tática' || jogoSelecionado == 'Jogo de Memória') ...[
           // Modo do Jogo: Imagens ou Palavras
           const Text(
             'Modo do Jogo',
