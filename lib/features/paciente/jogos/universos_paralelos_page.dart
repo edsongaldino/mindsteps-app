@@ -201,6 +201,7 @@ class _UniversosParalelosPageState extends State<UniversosParalelosPage> {
           if (metodoSelecionado == "Escrever")
             TextField(
               controller: textoController,
+              onChanged: (val) => setState(() {}),
               maxLines: 6,
               style: const TextStyle(color: AppColors.text),
               decoration: InputDecoration(
