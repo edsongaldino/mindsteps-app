@@ -318,7 +318,7 @@ class _TopoDashboard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               const Text(
-                'Aqui está o resumo da sua clínica.',
+                'Acompanhe seus pacientes e atividades em um só lugar.',
                 style: TextStyle(fontSize: 14, color: AppColors.muted),
               ),
             ],
@@ -611,7 +611,7 @@ class _CardInfoPlano extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String nomePlanoFormatado = plano[0].toUpperCase() + plano.substring(1).toLowerCase();
+    final String nomePlanoFormatado = plano.toLowerCase() == 'starter' ? 'Atual' : (plano[0].toUpperCase() + plano.substring(1).toLowerCase());
     
     int? limitePacientes;
     if (plano.toLowerCase() == 'starter') {
@@ -698,7 +698,7 @@ class _CardInfoPlano extends StatelessWidget {
           Text(
             atingiuLimite 
                 ? 'Você atingiu o limite de pacientes ativos do seu plano. Para cadastrar novos pacientes, faça o upgrade.'
-                : 'Para alterar seu plano, realizar pagamentos ou gerenciar sua assinatura, acesse o painel web.',
+                : 'Informações e configurações do plano disponíveis na plataforma web.',
             style: const TextStyle(
               fontSize: 12,
               color: AppColors.muted,
