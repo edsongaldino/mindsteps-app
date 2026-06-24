@@ -57,11 +57,35 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _autenticarComBiometria() async {
+    // Busca as credenciais ANTES do prompt biométrico para evitar bloqueios de Keychain/transição de ciclo de vida no iOS
+    final credenciais = await _biometricService.getSavedCredentials();
+    if (credenciais == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.danger,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            content: const Row(
+              children: [
+                Icon(LucideIcons.circleAlert, color: Colors.white, size: 20),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Credenciais de biometria não encontradas. Por favor, digite seu e-mail e senha.',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
     final autenticado = await _biometricService.authenticate();
     if (!autenticado) return;
-
-    final credenciais = await _biometricService.getSavedCredentials();
-    if (credenciais == null) return;
 
     try {
       setState(() => carregando = true);
@@ -102,8 +126,29 @@ class _LoginPageState extends State<LoginPage> {
       );
     } catch (e) {
       if (mounted) {
+        String mensagem = e.toString();
+        if (mensagem.startsWith('Exception: ')) {
+          mensagem = mensagem.substring(11);
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Falha ao autenticar: ${e.toString()}')),
+          SnackBar(
+            backgroundColor: AppColors.danger,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            content: Row(
+              children: [
+                const Icon(LucideIcons.circleAlert, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Falha ao autenticar: $mensagem',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       }
     } finally {
@@ -203,14 +248,230 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
         if (!mounted) return;
 
+        String mensagem = e.toString();
+        if (mensagem.startsWith('Exception: ')) {
+          mensagem = mensagem.substring(11);
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
+          SnackBar(
+            backgroundColor: AppColors.danger,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            content: Row(
+              children: [
+                const Icon(LucideIcons.circleAlert, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    mensagem,
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
     } finally {
         if (mounted) {
         setState(() => carregando = false);
         }
     }
+  }
+
+  void _mostrarModalNaoPossuiConta() {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.6),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Top close button
+              Align(
+                alignment: Alignment.topRight,
+                child: IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(LucideIcons.x, color: AppColors.muted, size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Shield user badge
+              Container(
+                width: 72,
+                height: 72,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF0F7F6),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  LucideIcons.shieldCheck,
+                  color: AppColors.secondary,
+                  size: 36,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Title
+              const Text(
+                'Acesso ao MindSteps',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.text,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Divider Line
+              Container(
+                width: 36,
+                height: 3,
+                decoration: BoxDecoration(
+                  color: AppColors.secondary,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Item 1
+              _buildModalRow(
+                icone: LucideIcons.users,
+                richText: RichText(
+                  text: const TextSpan(
+                    style: TextStyle(fontSize: 13, height: 1.4, color: AppColors.text),
+                    children: [
+                      TextSpan(
+                        text: 'O MindSteps é uma plataforma exclusiva ',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.text),
+                      ),
+                      TextSpan(
+                        text: 'para psicólogos, clínicas e pacientes vinculados a profissionais cadastrados.',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Item 2
+              _buildModalRow(
+                icone: LucideIcons.shieldCheck,
+                richText: RichText(
+                  text: const TextSpan(
+                    style: TextStyle(fontSize: 13, height: 1.4, color: AppColors.text),
+                    children: [
+                      TextSpan(
+                        text: 'As contas são criadas e gerenciadas ',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.text),
+                      ),
+                      TextSpan(
+                        text: 'pelos profissionais responsáveis através da plataforma administrativa, garantindo segurança e organização no acompanhamento terapêutico.',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Item 3
+              _buildModalRow(
+                icone: LucideIcons.globe,
+                richText: RichText(
+                  text: const TextSpan(
+                    style: TextStyle(fontSize: 13, height: 1.4, color: AppColors.text),
+                    children: [
+                      TextSpan(
+                        text: 'Se você deseja utilizar o MindSteps em sua clínica ou conhecer a plataforma, ',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.text),
+                      ),
+                      TextSpan(
+                        text: 'visite nosso site oficial.',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 28),
+
+              // CTA button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final Uri url = Uri.parse('https://mindsteps.com.br');
+                    try {
+                      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+                        throw Exception('Não foi possível abrir o site.');
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Erro ao abrir site: $e')),
+                        );
+                      }
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.secondary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  icon: const Icon(LucideIcons.externalLink, size: 16),
+                  label: const Text('Conhecer o MindSteps', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Close text button
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: const Text(
+                  'Fechar',
+                  style: TextStyle(
+                    color: AppColors.secondary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModalRow({required IconData icone, required Widget richText}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0F7F6),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icone, color: AppColors.secondary, size: 20),
+        ),
+        const SizedBox(width: 16),
+        Expanded(child: richText),
+      ],
+    );
   }
 
   @override
@@ -444,40 +705,39 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 32),
                   
-                  // Não tem uma conta? Criar conta
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Não tem uma conta? ',
-                        style: TextStyle(color: AppColors.muted, fontSize: 14),
-                      ),
-                      GestureDetector(
-                        onTap: () async {
-                          final Uri url = Uri.parse('http://localhost:4200');
-                          try {
-                            if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-                              throw Exception('Não foi possível abrir a página de cadastro.');
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Erro ao abrir navegador: $e')),
-                              );
-                            }
-                          }
-                        },
-                        child: const Text(
-                          'Criar conta',
-                          style: TextStyle(
-                            color: AppColors.secondary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            decoration: TextDecoration.underline,
+                  // Não possui uma conta? Mensagem informativa interativa
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: _mostrarModalNaoPossuiConta,
+                            child: const Text(
+                              'Não possui uma conta?',
+                              style: TextStyle(
+                                color: AppColors.secondary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Entre em contato com sua clínica ou psicólogo responsável para solicitar seu acesso.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppColors.muted,
+                              fontSize: 13,
+                              height: 1.4,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ),

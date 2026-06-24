@@ -490,6 +490,292 @@ class _AdminPerfilPageState extends State<AdminPerfilPage> {
     );
   }
 
+  Future<void> _excluirConta(String usuarioId) async {
+    Widget buildBulletPoint(String text) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '• ',
+            style: TextStyle(
+              color: Color(0xFFE53E3E),
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFF475569),
+                height: 1.3,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: Colors.white,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Stack(
+          children: [
+            // Content
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Red Trash Icon Circle
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFECEF),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        LucideIcons.trash2,
+                        color: Color(0xFFEF4444),
+                        size: 38,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    // Title
+                    const Text(
+                      'Excluir conta',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    // Red Divider
+                    Container(
+                      width: 48,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444),
+                        borderRadius: BorderRadius.circular(1.5),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Subtitle
+                    RichText(
+                      textAlign: TextAlign.center,
+                      text: const TextSpan(
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF475569),
+                          fontFamily: 'Inter',
+                          height: 1.4,
+                        ),
+                        children: [
+                          TextSpan(text: 'A exclusão da conta é uma '),
+                          TextSpan(
+                            text: 'ação permanente',
+                            style: TextStyle(
+                              color: Color(0xFFEF4444),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextSpan(text: ' e não poderá ser desfeita.'),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    // Red Warning Card
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFECEF),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            LucideIcons.info,
+                            color: Color(0xFFEF4444),
+                            size: 22,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Ao excluir sua conta:',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                buildBulletPoint('Seu acesso administrativo ao MindSteps será removido;'),
+                                const SizedBox(height: 6),
+                                buildBulletPoint('Todo o seu histórico, dados cadastrados e atividades associadas serão apagados;'),
+                                const SizedBox(height: 6),
+                                buildBulletPoint('Esta ação não poderá ser desfeita.'),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Blue Shield Card
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F6FC),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            LucideIcons.shieldAlert,
+                            color: Color(0xFF0D9488),
+                            size: 22,
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text(
+                              'Dados de auditoria de segurança e logs de sistema serão mantidos conforme exigências regulatórias e políticas de conformidade interna.',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF334155),
+                                  height: 1.45,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Question
+                    const Text(
+                      'Tem certeza que deseja excluir sua conta?',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Para continuar, confirme sua decisão.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Action: Excluir
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFEF4444),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: const Icon(LucideIcons.trash2, size: 16),
+                        label: const Text(
+                          'Sim, excluir minha conta',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // Action: Cancelar
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF334155),
+                          side: const BorderSide(color: Color(0xFFCBD5E1)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancelar',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Close Button 'X'
+            Positioned(
+              right: 8,
+              top: 8,
+              child: IconButton(
+                onPressed: () => Navigator.pop(context, false),
+                icon: const Icon(LucideIcons.x, color: Color(0xFF64748B), size: 20),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmar != true) return;
+
+    try {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Processando exclusão de conta...')),
+        );
+      }
+      
+      await ApiClient.dio.delete('/Usuarios/$usuarioId');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sua conta foi excluída com sucesso.')),
+        );
+        _sair(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao excluir conta: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -552,6 +838,16 @@ class _AdminPerfilPageState extends State<AdminPerfilPage> {
                   titulo: 'Ajuda',
                   icone: LucideIcons.circleQuestionMark,
                   onTap: _mostrarAjuda,
+                ),
+                _OpcaoPerfil(
+                  titulo: 'Excluir conta',
+                  icone: LucideIcons.trash2,
+                  onTap: () {
+                    final uId = me['usuarioId'];
+                    if (uId != null) {
+                      _excluirConta(uId.toString());
+                    }
+                  },
                 ),
                 const SizedBox(height: 20),
                 SizedBox(
