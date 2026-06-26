@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
 import 'auth_service.dart';
 import '../../core/auth/auth_storage.dart';
@@ -286,7 +285,7 @@ class _LoginPageState extends State<LoginPage> {
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         child: Container(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(28),
@@ -294,134 +293,184 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Top close button
-              Align(
-                alignment: Alignment.topRight,
-                child: IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(LucideIcons.x, color: AppColors.muted, size: 20),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // Shield user badge
+              // Badge de informação/alerta
               Container(
-                width: 72,
-                height: 72,
+                width: 64,
+                height: 64,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFF0F7F6),
+                  color: Color(0xFFE6F4F2),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  LucideIcons.shieldCheck,
+                  LucideIcons.info,
                   color: AppColors.secondary,
-                  size: 36,
+                  size: 32,
                 ),
               ),
               const SizedBox(height: 16),
 
               // Title
               const Text(
-                'Acesso ao MindSteps',
+                'Não possui uma conta?',
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: AppColors.text,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
 
-              // Divider Line
+              // Sub-header (RichText)
+              RichText(
+                textAlign: TextAlign.center,
+                text: const TextSpan(
+                  style: TextStyle(fontSize: 13, height: 1.4, color: AppColors.muted),
+                  children: [
+                    TextSpan(text: 'O MindSteps é uma plataforma utilizada por\n'),
+                    TextSpan(
+                      text: 'psicólogos, clínicas e pacientes.',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.secondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Card Container
               Container(
-                width: 36,
-                height: 3,
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.secondary,
-                  borderRadius: BorderRadius.circular(2),
+                  color: const Color(0xFFF7FAF9),
+                  border: Border.all(color: AppColors.secondary.withOpacity(0.12)),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  children: [
+                    // Item 1: Pacientes
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.secondary.withOpacity(0.08)),
+                          ),
+                          child: const Icon(
+                            LucideIcons.user,
+                            color: AppColors.secondary,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Para pacientes',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.text,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'O acesso é liberado pelo seu psicólogo ou pela clínica onde você está em acompanhamento.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  height: 1.3,
+                                  color: AppColors.muted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Divider
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Divider(
+                        color: AppColors.secondary.withOpacity(0.08),
+                        height: 1,
+                      ),
+                    ),
+                    // Item 2: Psicólogos e clínicas
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.secondary.withOpacity(0.08)),
+                          ),
+                          child: const Icon(
+                            LucideIcons.briefcase,
+                            color: AppColors.secondary,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Para psicólogos e clínicas',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.text,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'As contas são criadas e gerenciadas através da plataforma administrativa do MindSteps.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  height: 1.3,
+                                  color: AppColors.muted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
-              // Item 1
-              _buildModalRow(
-                icone: LucideIcons.users,
-                richText: RichText(
-                  text: const TextSpan(
-                    style: TextStyle(fontSize: 13, height: 1.4, color: AppColors.text),
-                    children: [
-                      TextSpan(
-                        text: 'O MindSteps é uma plataforma exclusiva ',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.text),
-                      ),
-                      TextSpan(
-                        text: 'para psicólogos, clínicas e pacientes vinculados a profissionais cadastrados.',
-                      ),
-                    ],
+              // Bottom note
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  'Caso ainda não tenha acesso, entre em contato com seu psicólogo ou clínica responsável.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.4,
+                    color: AppColors.text,
                   ),
                 ),
               ),
               const SizedBox(height: 20),
 
-              // Item 2
-              _buildModalRow(
-                icone: LucideIcons.shieldCheck,
-                richText: RichText(
-                  text: const TextSpan(
-                    style: TextStyle(fontSize: 13, height: 1.4, color: AppColors.text),
-                    children: [
-                      TextSpan(
-                        text: 'As contas são criadas e gerenciadas ',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.text),
-                      ),
-                      TextSpan(
-                        text: 'pelos profissionais responsáveis através da plataforma administrativa, garantindo segurança e organização no acompanhamento terapêutico.',
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Item 3
-              _buildModalRow(
-                icone: LucideIcons.globe,
-                richText: RichText(
-                  text: const TextSpan(
-                    style: TextStyle(fontSize: 13, height: 1.4, color: AppColors.text),
-                    children: [
-                      TextSpan(
-                        text: 'Se você deseja utilizar o MindSteps em sua clínica ou conhecer a plataforma, ',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.text),
-                      ),
-                      TextSpan(
-                        text: 'visite nosso site oficial.',
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 28),
-
-              // CTA button
+              // Action button (Entendi)
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    final Uri url = Uri.parse('https://mindsteps.com.br');
-                    try {
-                      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-                        throw Exception('Não foi possível abrir o site.');
-                      }
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Erro ao abrir site: $e')),
-                        );
-                      }
-                    }
-                  },
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.secondary,
                     foregroundColor: Colors.white,
@@ -430,21 +479,9 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  icon: const Icon(LucideIcons.externalLink, size: 16),
-                  label: const Text('Conhecer o MindSteps', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Close text button
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: const Text(
-                  'Fechar',
-                  style: TextStyle(
-                    color: AppColors.secondary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                  child: const Text(
+                    'Entendi',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
               ),
@@ -455,24 +492,6 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildModalRow({required IconData icone, required Widget richText}) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF0F7F6),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icone, color: AppColors.secondary, size: 20),
-        ),
-        const SizedBox(width: 16),
-        Expanded(child: richText),
-      ],
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
