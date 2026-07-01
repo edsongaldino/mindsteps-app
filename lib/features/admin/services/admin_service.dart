@@ -17,8 +17,13 @@ class AdminService {
   }
 
   Future<Map<String, dynamic>> obterResumo() async {
-    final usuarios = await listarUsuarios();
-    final psicologos = await listarPsicologos();
+    final results = await Future.wait([
+      listarUsuarios(),
+      listarPsicologos(),
+    ]);
+
+    final usuarios = results[0];
+    final psicologos = results[1];
 
     final admins = usuarios.where((u) => u['perfil']?.toString() == 'Administrador' || u['perfil'] == 1).length;
     final pacientes = usuarios.where((u) => u['perfil']?.toString() == 'Paciente' || u['perfil'] == 3).length;

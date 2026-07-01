@@ -80,10 +80,23 @@ class PacienteService {
 
   Future<Map<String, dynamic>> obterResumoHome() async {
     final me = await obterMe();
-    final atividades = await listarMinhasAtividades();
-    final checkins = await listarMeusCheckins();
-    final registros = await listarMeusRegistrosPensamentos();
-    final mensagens = await listarMinhasMensagens();
+    final pacienteId = me['pacienteId']?.toString();
+
+    if (pacienteId == null || pacienteId.isEmpty) {
+      throw Exception('PacienteId não encontrado para o usuário logado.');
+    }
+
+    final results = await Future.wait([
+      ApiClient.dio.get('/Atividades/paciente/$pacienteId'),
+      ApiClient.dio.get('/CheckInsEmocionais/paciente/$pacienteId'),
+      ApiClient.dio.get('/RegistrosPensamentos/paciente/$pacienteId'),
+      ApiClient.dio.get('/Mensagens/minhas'),
+    ]);
+
+    final atividades = List<dynamic>.from(results[0].data);
+    final checkins = List<dynamic>.from(results[1].data);
+    final registros = List<dynamic>.from(results[2].data);
+    final mensagens = List<dynamic>.from(results[3].data);
 
     final concluidas = atividades.where((x) {
       return _estaConcluida(x['status']);

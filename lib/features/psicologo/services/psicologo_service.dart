@@ -73,9 +73,19 @@ class PsicologoService {
     final nome = me['nome'] ?? 'Psicólogo';
     final aprovado = me['aprovado'] ?? true;
     final plano = me['plano'] ?? 'Starter';
+    final psicologoId = me['psicologoId']?.toString();
 
-    final pacientes = await listarPacientesDoPsicologo();
-    final atividades = await listarAtividadesDoPsicologo();
+    if (psicologoId == null || psicologoId.isEmpty) {
+      throw Exception('PsicologoId não encontrado para o usuário logado.');
+    }
+
+    final results = await Future.wait([
+      ApiClient.dio.get('/Pacientes/psicologo/$psicologoId'),
+      ApiClient.dio.get('/Atividades/psicologo/$psicologoId'),
+    ]);
+
+    final pacientes = List<dynamic>.from(results[0].data);
+    final atividades = List<dynamic>.from(results[1].data);
 
     int totalAtividades = 0;
     int totalConcluidas = 0;
