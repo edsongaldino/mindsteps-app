@@ -26,6 +26,7 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
   late Future<Map<String, dynamic>> dadosFuture;
   late TabController _tabController;
   bool aprovado = true;
+  int pacienteNivel = 1;
 
   @override
   void initState() {
@@ -51,6 +52,11 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
 
   Future<Map<String, dynamic>> _carregarDados() async {
     final paciente = await service.obterPacientePorId(widget.pacienteId);
+    if (mounted) {
+      setState(() {
+        pacienteNivel = paciente['nivel'] as int? ?? 1;
+      });
+    }
     final checkins = await service.listarCheckinsPaciente(widget.pacienteId);
     final registros = await service.listarRegistrosPensamentosPaciente(widget.pacienteId);
     final atividades = await service.listarAtividadesPaciente(widget.pacienteId);
@@ -58,7 +64,8 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
     
     // Dados de plano e bloqueio de IA
     final me = await service.obterMe();
-    final plano = me['plano'] ?? 'Starter';
+    final planoRaw = me['plano']?.toString();
+    final plano = (planoRaw == null || planoRaw.isEmpty) ? 'Starter' : planoRaw;
     final isIaLocked = plano.toString().toLowerCase() != 'profissional' && plano.toString().toLowerCase() != 'clinica';
 
     List<dynamic> iaInsights = [];
@@ -425,6 +432,7 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
                     builder: (_) => EnviarAtividadePage(
                       pacienteId: widget.pacienteId,
                       pacienteNome: widget.nome,
+                      pacienteNivel: pacienteNivel,
                     ),
                   ),
                 );

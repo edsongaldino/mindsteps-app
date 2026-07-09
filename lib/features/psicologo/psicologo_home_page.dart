@@ -611,12 +611,13 @@ class _CardInfoPlano extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String nomePlanoFormatado = plano.toLowerCase() == 'starter' ? 'Atual' : (plano[0].toUpperCase() + plano.substring(1).toLowerCase());
+    final String planoLimpo = (plano == null || plano.trim().isEmpty) ? 'Starter' : plano.trim();
+    final String nomePlanoFormatado = planoLimpo.toLowerCase() == 'starter' ? 'Atual' : (planoLimpo[0].toUpperCase() + planoLimpo.substring(1).toLowerCase());
     
     int? limitePacientes;
-    if (plano.toLowerCase() == 'starter') {
+    if (planoLimpo.toLowerCase() == 'starter') {
       limitePacientes = 5;
-    } else if (plano.toLowerCase() == 'essencial') {
+    } else if (planoLimpo.toLowerCase() == 'essencial') {
       limitePacientes = 20;
     }
 

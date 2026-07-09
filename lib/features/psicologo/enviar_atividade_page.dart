@@ -7,11 +7,13 @@ import 'services/psicologo_service.dart';
 class EnviarAtividadePage extends StatefulWidget {
   final String pacienteId;
   final String pacienteNome;
+  final int pacienteNivel;
 
   const EnviarAtividadePage({
     super.key,
     required this.pacienteId,
     required this.pacienteNome,
+    required this.pacienteNivel,
   });
 
   @override
@@ -152,13 +154,27 @@ class _EnviarAtividadePageState extends State<EnviarAtividadePage> {
                           LucideIcons.headphones,
                         ];
 
+                        final nivelReq = atividade['nivel'] as int? ?? 1;
+                        final bloqueada = nivelReq > widget.pacienteNivel;
+
                         return _AtividadeSelecionavelCard(
                           titulo: titulo,
                           descricao: descricao,
                           selecionada: atividadeSelecionadaId == id,
                           corFundoIcone: cores[index % cores.length],
                           icone: icones[index % icones.length],
-                          onTap: () => setState(() => atividadeSelecionadaId = id),
+                          bloqueada: bloqueada,
+                          nivelReq: nivelReq,
+                          onTap: bloqueada
+                              ? () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Esta atividade exige nível $nivelReq, mas o paciente está no nível ${widget.pacienteNivel}.'),
+                                      backgroundColor: AppColors.danger,
+                                    ),
+                                  );
+                                }
+                              : () => setState(() => atividadeSelecionadaId = id),
                         );
                       }),
                       const SizedBox(height: 100), // Espaço pro botão fixo
@@ -296,6 +312,8 @@ class _AtividadeSelecionavelCard extends StatelessWidget {
   final IconData icone;
   final Color corFundoIcone;
   final VoidCallback onTap;
+  final bool bloqueada;
+  final int nivelReq;
 
   const _AtividadeSelecionavelCard({
     required this.titulo,
@@ -304,6 +322,8 @@ class _AtividadeSelecionavelCard extends StatelessWidget {
     required this.icone,
     required this.corFundoIcone,
     required this.onTap,
+    this.bloqueada = false,
+    this.nivelReq = 1,
   });
 
   @override
@@ -314,10 +334,12 @@ class _AtividadeSelecionavelCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: bloqueada ? Colors.grey.shade50 : AppColors.card,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: selecionada ? AppColors.primary : AppColors.border,
+            color: selecionada
+                ? AppColors.primary
+                : (bloqueada ? Colors.grey.shade200 : AppColors.border),
             width: selecionada ? 2 : 1,
           ),
           boxShadow: [
@@ -334,10 +356,14 @@ class _AtividadeSelecionavelCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: corFundoIcone,
+                color: bloqueada ? Colors.grey.shade200 : corFundoIcone,
                 shape: BoxShape.circle,
               ),
-              child: Icon(icone, color: AppColors.primary, size: 24),
+              child: Icon(
+                icone,
+                color: bloqueada ? Colors.grey.shade600 : AppColors.primary,
+                size: 24,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -346,8 +372,8 @@ class _AtividadeSelecionavelCard extends StatelessWidget {
                 children: [
                   Text(
                     titulo,
-                    style: const TextStyle(
-                      color: AppColors.text,
+                    style: TextStyle(
+                      color: bloqueada ? Colors.grey.shade500 : AppColors.text,
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                     ),
@@ -355,16 +381,36 @@ class _AtividadeSelecionavelCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     descricao,
-                    style: const TextStyle(
-                      color: AppColors.muted,
+                    style: TextStyle(
+                      color: bloqueada ? Colors.grey.shade400 : AppColors.muted,
                       fontSize: 12,
                     ),
                   ),
+                  if (bloqueada) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.danger.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'Exige Nível $nivelReq',
+                        style: const TextStyle(
+                          color: AppColors.danger,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
             if (selecionada)
-              const Icon(LucideIcons.circleCheck, color: AppColors.success),
+              const Icon(LucideIcons.circleCheck, color: AppColors.success)
+            else if (bloqueada)
+              Icon(LucideIcons.lock, color: Colors.grey.shade400, size: 20),
           ],
         ),
       ),

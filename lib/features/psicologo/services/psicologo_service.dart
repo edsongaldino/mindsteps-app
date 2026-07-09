@@ -72,7 +72,8 @@ class PsicologoService {
     final me = await obterMe();
     final nome = me['nome'] ?? 'Psicólogo';
     final aprovado = me['aprovado'] ?? true;
-    final plano = me['plano'] ?? 'Starter';
+    final planoRaw = me['plano']?.toString();
+    final plano = (planoRaw == null || planoRaw.isEmpty) ? 'Starter' : planoRaw;
     final psicologoId = me['psicologoId']?.toString();
 
     if (psicologoId == null || psicologoId.isEmpty) {

@@ -95,10 +95,20 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
           pacienteSelecionadoId = lista.first['id']?.toString();
         }
       });
+      _sincronizarPacienteSelecionado();
     } catch (e) {
       debugPrint('Erro ao carregar pacientes: $e');
     } finally {
       setState(() => carregandoPacientes = false);
+    }
+  }
+
+  void _sincronizarPacienteSelecionado() {
+    final elegiveis = pacientes.where((p) => (p['nivel'] as int? ?? 1) >= nivelAtividade).toList();
+    if (pacienteSelecionadoId != null && !elegiveis.any((p) => p['id']?.toString() == pacienteSelecionadoId)) {
+      setState(() {
+        pacienteSelecionadoId = elegiveis.isNotEmpty ? elegiveis.first['id']?.toString() : null;
+      });
     }
   }
 
@@ -278,8 +288,9 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
         
         // 2. Enviar para os pacientes selecionados
         if (tipoDestino == 'todos') {
-          // Envia para todos da lista do psicólogo
-          for (var paciente in pacientes) {
+          // Envia para todos da lista do psicólogo que possuem o nível necessário
+          final pacientesElegiveis = pacientes.where((p) => (p['nivel'] as int? ?? 1) >= nivelAtividade).toList();
+          for (var paciente in pacientesElegiveis) {
             final pacienteId = paciente['id'].toString();
             await service.enviarAtividadeParaPaciente(
               atividadeId: atividadeId,
@@ -878,7 +889,10 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
             final ativo = nivelAtividade == nivel;
             return Expanded(
               child: GestureDetector(
-                onTap: () => setState(() => nivelAtividade = nivel),
+                onTap: () => setState(() {
+                  nivelAtividade = nivel;
+                  _sincronizarPacienteSelecionado();
+                }),
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1211,8 +1225,8 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
           const SizedBox(height: 16),
           carregandoPacientes
               ? const Center(child: CircularProgressIndicator())
-              : pacientes.isEmpty
-                  ? const Text('Nenhum paciente cadastrado.', style: TextStyle(color: AppColors.danger))
+              : pacientes.where((p) => (p['nivel'] as int? ?? 1) >= nivelAtividade).isEmpty
+                  ? const Text('Nenhum paciente possui o nível necessário.', style: TextStyle(color: AppColors.danger, fontSize: 13, fontWeight: FontWeight.bold))
                   : Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       decoration: BoxDecoration(color: const Color(0xFFF4F6F9), borderRadius: BorderRadius.circular(12)),
@@ -1222,9 +1236,10 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
                           isExpanded: true,
                           icon: const Icon(LucideIcons.chevronDown, color: AppColors.muted),
                           items: pacientes
+                              .where((p) => (p['nivel'] as int? ?? 1) >= nivelAtividade)
                               .map((p) => DropdownMenuItem(
                                     value: p['id']?.toString(),
-                                    child: Text(p['nome']?.toString() ?? 'Paciente'),
+                                    child: Text('${p['nome']?.toString() ?? 'Paciente'} (Nível ${p['nivel']})'),
                                   ))
                               .toList(),
                           onChanged: (val) {

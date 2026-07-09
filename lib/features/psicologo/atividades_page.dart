@@ -172,10 +172,12 @@ class AtividadesPageState extends State<AtividadesPage> {
                               value: 'todos',
                               child: Text('Todos os pacientes ativos'),
                             ),
-                            ...todosPacientes.map((p) => DropdownMenuItem(
-                                  value: p['id']?.toString(),
-                                  child: Text(p['nome']?.toString() ?? 'Paciente'),
-                                )),
+                            ...todosPacientes
+                                .where((p) => (p['nivel'] as int? ?? 1) >= (atividade['nivel'] as int? ?? 1))
+                                .map((p) => DropdownMenuItem(
+                                      value: p['id']?.toString(),
+                                      child: Text('${p['nome']?.toString() ?? 'Paciente'} (Nível ${p['nivel']})'),
+                                    )),
                           ],
                           onChanged: (val) {
                             setModalState(() => pacienteSelecionadoId = val);
@@ -234,13 +236,17 @@ class AtividadesPageState extends State<AtividadesPage> {
                                   final String atividadeId = atividade['id'].toString();
 
                                   if (pacienteSelecionadoId == 'todos') {
-                                    // Loop e envia para todos
+                                    // Loop e envia para todos que possuem nível adequado
+                                    final atividadeNivel = atividade['nivel'] as int? ?? 1;
                                     for (var pac in todosPacientes) {
-                                      await service.enviarAtividadeParaPaciente(
-                                        atividadeId: atividadeId,
-                                        pacienteId: pac['id'].toString(),
-                                        dataLimite: dataLimite,
-                                      );
+                                      final pacNivel = pac['nivel'] as int? ?? 1;
+                                      if (pacNivel >= atividadeNivel) {
+                                        await service.enviarAtividadeParaPaciente(
+                                          atividadeId: atividadeId,
+                                          pacienteId: pac['id'].toString(),
+                                          dataLimite: dataLimite,
+                                        );
+                                      }
                                     }
                                   } else {
                                     // Envia para o específico
