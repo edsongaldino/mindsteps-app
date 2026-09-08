@@ -7,7 +7,9 @@ import 'paciente_checkin_page.dart';
 import 'paciente_evolucao_page.dart';
 import 'paciente_perfil_page.dart';
 import 'paciente_registro_pensamento_page.dart';
-import 'paciente_jogos_page.dart';
+import 'models/avatar_model.dart';
+import 'widgets/avatar_widget.dart';
+import 'criar_avatar_page.dart';
 import 'services/paciente_service.dart';
 
 class PacienteHomePage extends StatefulWidget {
@@ -151,6 +153,7 @@ class _DashboardPacienteState extends State<_DashboardPaciente> {
               children: [
                 _TopoPaciente(
                   nome: resumo['nome'] ?? '',
+                  fotoUrl: resumo['fotoUrl']?.toString(),
                   notificacoes: resumo['notificacoes'] ?? [],
                   onRefresh: _recarregar,
                 ),
@@ -219,11 +222,13 @@ class _DashboardPacienteState extends State<_DashboardPaciente> {
 
 class _TopoPaciente extends StatelessWidget {
   final String nome;
+  final String? fotoUrl;
   final List<dynamic> notificacoes;
   final VoidCallback onRefresh;
 
   const _TopoPaciente({
     required this.nome,
+    this.fotoUrl,
     required this.notificacoes,
     required this.onRefresh,
   });
@@ -361,8 +366,20 @@ class _TopoPaciente extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final avatarParsed = AvatarModel.fromJson(fotoUrl);
+
     return Row(
       children: [
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CriarAvatarPage()),
+            ).then((_) => onRefresh());
+          },
+          child: AvatarWidget(avatar: avatarParsed, size: 48),
+        ),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,16 +387,16 @@ class _TopoPaciente extends StatelessWidget {
               Text(
                 nome.isNotEmpty ? 'Olá, $nome!' : 'Olá!',
                 style: const TextStyle(
-                  fontSize: 22,
+                  fontSize: 20,
                   fontWeight: FontWeight.w900,
                   color: AppColors.text,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               const Text(
                 'Como você está se sentindo hoje?',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 12,
                   color: AppColors.muted,
                 ),
               ),

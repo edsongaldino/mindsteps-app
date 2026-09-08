@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/api/api_client.dart';
@@ -114,6 +116,7 @@ class PacientesPageState extends State<PacientesPage> {
     required IconData icone,
     bool obscureText = false,
     TextInputType keyboardType = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
@@ -129,6 +132,7 @@ class PacientesPageState extends State<PacientesPage> {
             controller: controller,
             obscureText: obscureText,
             keyboardType: keyboardType,
+            inputFormatters: inputFormatters,
             style: const TextStyle(fontSize: 14, color: AppColors.text),
             decoration: InputDecoration(
               prefixIcon: Icon(icone, size: 18, color: AppColors.muted),
@@ -295,6 +299,13 @@ class PacientesPageState extends State<PacientesPage> {
     final nomeController = TextEditingController(text: usuario?['nome'] ?? paciente['nome']);
     final emailController = TextEditingController(text: usuario?['email'] ?? paciente['email']);
     final telefoneController = TextEditingController(text: usuario?['telefone'] ?? paciente['telefone'] ?? '');
+    
+    final maskFormatter = MaskTextInputFormatter(
+      mask: '(##) #####-####',
+      filter: { "#": RegExp(r'[0-9]') },
+    );
+
+    final senhaController = TextEditingController();
 
     _exibirPainelLateral(
       context: context,
@@ -317,6 +328,13 @@ class PacientesPageState extends State<PacientesPage> {
           label: 'Telefone',
           icone: LucideIcons.phone,
           keyboardType: TextInputType.phone,
+          inputFormatters: [maskFormatter],
+        ),
+        _buildTextField(
+          controller: senhaController,
+          label: 'Nova senha (opcional)',
+          icone: LucideIcons.lock,
+          obscureText: true,
         ),
       ],
       onConfirmar: () async {
@@ -325,7 +343,8 @@ class PacientesPageState extends State<PacientesPage> {
             id: paciente['id'].toString(),
             nome: nomeController.text.trim(),
             email: emailController.text.trim(),
-            telefone: telefoneController.text.trim(),
+            telefone: telefoneController.text.replaceAll(RegExp(r'\D'), ''),
+            senha: senhaController.text.trim(),
           );
           _recarregar();
         } catch (e) {
@@ -345,6 +364,11 @@ class PacientesPageState extends State<PacientesPage> {
     final emailController = TextEditingController();
     final telefoneController = TextEditingController();
     final senhaController = TextEditingController();
+
+    final maskFormatter = MaskTextInputFormatter(
+      mask: '(##) #####-####',
+      filter: { "#": RegExp(r'[0-9]') },
+    );
 
     _exibirPainelLateral(
       context: context,
@@ -367,6 +391,7 @@ class PacientesPageState extends State<PacientesPage> {
           label: 'Telefone',
           icone: LucideIcons.phone,
           keyboardType: TextInputType.phone,
+          inputFormatters: [maskFormatter],
         ),
         _buildTextField(
           controller: senhaController,
@@ -380,7 +405,7 @@ class PacientesPageState extends State<PacientesPage> {
           await service.criarPaciente(
             nome: nomeController.text.trim(),
             email: emailController.text.trim(),
-            telefone: telefoneController.text.trim(),
+            telefone: telefoneController.text.replaceAll(RegExp(r'\D'), ''),
             senha: senhaController.text.trim(),
           );
           _recarregar();

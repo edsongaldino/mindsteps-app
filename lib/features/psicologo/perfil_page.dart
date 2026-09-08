@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
@@ -133,10 +134,17 @@ class _PsicologoPerfilPageState extends State<PsicologoPerfilPage> {
   void _abrirMeusDados(Map<String, dynamic> me) {
     final nomeController = TextEditingController(text: me['nome'] ?? '');
     final emailController = TextEditingController(text: me['email'] ?? '');
-    final telefoneController = TextEditingController(text: me['telefone'] ?? '');
     final crpController = TextEditingController(text: me['crp'] ?? '');
     final bioController = TextEditingController(text: me['bio'] ?? '');
+    final senhaController = TextEditingController();
     final psicologoId = me['psicologoId'];
+
+    final maskFormatter = MaskTextInputFormatter(
+      mask: '(##) #####-####',
+      filter: { "#": RegExp(r'[0-9]') },
+      initialText: me['telefone'] ?? '',
+    );
+    final telefoneController = TextEditingController(text: maskFormatter.getMaskedText());
 
     bool salvandoDados = false;
 
@@ -218,6 +226,7 @@ class _PsicologoPerfilPageState extends State<PsicologoPerfilPage> {
                                   TextField(
                                     controller: telefoneController,
                                     keyboardType: TextInputType.phone,
+                                    inputFormatters: [maskFormatter],
                                     decoration: InputDecoration(
                                       labelText: 'Telefone',
                                       filled: true,
@@ -261,6 +270,21 @@ class _PsicologoPerfilPageState extends State<PsicologoPerfilPage> {
                                       ),
                                     ),
                                   ),
+                                  const SizedBox(height: 16),
+                                  TextField(
+                                    controller: senhaController,
+                                    obscureText: true,
+                                    decoration: InputDecoration(
+                                      labelText: 'Nova senha (opcional)',
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      prefixIcon: const Icon(LucideIcons.lock, color: AppColors.muted),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -288,15 +312,20 @@ class _PsicologoPerfilPageState extends State<PsicologoPerfilPage> {
                                       : () async {
                                           setDialogState(() => salvandoDados = true);
                                           try {
+                                            final payload = {
+                                              'nome': nomeController.text.trim(),
+                                              'email': emailController.text.trim(),
+                                              'telefone': telefoneController.text.replaceAll(RegExp(r'\D'), ''),
+                                              'crp': crpController.text.trim(),
+                                              'bio': bioController.text.trim(),
+                                            };
+                                            if (senhaController.text.trim().isNotEmpty) {
+                                              payload['senha'] = senhaController.text.trim();
+                                            }
+                                            
                                             await ApiClient.dio.put(
                                               '/Psicologos/$psicologoId',
-                                              data: {
-                                                'nome': nomeController.text.trim(),
-                                                'email': emailController.text.trim(),
-                                                'telefone': telefoneController.text.trim(),
-                                                'crp': crpController.text.trim(),
-                                                'bio': bioController.text.trim(),
-                                              },
+                                              data: payload,
                                             );
                                             if (mounted) {
                                               ScaffoldMessenger.of(context).showSnackBar(

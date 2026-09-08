@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../core/theme/app_theme.dart';
 import 'services/psicologo_service.dart';
 
@@ -21,18 +23,76 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
   // Passo 1: Tipo de Atividade
   int tipoSelecionado = 1; // 1: Reflexão, 2: Registro, 3: Exercício, 4: Checklist, 5: Áudio, 6: Leitura, 7: Jogo
   
-  // Passo 2: Conteúdo
+  // Anexo de Áudio/Vídeo para o Tipo Áudio
+  String opcaoMidiaAudio = 'gravar'; // 'gravar' ou 'upload'
+  bool gravandoAudio = false;
+  int duracaoGravacaoSegundos = 0;
+  Timer? timerGravacao;
+  bool reproduzindoAudio = false;
+  String? arquivoMidiaNome;
+  String? arquivoMidiaCaminho;
+  String? arquivoMidiaTipo;
+  
+  // Passo 2: Conteúdo por Tipo
   final tituloController = TextEditingController(text: 'Reflexão sobre ansiedade social');
   final descricaoController = TextEditingController(
     text: 'Esta atividade tem como objetivo te ajudar a refletir sobre situações sociais que geram ansiedade e identificar pensamentos e emoções envolvidas.',
   );
+
+  // Tipo 1: Reflexão & Tipo 5: Áudio (Perguntas Guiadas)
   List<String> perguntasGuiadas = [
-    'O que aconteceu?',
-    'O que você sentiu?',
-    'O que passou pela sua mente?',
+    'O que aconteceu na situação?',
+    'Quais emoções você sentiu e com qual intensidade?',
+    'O que passou pela sua mente naquele momento?',
   ];
   List<TextEditingController> perguntasControllers = [];
   final novaPerguntaController = TextEditingController();
+
+  // Tipo 2: Registro de Pensamentos (RPD)
+  String templateRpd = 'TCC Padrão (5 Colunas)';
+  List<String> rpdColunas = [
+    'Situação (Onde/Quando)',
+    'Emoções & Intensidade (0-100)',
+    'Pensamento Automático Disfuncional',
+    'Resposta Alternativa / Racional',
+    'Reavaliação Emocional (0-100)',
+  ];
+  bool rpdIncluirEvidencias = true;
+
+  // Tipo 3: Exercício Prático
+  int exercicioDuracaoMinutos = 5;
+  bool exercicioMedirPrePos = true;
+  List<String> exercicioPassos = [
+    'Sente-se em uma posição confortável com as costas eretas.',
+    'Inspire suavemente pelo nariz contando até 4.',
+    'Retenha o ar nos pulmões por 2 segundos.',
+    'Expire devagar pela boca contando até 6.',
+    'Repita o ciclo por 5 minutos mantendo o foco na respiração.',
+  ];
+  List<TextEditingController> exercicioPassosControllers = [];
+  final novoExercicioPassoController = TextEditingController();
+
+  // Tipo 4: Checklist
+  List<String> checklistItens = [
+    'Tomar água regularmente (mínimo 2 litros)',
+    'Praticar ao menos 15 min de atividade física ou caminhada',
+    'Pausa de 5 min para descompressão sem telas',
+    'Registrar um aspecto positivo ou gratidão do dia',
+  ];
+  List<TextEditingController> checklistItensControllers = [];
+  final novoChecklistItemController = TextEditingController();
+
+  // Tipo 6: Leitura Psicoeducativa
+  final leituraTextoController = TextEditingController(
+    text: 'A ansiedade é uma resposta fisiológica e emocional natural do ser humano diante da percepção de perigo ou incerteza.\n\nQuando percebemos uma ameaça, nosso cérebro ativa o sistema nervoso simpático, provocando taquicardia, respiração acelerada e tensão muscular. Na TCC, aprendemos que não são as situações em si que causam a ansiedade, mas a forma como as interpretamos.\n\nAo identificar pensamentos catastróficos, podemos questionar sua veracidade e desenvolver uma perspectiva mais coerente e funcional.',
+  );
+  int leituraTempoEstimadoMinutos = 3;
+  List<String> leituraPerguntasFixacao = [
+    'Qual a principal diferença entre a situação em si e a interpretação cognitiva?',
+    'Como você pode aplicar o questionamento de pensamentos no seu dia a dia?',
+  ];
+  List<TextEditingController> leituraPerguntasControllers = [];
+  final novaLeituraPerguntaController = TextEditingController();
 
   // Passo 2 (Jogo): Conteúdo Jogo
   String jogoSelecionado = 'Memória Tática';
@@ -71,17 +131,34 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
   @override
   void initState() {
     super.initState();
-    _sincronizarControllersPerguntas();
+    _sincronizarControllers();
     _carregarPacientes();
   }
 
   @override
   void dispose() {
+    timerGravacao?.cancel();
     tituloController.dispose();
     descricaoController.dispose();
     novaPerguntaController.dispose();
+    novoExercicioPassoController.dispose();
+    novoChecklistItemController.dispose();
+    leituraTextoController.dispose();
+    novaLeituraPerguntaController.dispose();
     feedbackController.dispose();
     customPalavrasController.dispose();
+    for (var c in perguntasControllers) {
+      c.dispose();
+    }
+    for (var c in exercicioPassosControllers) {
+      c.dispose();
+    }
+    for (var c in checklistItensControllers) {
+      c.dispose();
+    }
+    for (var c in leituraPerguntasControllers) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -118,41 +195,51 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
         tituloController.text = 'Reflexão sobre emoções';
         descricaoController.text = 'Esta atividade tem como objetivo te ajudar a refletir sobre situações recentes e identificar pensamentos e emoções envolvidas.';
         perguntasGuiadas = [
-          'O que aconteceu?',
-          'O que você sentiu?',
-          'O que passou pela sua mente?',
+          'O que aconteceu na situação?',
+          'Quais emoções você sentiu e com qual intensidade?',
+          'O que passou pela sua mente naquele momento?',
+          'Como você reagiu ou se comportou?',
         ];
         tipoResposta = 'Texto (resposta livre)';
         break;
-      case 2: // Registro de Pensamentos
-        tituloController.text = 'Registro de Pensamentos (RPD)';
-        descricaoController.text = 'O Registro de Pensamentos Disfuncionais ajuda a identificar e reestruturar pensamentos negativos automáticos.';
-        perguntasGuiadas = [
-          'Qual foi a situação?',
-          'Quais foram as emoções e a intensidade (0-100)?',
-          'Quais foram os pensamentos automáticos?',
-          'Qual é uma resposta alternativa realista?',
+      case 2: // Registro de Pensamentos (RPD)
+        tituloController.text = 'Registro de Pensamentos Disfuncionais (RPD)';
+        descricaoController.text = 'Identifique a situação gatilho, seus pensamentos automáticos e elabore respostas alternativas equilibradas.';
+        templateRpd = 'TCC Padrão (5 Colunas)';
+        rpdColunas = [
+          'Situação (Onde/Quando)',
+          'Emoções & Intensidade (0-100)',
+          'Pensamento Automático Disfuncional',
+          'Resposta Alternativa / Racional',
+          'Reavaliação Emocional (0-100)',
         ];
-        tipoResposta = 'Texto (resposta livre)';
+        rpdIncluirEvidencias = true;
+        tipoResposta = 'Estrutura RPD (Tabela de Colunas)';
         break;
       case 3: // Exercício Prático
-        tituloController.text = 'Respiração Diafragmática';
-        descricaoController.text = 'Exercício prático para controle de sintomas físicos de ansiedade através do controle da respiração profunda.';
-        perguntasGuiadas = [
-          'Como você se sentia antes do exercício?',
-          'Como se sente agora?',
+        tituloController.text = 'Respiração Diafragmática 4-2-6';
+        descricaoController.text = 'Exercício prático de regulação autonômica para redução imediata de ansiedade e hiper-arousal.';
+        exercicioDuracaoMinutos = 5;
+        exercicioMedirPrePos = true;
+        exercicioPassos = [
+          'Sente-se em uma posição confortável com as costas eretas e ombros relaxados.',
+          'Inspire suavemente pelo nariz contando mentalmente até 4.',
+          'Retenha o ar nos pulmões de forma confortável por 2 segundos.',
+          'Expire devagar e completamente pela boca contando até 6.',
+          'Repita o ciclo por 5 minutos observando o ritmo do seu corpo.',
         ];
-        tipoResposta = 'Escolha única';
+        tipoResposta = 'Confirmação + Avaliação Pré/Pós';
         break;
       case 4: // Check-list
         tituloController.text = 'Check-list de Autocuidado Diário';
-        descricaoController.text = 'Marque os itens que você conseguiu realizar no dia de hoje em prol do seu bem-estar.';
-        perguntasGuiadas = [
-          'Bebi água o suficiente?',
-          'Fiz alguma atividade física?',
-          'Tirei um momento para relaxar?',
+        descricaoController.text = 'Marque os hábitos e ações que você conseguiu concluir hoje para manter seu equilíbrio emocional.';
+        checklistItens = [
+          'Tomar água regularmente (mínimo 2 litros)',
+          'Praticar ao menos 15 min de atividade física ou caminhada',
+          'Pausa de 5 min para descompressão sem telas',
+          'Registrar um aspecto positivo ou gratidão do dia',
         ];
-        tipoResposta = 'Texto (resposta livre)';
+        tipoResposta = 'Marcação de Itens (Checklist)';
         break;
       case 5: // Áudio
         tituloController.text = 'Meditação Guiada para Sono';
@@ -160,26 +247,28 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
         perguntasGuiadas = [
           'O áudio ajudou no seu relaxamento?',
         ];
-        tipoResposta = 'Escolha única';
-        break;
-      case 6: // Leitura
-        tituloController.text = 'O que é a Ansiedade?';
-        descricaoController.text = 'Leia o texto explicativo sobre o funcionamento da ansiedade no corpo e na mente.';
-        perguntasGuiadas = [
-          'Qual parte do texto mais chamou sua atenção?',
-          'Você se identificou com os sintomas descritos?',
-        ];
         tipoResposta = 'Texto (resposta livre)';
+        break;
+      case 6: // Leitura Psicoeducativa
+        tituloController.text = 'O que é a Ansiedade?';
+        descricaoController.text = 'Texto psicoeducativo explicando os mecanismos fisiológicos e cognitivos da ansiedade.';
+        leituraTextoController.text = 'A ansiedade é uma resposta fisiológica e emocional natural do ser humano diante da percepção de perigo ou incerteza.\n\nQuando percebemos uma ameaça, nosso cérebro ativa o sistema nervoso simpático, provocando taquicardia, respiração acelerada e tensão muscular. Na TCC, aprendemos que não são as situações em si que causam a ansiedade, mas a forma como as interpretamos.\n\nAo identificar pensamentos catastróficos, podemos questionar sua veracidade e desenvolver uma perspectiva mais coerente e funcional.';
+        leituraTempoEstimadoMinutos = 3;
+        leituraPerguntasFixacao = [
+          'Qual a principal diferença entre a situação em si e a interpretação cognitiva?',
+          'Como você pode aplicar o questionamento de pensamentos no seu dia a dia?',
+        ];
+        tipoResposta = 'Confirmação + Perguntas de Fixação';
         break;
       case 7: // Jogo
         tituloController.text = 'Memória Tática';
         descricaoController.text = 'Observe objetos do cotidiano, identifique qual sumiu e exercite sua atenção e memória visual.';
         perguntasGuiadas = [];
-        tipoResposta = 'Jogo';
+        tipoResposta = 'Jogo Interativo';
         jogoSelecionado = 'Memória Tática';
         break;
     }
-    _sincronizarControllersPerguntas();
+    _sincronizarControllers();
   }
 
   Future<void> escolherDataInicio() async {
@@ -205,8 +294,15 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
     }
   }
 
-  void _sincronizarControllersPerguntas() {
+  void _sincronizarControllers() {
     perguntasControllers = perguntasGuiadas.map((p) => TextEditingController(text: p)).toList();
+    exercicioPassosControllers = exercicioPassos.map((p) => TextEditingController(text: p)).toList();
+    checklistItensControllers = checklistItens.map((p) => TextEditingController(text: p)).toList();
+    leituraPerguntasControllers = leituraPerguntasFixacao.map((p) => TextEditingController(text: p)).toList();
+  }
+
+  void _sincronizarControllersPerguntas() {
+    _sincronizarControllers();
   }
 
   void adicionarPergunta() {
@@ -227,6 +323,60 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
     });
   }
 
+  void adicionarExercicioPasso() {
+    final texto = novoExercicioPassoController.text.trim();
+    if (texto.isNotEmpty) {
+      setState(() {
+        exercicioPassos.add(texto);
+        exercicioPassosControllers.add(TextEditingController(text: texto));
+        novoExercicioPassoController.clear();
+      });
+    }
+  }
+
+  void removerExercicioPasso(int index) {
+    setState(() {
+      exercicioPassos.removeAt(index);
+      exercicioPassosControllers.removeAt(index);
+    });
+  }
+
+  void adicionarChecklistItem() {
+    final texto = novoChecklistItemController.text.trim();
+    if (texto.isNotEmpty) {
+      setState(() {
+        checklistItens.add(texto);
+        checklistItensControllers.add(TextEditingController(text: texto));
+        novoChecklistItemController.clear();
+      });
+    }
+  }
+
+  void removerChecklistItem(int index) {
+    setState(() {
+      checklistItens.removeAt(index);
+      checklistItensControllers.removeAt(index);
+    });
+  }
+
+  void adicionarLeituraPergunta() {
+    final texto = novaLeituraPerguntaController.text.trim();
+    if (texto.isNotEmpty) {
+      setState(() {
+        leituraPerguntasFixacao.add(texto);
+        leituraPerguntasControllers.add(TextEditingController(text: texto));
+        novaLeituraPerguntaController.clear();
+      });
+    }
+  }
+
+  void removerLeituraPergunta(int index) {
+    setState(() {
+      leituraPerguntasFixacao.removeAt(index);
+      leituraPerguntasControllers.removeAt(index);
+    });
+  }
+
   Future<void> concluirWizard() async {
     if (tituloController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -238,33 +388,89 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
     setState(() => salvando = true);
 
     try {
+      String? midiaUrlFinal = arquivoMidiaCaminho;
+      if (tipoSelecionado == 5 && arquivoMidiaCaminho != null && !arquivoMidiaCaminho!.startsWith('http') && !arquivoMidiaCaminho!.startsWith('local_recordings')) {
+        try {
+          final resUpload = await service.uploadMediaAtividade(arquivoMidiaCaminho!);
+          midiaUrlFinal = resUpload['url']?.toString() ?? arquivoMidiaCaminho;
+        } catch (e) {
+          debugPrint('Erro no upload do arquivo de mídia: $e');
+        }
+      }
+
       // 1. Criar a atividade no Banco de Dados
-      // Perguntas e partes dinâmicas do conteúdo viram JSON
+      // Conteúdo estruturado salvo em JSON de acordo com o tipo selecionado
       final Map<String, dynamic> conteudoReal;
-      if (tipoSelecionado == 7) {
-        conteudoReal = {
-          'tipoJogo': jogoSelecionado,
-          'modo': modoJogo,
-          'tema': temaJogo,
-          'dificuldade': dificuldadeJogo,
-          'palavrasPersonalizadas': modoJogo == 'Palavras' && temaJogo == 'Personalizado'
-              ? customPalavrasController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList()
-              : null,
-        };
-      } else {
-        conteudoReal = {
-          'perguntas': perguntasGuiadas,
-        };
+      switch (tipoSelecionado) {
+        case 1: // Reflexão
+          conteudoReal = {
+            'tipoAtividade': 'reflexao',
+            'perguntas': perguntasGuiadas,
+          };
+          break;
+        case 2: // RPD
+          conteudoReal = {
+            'tipoAtividade': 'rpd',
+            'templateRpd': templateRpd,
+            'colunas': rpdColunas,
+            'incluirEvidencias': rpdIncluirEvidencias,
+          };
+          break;
+        case 3: // Exercício Prático
+          conteudoReal = {
+            'tipoAtividade': 'exercicio_pratico',
+            'duracaoMinutos': exercicioDuracaoMinutos,
+            'medirPrePos': exercicioMedirPrePos,
+            'passos': exercicioPassos,
+          };
+          break;
+        case 4: // Checklist
+          conteudoReal = {
+            'tipoAtividade': 'checklist',
+            'itens': checklistItens,
+            'perguntas': checklistItens,
+          };
+          break;
+        case 5: // Áudio
+          conteudoReal = {
+            'tipoAtividade': 'audio',
+            'perguntas': perguntasGuiadas,
+            if (arquivoMidiaNome != null) 'midiaNome': arquivoMidiaNome,
+            if (midiaUrlFinal != null) 'midiaCaminho': midiaUrlFinal,
+            if (arquivoMidiaTipo != null) 'midiaTipo': arquivoMidiaTipo,
+          };
+          break;
+        case 6: // Leitura Psicoeducativa
+          conteudoReal = {
+            'tipoAtividade': 'leitura',
+            'textoCorpo': leituraTextoController.text,
+            'tempoEstimadoMinutos': leituraTempoEstimadoMinutos,
+            'perguntasFixacao': leituraPerguntasFixacao,
+            'perguntas': leituraPerguntasFixacao,
+          };
+          break;
+        case 7: // Jogo
+        default:
+          conteudoReal = {
+            'tipoAtividade': 'jogo',
+            'tipoJogo': jogoSelecionado,
+            'modo': modoJogo,
+            'tema': temaJogo,
+            'dificuldade': dificuldadeJogo,
+            'palavrasPersonalizadas': modoJogo == 'Palavras' && temaJogo == 'Personalizado'
+                ? customPalavrasController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList()
+                : null,
+          };
+          break;
       }
 
       final configuracoes = {
         'tipoResposta': tipoResposta,
-        'atividadeObrigatoria': atividadeObrigatoria,
-        'permitirAnexos': permitirAnexos,
+        'audioUrl': (tipoSelecionado == 5 && arquivoMidiaNome != null) ? (midiaUrlFinal ?? arquivoMidiaNome) : null,
+        'arquivoUrl': (arquivoMidiaNome != null) ? (midiaUrlFinal ?? arquivoMidiaNome) : null,
         'feedbackAutomatico': feedbackController.text.isNotEmpty ? feedbackController.text : null,
-        'categoriaEmocional': categoriaEmocional,
-        'nivelSugerido': nivelSugerido,
-        'nivel': nivelAtividade,
+        if (tipoSelecionado == 7) 'nivelSugerido': nivelSugerido,
+        if (tipoSelecionado == 7) 'nivel': nivelAtividade,
         'frequencia': frequencia,
         'diasSemana': diasSemana.join(','),
         'horarioSugerido': '${horarioSugerido.hour.toString().padLeft(2, '0')}:${horarioSugerido.minute.toString().padLeft(2, '0')}',
@@ -553,6 +759,986 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
     );
   }
 
+  void _iniciarGravacaoAudio() {
+    setState(() {
+      gravandoAudio = true;
+      duracaoGravacaoSegundos = 0;
+      arquivoMidiaNome = null;
+      arquivoMidiaCaminho = null;
+    });
+
+    timerGravacao?.cancel();
+    timerGravacao = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          duracaoGravacaoSegundos++;
+        });
+      }
+    });
+  }
+
+  void _pararGravacaoAudio() {
+    timerGravacao?.cancel();
+    final timestamp = DateTime.now().millisecondsSinceEpoch.toString().substring(7);
+    setState(() {
+      gravandoAudio = false;
+      arquivoMidiaNome = 'instrucao_voz_$timestamp.m4a';
+      arquivoMidiaCaminho = 'local_recordings/instrucao_voz_$timestamp.m4a';
+      arquivoMidiaTipo = 'audio_gravado';
+    });
+  }
+
+  void _cancelarGravacaoAudio() {
+    timerGravacao?.cancel();
+    setState(() {
+      gravandoAudio = false;
+      duracaoGravacaoSegundos = 0;
+      arquivoMidiaNome = null;
+      arquivoMidiaCaminho = null;
+      arquivoMidiaTipo = null;
+    });
+  }
+
+  String _formatarDuracao(int segundos) {
+    final mins = (segundos ~/ 60).toString().padLeft(2, '0');
+    final secs = (segundos % 60).toString().padLeft(2, '0');
+    return '$mins:$secs';
+  }
+
+  Future<void> _selecionarVideo() async {
+    try {
+      final picker = ImagePicker();
+      final XFile? video = await picker.pickVideo(source: ImageSource.gallery);
+      if (video != null) {
+        setState(() {
+          arquivoMidiaNome = video.name;
+          arquivoMidiaCaminho = video.path;
+          arquivoMidiaTipo = 'video';
+        });
+      }
+    } catch (e) {
+      _exibirDialogoUrlMidia('vídeo');
+    }
+  }
+
+  Future<void> _selecionarOuGravarAudio() async {
+    try {
+      final picker = ImagePicker();
+      final XFile? media = await picker.pickMedia();
+      if (media != null) {
+        setState(() {
+          arquivoMidiaNome = media.name;
+          arquivoMidiaCaminho = media.path;
+          arquivoMidiaTipo = 'audio';
+        });
+      } else {
+        _exibirDialogoUrlMidia('áudio');
+      }
+    } catch (e) {
+      _exibirDialogoUrlMidia('áudio');
+    }
+  }
+
+  void _exibirDialogoUrlMidia(String tipoStr) {
+    final controller = TextEditingController(text: arquivoMidiaCaminho ?? '');
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text('Anexar $tipoStr'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Informe o nome ou link do arquivo de $tipoStr gravado:'),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  hintText: 'Ex: meditação_guiada.mp3 ou URL',
+                  filled: true,
+                  fillColor: const Color(0xFFF4F6F9),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (controller.text.trim().isNotEmpty) {
+                  setState(() {
+                    arquivoMidiaCaminho = controller.text.trim();
+                    arquivoMidiaNome = controller.text.trim().split('/').last.split('\\').last;
+                    arquivoMidiaTipo = tipoStr.contains('vídeo') ? 'video' : 'audio';
+                  });
+                }
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.secondary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text('Anexar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSecaoMidiaAudioVideo() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F6F9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(LucideIcons.headphones, color: AppColors.primary, size: 20),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Áudio ou Vídeo da Atividade',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.text),
+                    ),
+                    Text(
+                      'Grave uma instrução de voz direta ou envie um arquivo.',
+                      style: TextStyle(fontSize: 12, color: AppColors.muted),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Seletor de Abas (Gravar vs Upload)
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: gravandoAudio ? null : () => setState(() => opcaoMidiaAudio = 'gravar'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: opcaoMidiaAudio == 'gravar' ? AppColors.primary : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            LucideIcons.mic,
+                            size: 16,
+                            color: opcaoMidiaAudio == 'gravar' ? Colors.white : AppColors.muted,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Gravar no App',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: opcaoMidiaAudio == 'gravar' ? Colors.white : AppColors.muted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: gravandoAudio ? null : () => setState(() => opcaoMidiaAudio = 'upload'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: opcaoMidiaAudio == 'upload' ? AppColors.primary : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            LucideIcons.upload,
+                            size: 16,
+                            color: opcaoMidiaAudio == 'upload' ? Colors.white : AppColors.muted,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Upload / Arquivo',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: opcaoMidiaAudio == 'upload' ? Colors.white : AppColors.muted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Opção 1: Gravar no App
+          if (opcaoMidiaAudio == 'gravar') ...[
+            if (gravandoAudio) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF0F0),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.danger.withOpacity(0.4)),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 12,
+                          height: 12,
+                          decoration: const BoxDecoration(
+                            color: AppColors.danger,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Gravando áudio...',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.danger, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      _formatarDuracao(duracaoGravacaoSegundos),
+                      style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.text),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        OutlinedButton(
+                          onPressed: _cancelarGravacaoAudio,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.muted,
+                            side: const BorderSide(color: AppColors.border),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: const Text('Cancelar'),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton.icon(
+                          onPressed: _pararGravacaoAudio,
+                          icon: const Icon(LucideIcons.square, size: 16, color: Colors.white),
+                          label: const Text('Finalizar'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.danger,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ] else if (arquivoMidiaTipo == 'audio_gravado' && arquivoMidiaNome != null) ...[
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.secondary),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.softGreen,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(LucideIcons.mic, color: AppColors.secondary, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                arquivoMidiaNome!,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Duração: ${_formatarDuracao(duracaoGravacaoSegundos > 0 ? duracaoGravacaoSegundos : 15)}',
+                                style: const TextStyle(fontSize: 11, color: AppColors.secondary, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            reproduzindoAudio ? LucideIcons.pauseCircle : LucideIcons.playCircle,
+                            color: AppColors.primary,
+                            size: 28,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              reproduzindoAudio = !reproduzindoAudio;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton.icon(
+                          onPressed: _iniciarGravacaoAudio,
+                          icon: const Icon(LucideIcons.rotateCcw, size: 16, color: AppColors.muted),
+                          label: const Text('Gravar Novamente', style: TextStyle(color: AppColors.muted, fontSize: 12)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ] else ...[
+              GestureDetector(
+                onTap: _iniciarGravacaoAudio,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(LucideIcons.mic, color: AppColors.primary, size: 28),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Pressione para iniciar a gravação de voz',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.text),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Grave uma mensagem direta, meditação ou áudio de apoio.',
+                        style: TextStyle(fontSize: 12, color: AppColors.muted),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ] else ...[
+            // Opção 2: Upload de Arquivo/Vídeo
+            if (arquivoMidiaNome != null && arquivoMidiaTipo != 'audio_gravado') ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.secondary),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      arquivoMidiaTipo == 'video' ? LucideIcons.video : LucideIcons.music,
+                      color: AppColors.secondary,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            arquivoMidiaNome!,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            'Mídia anexada e pronta para envio',
+                            style: TextStyle(fontSize: 11, color: AppColors.secondary, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(LucideIcons.trash2, color: AppColors.danger, size: 18),
+                      onPressed: () {
+                        setState(() {
+                          arquivoMidiaNome = null;
+                          arquivoMidiaCaminho = null;
+                          arquivoMidiaTipo = null;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _selecionarVideo,
+                    icon: const Icon(LucideIcons.video, size: 18),
+                    label: const Text('Anexar Vídeo'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _selecionarOuGravarAudio,
+                    icon: const Icon(LucideIcons.fileAudio, size: 18),
+                    label: const Text('Anexar Áudio'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.secondary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // --- SUB-BUILDERS DE CONTEÚDO POR TIPO ---
+
+  Widget _buildConteudoReflexao() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Perguntas guiadas de reflexão',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Adicione perguntas para guiar a autoanálise do paciente.',
+          style: TextStyle(fontSize: 12, color: AppColors.muted),
+        ),
+        const SizedBox(height: 12),
+        Column(
+          children: List.generate(perguntasControllers.length, (index) {
+            final controller = perguntasControllers[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: TextField(
+                controller: controller,
+                onChanged: (val) => perguntasGuiadas[index] = val,
+                decoration: InputDecoration(
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.only(left: 16, top: 14, bottom: 14, right: 8),
+                    child: Text(
+                      '${index + 1}. ',
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 14),
+                    ),
+                  ),
+                  prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.delete_outline, color: AppColors.danger, size: 18),
+                    onPressed: () => removerPergunta(index),
+                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary)),
+                  filled: true,
+                  fillColor: Colors.white,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                style: const TextStyle(fontSize: 14, color: AppColors.text),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: novaPerguntaController,
+          decoration: InputDecoration(
+            hintText: 'Escreva uma nova pergunta reflexiva...',
+            filled: true,
+            fillColor: const Color(0xFFF4F6F9),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            suffixIcon: Container(
+              margin: const EdgeInsets.all(6),
+              decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
+              child: IconButton(
+                icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                onPressed: adicionarPergunta,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConteudoRPD() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Modelo de RPD (TCC)',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(color: const Color(0xFFF4F6F9), borderRadius: BorderRadius.circular(12)),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: templateRpd,
+              isExpanded: true,
+              icon: const Icon(LucideIcons.chevronDown, color: AppColors.muted),
+              items: ['TCC Padrão (5 Colunas)', 'Ansiedade & Fobia', 'Reestruturação Curta (3 Colunas)']
+                  .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+                  .toList(),
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() {
+                    templateRpd = val;
+                    if (val.contains('3 Colunas')) {
+                      rpdColunas = ['Situação', 'Pensamento Automático', 'Resposta Alternativa'];
+                    } else if (val.contains('Ansiedade')) {
+                      rpdColunas = ['Gatilho / Situação', 'Sinais Físicos & Medo (0-100)', 'Pensamento Catastrófico', 'Evidências Reais', 'Pensamento Seguro / Coping'];
+                    } else {
+                      rpdColunas = ['Situação (Onde/Quando)', 'Emoções & Intensidade (0-100)', 'Pensamento Automático Disfuncional', 'Resposta Alternativa / Racional', 'Reavaliação Emocional (0-100)'];
+                    }
+                  });
+                }
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.secondary.withOpacity(0.4)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: AppColors.softGreen, borderRadius: BorderRadius.circular(8)),
+                    child: const Icon(LucideIcons.columns, color: AppColors.secondary, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Estrutura da Tabela RPD', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.text)),
+                        Text('Colunas apresentadas ao paciente no preenchimento:', style: TextStyle(fontSize: 11, color: AppColors.muted)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ...rpdColunas.asMap().entries.map((entry) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: const BoxDecoration(color: AppColors.secondary, shape: BoxShape.circle),
+                        child: Center(
+                          child: Text('${entry.key + 1}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(entry.value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.text)),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConteudoExercicioPratico() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Duração estimada', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text)),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(color: const Color(0xFFF4F6F9), borderRadius: BorderRadius.circular(12)),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<int>(
+                        value: exercicioDuracaoMinutos,
+                        isExpanded: true,
+                        icon: const Icon(LucideIcons.chevronDown, color: AppColors.muted),
+                        items: [2, 3, 5, 10, 15, 20]
+                            .map((min) => DropdownMenuItem<int>(value: min, child: Text('$min minutos')))
+                            .toList(),
+                        onChanged: (val) {
+                          if (val != null) setState(() => exercicioDuracaoMinutos = val);
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Medir Tensão Pré/Pós', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text)),
+                  const SizedBox(height: 6),
+                  Container(
+                    height: 48,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(color: const Color(0xFFF4F6F9), borderRadius: BorderRadius.circular(12)),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Escala 0-10', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.text)),
+                        Switch(
+                          value: exercicioMedirPrePos,
+                          activeColor: AppColors.secondary,
+                          onChanged: (val) => setState(() => exercicioMedirPrePos = val),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        const Text(
+          'Passo a passo do exercício',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
+        ),
+        const SizedBox(height: 4),
+        const Text('Sequência de instruções guiadas.', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+        const SizedBox(height: 12),
+        Column(
+          children: List.generate(exercicioPassosControllers.length, (index) {
+            final controller = exercicioPassosControllers[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: TextField(
+                controller: controller,
+                onChanged: (val) => exercicioPassos[index] = val,
+                decoration: InputDecoration(
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.only(left: 14, top: 14, bottom: 14, right: 6),
+                    child: Text(
+                      'Passo ${index + 1}: ',
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 12),
+                    ),
+                  ),
+                  prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.delete_outline, color: AppColors.danger, size: 18),
+                    onPressed: () => removerExercicioPasso(index),
+                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary)),
+                  filled: true,
+                  fillColor: Colors.white,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                style: const TextStyle(fontSize: 13, color: AppColors.text),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: novoExercicioPassoController,
+          decoration: InputDecoration(
+            hintText: 'Adicionar nova instrução sequencial...',
+            filled: true,
+            fillColor: const Color(0xFFF4F6F9),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            suffixIcon: Container(
+              margin: const EdgeInsets.all(6),
+              decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
+              child: IconButton(
+                icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                onPressed: adicionarExercicioPasso,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConteudoChecklist() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Itens do Check-list',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
+        ),
+        const SizedBox(height: 4),
+        const Text('Ações simples que o paciente irá marcar como concluídas.', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+        const SizedBox(height: 12),
+        Column(
+          children: List.generate(checklistItensControllers.length, (index) {
+            final controller = checklistItensControllers[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: TextField(
+                controller: controller,
+                onChanged: (val) => checklistItens[index] = val,
+                decoration: InputDecoration(
+                  prefixIcon: const Padding(
+                    padding: EdgeInsets.only(left: 14, right: 8),
+                    child: Icon(LucideIcons.checkSquare, color: AppColors.secondary, size: 20),
+                  ),
+                  prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.delete_outline, color: AppColors.danger, size: 18),
+                    onPressed: () => removerChecklistItem(index),
+                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary)),
+                  filled: true,
+                  fillColor: Colors.white,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                style: const TextStyle(fontSize: 14, color: AppColors.text),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: novoChecklistItemController,
+          decoration: InputDecoration(
+            hintText: 'Adicionar novo item de checklist...',
+            filled: true,
+            fillColor: const Color(0xFFF4F6F9),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            suffixIcon: Container(
+              margin: const EdgeInsets.all(6),
+              decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
+              child: IconButton(
+                icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                onPressed: adicionarChecklistItem,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConteudoLeitura() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Texto Psicoeducativo',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
+            ),
+            Row(
+              children: [
+                const Icon(LucideIcons.clock, size: 14, color: AppColors.muted),
+                const SizedBox(width: 4),
+                Text(
+                  'Tempo est.: $leituraTempoEstimadoMinutos min',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: leituraTextoController,
+          maxLines: 8,
+          decoration: InputDecoration(
+            hintText: 'Escreva ou cole o artigo/texto informativo para o paciente ler...',
+            filled: true,
+            fillColor: const Color(0xFFF4F6F9),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.all(16),
+          ),
+          style: const TextStyle(fontSize: 13, color: AppColors.text, height: 1.4),
+        ),
+        const SizedBox(height: 20),
+
+        const Text(
+          'Perguntas de Compreensão / Fixação',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
+        ),
+        const SizedBox(height: 4),
+        const Text('Questões para verificar o entendimento após a leitura.', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+        const SizedBox(height: 12),
+        Column(
+          children: List.generate(leituraPerguntasControllers.length, (index) {
+            final controller = leituraPerguntasControllers[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: TextField(
+                controller: controller,
+                onChanged: (val) => leituraPerguntasFixacao[index] = val,
+                decoration: InputDecoration(
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.only(left: 16, top: 14, bottom: 14, right: 8),
+                    child: Text(
+                      '${index + 1}. ',
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 14),
+                    ),
+                  ),
+                  prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.delete_outline, color: AppColors.danger, size: 18),
+                    onPressed: () => removerLeituraPergunta(index),
+                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary)),
+                  filled: true,
+                  fillColor: Colors.white,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                style: const TextStyle(fontSize: 14, color: AppColors.text),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: novaLeituraPerguntaController,
+          decoration: InputDecoration(
+            hintText: 'Adicionar pergunta de reflexão pós-leitura...',
+            filled: true,
+            fillColor: const Color(0xFFF4F6F9),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            suffixIcon: Container(
+              margin: const EdgeInsets.all(6),
+              decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
+              child: IconButton(
+                icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                onPressed: adicionarLeituraPergunta,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   // --- PASSO 2: CONTEÚDO DA ATIVIDADE ---
   Widget _buildPassoConteudoAtividade() {
     return Column(
@@ -603,127 +1789,46 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
         ),
         const SizedBox(height: 20),
 
-        if (tipoSelecionado != 7) ...[
-          Text(
-            tipoSelecionado == 4 ? 'Itens do check-list' : (tipoSelecionado == 2 ? 'Campos do registro' : 'Perguntas guiadas'),
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
-          ),
-          const SizedBox(height: 8),
-          Column(
-            children: List.generate(perguntasControllers.length, (index) {
-              final controller = perguntasControllers[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: TextField(
-                  controller: controller,
-                  onChanged: (val) {
-                    perguntasGuiadas[index] = val;
-                  },
-                  decoration: InputDecoration(
-                    prefixIcon: Padding(
-                      padding: const EdgeInsets.only(left: 16, top: 14, bottom: 14, right: 8),
-                      child: Text(
-                        '${index + 1}. ',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 14),
-                      ),
-                    ),
-                    prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.delete_outline, color: AppColors.danger, size: 18),
-                      onPressed: () => removerPergunta(index),
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.primary),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  style: const TextStyle(fontSize: 14, color: AppColors.text),
-                ),
-              );
-            }),
-          ),
-          
-          const SizedBox(height: 8),
-          TextField(
-            controller: novaPerguntaController,
-            decoration: InputDecoration(
-              hintText: tipoSelecionado == 4 ? 'Escreva um novo item...' : 'Escreva uma nova pergunta...',
-              filled: true,
-              fillColor: const Color(0xFFF4F6F9),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              suffixIcon: Container(
-                margin: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.add, color: Colors.white, size: 20),
-                  onPressed: adicionarPergunta,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                ),
-              ),
-            ),
-          ),
-        ] else ...[
-          _buildConfiguracaoJogo(),
+        if (tipoSelecionado == 1) _buildConteudoReflexao(),
+        if (tipoSelecionado == 2) _buildConteudoRPD(),
+        if (tipoSelecionado == 3) _buildConteudoExercicioPratico(),
+        if (tipoSelecionado == 4) _buildConteudoChecklist(),
+        if (tipoSelecionado == 5) ...[
+          _buildSecaoMidiaAudioVideo(),
+          _buildConteudoReflexao(),
         ],
-        const SizedBox(height: 32),
-
-        const Text(
-          'Recursos adicionais (opcional)',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildRecursoBotao('Áudio', Icons.headset),
-            _buildRecursoBotao('Imagem', Icons.image),
-            _buildRecursoBotao('PDF', Icons.description),
-            _buildRecursoBotao('Vídeo', Icons.play_circle_outline),
-          ],
-        ),
+        if (tipoSelecionado == 6) _buildConteudoLeitura(),
+        if (tipoSelecionado == 7) _buildConfiguracaoJogo(),
       ],
     );
   }
 
-  Widget _buildRecursoBotao(String label, IconData icone) {
-    return Container(
-      width: 68,
-      height: 68,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icone, color: AppColors.primary, size: 22),
-          const SizedBox(height: 6),
-          Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.muted)),
-        ],
-      ),
-    );
+  List<String> _obterOpcoesTipoResposta() {
+    switch (tipoSelecionado) {
+      case 1:
+        return ['Texto (resposta livre)', 'Áudio gravado pelo paciente'];
+      case 2:
+        return ['Estrutura RPD (Tabela de Colunas)'];
+      case 3:
+        return ['Confirmação + Avaliação Pré/Pós', 'Texto (resposta livre)'];
+      case 4:
+        return ['Marcação de Itens (Checklist)'];
+      case 5:
+        return ['Texto (resposta livre)', 'Áudio gravado pelo paciente', 'Escolha única'];
+      case 6:
+        return ['Confirmação + Perguntas de Fixação', 'Apenas confirmação de leitura'];
+      case 7:
+        return ['Jogo Interativo'];
+      default:
+        return ['Texto (resposta livre)'];
+    }
   }
 
   // --- PASSO 3: CONFIGURAÇÕES DA ATIVIDADE ---
   Widget _buildPassoConfiguracoes() {
+    final opcoesResposta = _obterOpcoesTipoResposta();
+    final valorRespostaValido = opcoesResposta.contains(tipoResposta) ? tipoResposta : opcoesResposta.first;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -749,10 +1854,10 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
             decoration: BoxDecoration(color: const Color(0xFFF4F6F9), borderRadius: BorderRadius.circular(12)),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
-                value: tipoResposta,
+                value: valorRespostaValido,
                 isExpanded: true,
                 icon: const Icon(LucideIcons.chevronDown, color: AppColors.muted),
-                items: ['Texto (resposta livre)', 'Escolha única', 'Áudio gravado']
+                items: opcoesResposta
                     .map((item) => DropdownMenuItem(value: item, child: Text(item)))
                     .toList(),
                 onChanged: (val) {
@@ -763,46 +1868,6 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
           ),
           const SizedBox(height: 20),
         ],
-
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Atividade obrigatória?',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
-            ),
-            Row(
-              children: [
-                _buildSelecaoBotao('Sim', atividadeObrigatoria, () => setState(() => atividadeObrigatoria = true)),
-                const SizedBox(width: 8),
-                _buildSelecaoBotao('Não', !atividadeObrigatoria, () => setState(() => atividadeObrigatoria = false)),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Permitir anexos?',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
-                ),
-                Text('Paciente poderá enviar arquivos de suporte.', style: TextStyle(fontSize: 11, color: AppColors.muted)),
-              ],
-            ),
-            Switch(
-              value: permitirAnexos,
-              activeColor: AppColors.secondary,
-              onChanged: (val) => setState(() => permitirAnexos = val),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
 
         const Text(
           'Feedback automático (opcional)',
@@ -820,102 +1885,80 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
         ),
         const SizedBox(height: 20),
 
-        const Text(
-          'Categoria emocional',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(color: const Color(0xFFF4F6F9), borderRadius: BorderRadius.circular(12)),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: categoriaEmocional,
-              isExpanded: true,
-              icon: const Icon(LucideIcons.chevronDown, color: AppColors.muted),
-              items: ['Ansiedade', 'Depressão', 'Estresse', 'Felicidade', 'Raiva', 'Outro']
-                  .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-                  .toList(),
-              onChanged: (val) {
-                if (val != null) setState(() => categoriaEmocional = val);
-              },
-            ),
+        if (tipoSelecionado == 7) ...[
+          const Text(
+            'Nível sugerido',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
           ),
-        ),
-        const SizedBox(height: 20),
-
-        const Text(
-          'Nível sugerido',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: ['Leve', 'Moderado', 'Intenso'].map((nivel) {
-            final ativo = nivelSugerido == nivel;
-            return Expanded(
-              child: GestureDetector(
-                onTap: () => setState(() => nivelSugerido = nivel),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: ativo ? AppColors.primary : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: ativo ? AppColors.primary : AppColors.border),
-                  ),
-                  child: Center(
-                    child: Text(
-                      nivel,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                        color: ativo ? Colors.white : AppColors.muted,
+          const SizedBox(height: 10),
+          Row(
+            children: ['Leve', 'Moderado', 'Intenso'].map((nivel) {
+              final ativo = nivelSugerido == nivel;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => nivelSugerido = nivel),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: ativo ? AppColors.primary : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: ativo ? AppColors.primary : AppColors.border),
+                    ),
+                    child: Center(
+                      child: Text(
+                        nivel,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: ativo ? Colors.white : AppColors.muted,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 20),
-        const Text(
-          'Nível de Desbloqueio (Gamificação)',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [1, 2, 3, 4, 5].map((nivel) {
-            final ativo = nivelAtividade == nivel;
-            return Expanded(
-              child: GestureDetector(
-                onTap: () => setState(() {
-                  nivelAtividade = nivel;
-                  _sincronizarPacienteSelecionado();
-                }),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: ativo ? AppColors.secondary : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: ativo ? AppColors.secondary : AppColors.border),
-                  ),
-                  child: Center(
-                    child: Text(
-                      'Nível $nivel',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                        color: ativo ? Colors.white : AppColors.muted,
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Nível de Desbloqueio (Gamificação)',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [1, 2, 3, 4, 5].map((nivel) {
+              final ativo = nivelAtividade == nivel;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() {
+                    nivelAtividade = nivel;
+                    _sincronizarPacienteSelecionado();
+                  }),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: ativo ? AppColors.secondary : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: ativo ? AppColors.secondary : AppColors.border),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Nível $nivel',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                          color: ativo ? Colors.white : AppColors.muted,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            );
-          }).toList(),
-        ),
+              );
+            }).toList(),
+          ),
+        ],
       ],
     );
   }
@@ -1173,14 +2216,15 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.text),
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(color: AppColors.softGreen, borderRadius: BorderRadius.circular(8)),
-                    child: Text(
-                      nivelSugerido,
-                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.secondary),
+                  if (tipoSelecionado == 7)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(color: AppColors.softGreen, borderRadius: BorderRadius.circular(8)),
+                      child: Text(
+                        nivelSugerido,
+                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.secondary),
+                      ),
                     ),
-                  ),
                 ],
               ),
               const SizedBox(height: 10),
@@ -1194,8 +2238,6 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
               _buildRevisaoItem('Frequência:', frequencia),
               _buildRevisaoItem('Início:', '${dataInicio.day.toString().padLeft(2, '0')}/${dataInicio.month.toString().padLeft(2, '0')}/${dataInicio.year} às ${horarioSugerido.hour.toString().padLeft(2, '0')}:${horarioSugerido.minute.toString().padLeft(2, '0')}'),
               _buildRevisaoItem('Prazo de Conclusão:', prazoConclusao),
-              _buildRevisaoItem('Categoria Emocional:', categoriaEmocional),
-              _buildRevisaoItem('Obrigatória:', atividadeObrigatoria ? 'Sim' : 'Não'),
               if (tipoSelecionado == 7) ...[
                 _buildRevisaoItem('Jogo:', '$jogoSelecionado ($modoJogo)'),
                 _buildRevisaoItem('Tema:', temaJogo),
@@ -1382,46 +2424,265 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
     );
   }
 
+  final List<Map<String, dynamic>> jogosPorSubcategoria = const [
+    {
+      'subcategoria': 'CONTROLE INIBITÓRIO',
+      'jogos': [
+        'Modo Piloto',
+        'Reação Zero',
+      ],
+    },
+    {
+      'subcategoria': 'MEMÓRIA OPERACIONAL',
+      'jogos': [
+        'Investigação',
+        'Memória Tática',
+        'Jogo de Memória',
+      ],
+    },
+    {
+      'subcategoria': 'ATENÇÃO',
+      'jogos': [
+        'Missão Foco',
+      ],
+    },
+    {
+      'subcategoria': 'REGULAÇÃO EMOCIONAL',
+      'jogos': [
+        'Respire',
+        'Ansiedade Social',
+      ],
+    },
+    {
+      'subcategoria': 'PSICOEDUCAÇÃO',
+      'jogos': [
+        'Ilha das Emoções',
+      ],
+    },
+    {
+      'subcategoria': 'TCC & REESTRUTURAÇÃO COGNITIVA',
+      'jogos': [
+        'Ache a Distorção',
+        'Detetive dos Pensamentos',
+        'Tribunal dos Pensamentos',
+        'Cartas dos Sabotadores',
+      ],
+    },
+    {
+      'subcategoria': 'FLEXIBILIDADE COGNITIVA & LINGUAGEM',
+      'jogos': [
+        'Mente Flexível',
+        'Laboratório Mental',
+        'Shark Mind',
+        'Universos Paralelos',
+      ],
+    },
+    {
+      'subcategoria': 'HÁBITOS, SAÚDE & EXPOSIÇÃO',
+      'jogos': [
+        'Check-List (Saúde)',
+        'Caçador de Gatilhos',
+        'Missão Coragem',
+        'Jornada do Herói Interior',
+      ],
+    },
+  ];
+
+  String _obterSubcategoriaDoJogo(String jogo) {
+    for (final grupo in jogosPorSubcategoria) {
+      final List<String> jogos = grupo['jogos'] as List<String>;
+      if (jogos.contains(jogo)) {
+        return grupo['subcategoria'] as String;
+      }
+    }
+    return 'GERAL';
+  }
+
+  void _abrirModalSelecaoJogo() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.75,
+          minChildSize: 0.5,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Selecione o Jogo por Subcategoria',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.text),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Escolha a atividade baseada na área clínica ou neuropsicológica:',
+                    style: TextStyle(fontSize: 13, color: AppColors.textLight),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: scrollController,
+                      itemCount: jogosPorSubcategoria.length,
+                      itemBuilder: (context, index) {
+                        final grupo = jogosPorSubcategoria[index];
+                        final subcat = grupo['subcategoria'] as String;
+                        final jogos = grupo['jogos'] as List<String>;
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 4,
+                                    height: 16,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary,
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    subcat,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            ...jogos.map((jogo) {
+                              final selecionado = jogoSelecionado == jogo;
+                              return GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    jogoSelecionado = jogo;
+                                    tituloController.text = jogo;
+                                    descricaoController.text = _getDescricaoDetalhadaJogo(jogo);
+                                  });
+                                  Navigator.pop(context);
+                                },
+                                child: Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                  decoration: BoxDecoration(
+                                    color: selecionado ? AppColors.primary.withOpacity(0.1) : const Color(0xFFF8FAFC),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(color: selecionado ? AppColors.primary : AppColors.border),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        selecionado ? LucideIcons.checkCircle2 : LucideIcons.gamepad2,
+                                        size: 20,
+                                        color: selecionado ? AppColors.primary : AppColors.muted,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          jogo,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: selecionado ? FontWeight.bold : FontWeight.normal,
+                                            color: selecionado ? AppColors.primary : AppColors.text,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }),
+                            const SizedBox(height: 8),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   String _getDescricaoDetalhadaJogo(String jogo) {
     switch (jogo) {
+      case 'Respire':
+      case 'Controle das Emoções - Respire':
       case 'Decisão Sob Pressão':
-        return 'Treinamento de controle inibitório e regulação de emoções. O paciente visualiza uma situação de alta pressão, faz uma pausa para respiração profunda guiada e seleciona a melhor atitude consciente.';
+        return '[REGULAÇÃO EMOCIONAL] Treinamento de controle inibitório e regulação de emoções sob pressão. O paciente visualiza a situação, faz respiração guiada e escolhe a atitude consciente.';
+      case 'Atenção - Missão Foco':
       case 'Missão Foco':
-        return 'Treina o controle inibitório e atenção seletiva. O jogador deve responder rapidamente apenas aos comandos "EXECUTE", ignorando comandos "IGNORE".';
+        return '[ATENÇÃO] Treina controle inibitório e atenção seletiva sob distração rápida. Responde ao EXECUTE e inibe no IGNORE.';
       case 'Memória Tática':
-        return 'Treino de memória operacional visual. O paciente observa uma grade de objetos do cotidiano, descobre qual deles sumiu e o identifica na lista. Exercita atenção, foco e memória visual.';
+        return '[MEMÓRIA OPERACIONAL] Treino de retenção visual e atenção. O paciente observa grades progressivas de objetos e descobre qual sumiu.';
+      case 'Memória Operacional - Investigação':
       case 'Investigação':
-        return 'Treino de memória operacional verbal. O paciente lê um depoimento textual de um mistério, entende as declarações e responde a uma pergunta surpresa de compreensão de detalhes.';
+        return '[MEMÓRIA OPERACIONAL] Treino de memória de trabalho verbal. Leitura de depoimentos e retenção de detalhes com opção de repetição livre.';
+      case 'Controle Inibitório - Modo Piloto':
       case 'Modo Piloto':
-        return 'Treinamento de controle inibitório e tempo de reflexão. Em uma situação de estresse ou impulso, o jogador desativa o piloto automático seguindo um checklist de desaceleração.';
+        return '[CONTROLE INIBITÓRIO] Treinamento de desaceleração de impulsos em 4 situações críticas usando checklists conscientes.';
       case 'Laboratório Mental':
-        return 'Treina a flexibilidade cognitiva e criatividade verbal. O paciente altera uma letra por vez de forma flexível para encadear palavras corretas (ex: GATO -> PATO -> MATO).';
+        return '[FLEXIBILIDADE COGNITIVA] Alteração de letras encadeando palavras corretas.';
       case 'Mente Flexível':
-        return 'Treina a flexibilidade cognitiva e adaptação rápida. O jogador classifica objetos de acordo com regras que mudam de repente no jogo (cores, tamanhos ou lados).';
+        return '[FLEXIBILIDADE COGNITIVA] Classificação dinâmica de objetos de acordo com regras imprevisíveis (cor, tamanho, lados, quantidade).';
       case 'Shark Mind':
-        return 'Estimula a criatividade e fluência verbal. O paciente deve gravar um pitch criativo de 30 segundos vendendo um item comum para um comprador incomum.';
+        return '[FLUÊNCIA VERBAL] Pitch de vendas criativo de 30 segundos.';
       case 'Universos Paralelos':
-        return 'Estimula o pensamento divergente e originalidade. Diante de um cenário hipotético alternativo ("E se..."), o paciente cria e expressa sua própria versão da história.';
+        return '[PENSAMENTO DIVERGENTE] Resposta criativa a cenários hipotéticos alternativose originais.';
       case 'Reação Zero':
-        return 'Treina a inibição motora e tempo de reação. O jogador deve responder tocando rápido nos sinais "TOQUE" e se conter completamente nos sinais "NÃO TOQUE" ou "CONGELAR!".';
+        return '[INIBIÇÃO MOTORA] Resposta rápida ao sinal TOQUE e contenção ao sinal CONGELAR.';
       case 'Detetive dos Pensamentos':
-        return 'Baseado em TCC. O paciente passa pelo fluxo: Situação ➔ Pensamento ➔ Emoção ➔ Intensidade ➔ Reestruturação Cognitiva. Ideal para identificar e reestruturar pensamentos automáticos.';
+        return '[TCC] Identificação e reestruturação cognitiva de pensamentos automáticos em 3 situações.';
       case 'Tribunal dos Pensamentos':
-        return 'Coloque os pensamentos disfuncionais em julgamento. O paciente analisa as Evidências a Favor e as Evidências Contra antes de emitir um Veredito equilibrado.';
+        return '[TCC] Julgamento de pensamentos disfuncionais com análise de evidências a favor e contra.';
       case 'Caçador de Gatilhos':
-        return 'Ajuda o paciente a mapear os gatilhos emocionais da semana, registrando a situação, emoção e intensidade para gerar gráficos e relatórios na evolução.';
+        return '[AUTOMONITORAMENTO] Mapeamento de gatilhos emocionais e intensidade semanal.';
       case 'Missão Coragem':
-        return 'Baseado em Exposição Gradual. O paciente escolhe desafios de enfrentamento, avalia o nível de ansiedade esperado/real e acompanha sua taxa de sucesso.';
+        return '[EXPOSIÇÃO GRADUAL] Enfrentamento gradual de medos com avaliação pré/pós ansiedade.';
+      case 'Ansiedade Social':
+      case 'Regulação - Ansiedade Social':
       case 'O Monstro da Ansiedade':
-        return 'Mapeamento corporal da ansiedade. O paciente identifica em quais partes do corpo sente os sintomas físicos e aprende técnicas de regulação direcionadas.';
+        return '[SOMATIZAÇÃO & TCC] Mapeamento corporal de sintomas físicos e pensamentos automáticos da ansiedade social.';
+      case 'Psicoeducação - Ilha das Emoções':
       case 'Ilha das Emoções':
-        return 'Uma jornada lúdica de exploração de sentimentos. Ajuda crianças e adolescentes a nomear emoções e descobrir estratégias de autorregulação.';
+        return '[PSICOEDUCAÇÃO] Jornada de aprendizado de estratégias de regulação para 4 problemas emocionais cotidianos.';
       case 'Cartas dos Sabotadores':
-        return 'Ajuda a identificar a voz dos sabotadores internos (o Crítico, o Perfeccionista, o Hiper-realizador) e ensina a responder a cada um deles.';
+        return '[TCC / AUTOCONHECIMENTO] Identificação de sabotadores internos e criação de respostas saudáveis.';
+      case 'Ache a Distorção':
       case 'Escape Room Terapêutico':
-        return 'Desafios e enigmas focados em conceitos de TCC. O paciente resolve problemas de reestruturação cognitiva para conseguir "escapar" das salas virtuais.';
+        return '[REESTRUTURAÇÃO COGNITIVA] Enigmas de identificação de distorções cognitivas para desbloquear salas.';
       case 'Jornada do Herói Interior':
-        return 'Usa a metáfora da Jornada do Herói para ressignificar traumas e desafios pessoais, promovendo a autoestima e a autocompaixão.';
+        return '[RESSIGNIFICAÇÃO] Metáfora da Jornada do Herói para autoestima e autocompaixão.';
       default:
         return 'Realize a atividade terapêutica do jogo selecionado.';
     }
@@ -1429,15 +2690,20 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
 
   String _getMetricasJogo(String jogo) {
     switch (jogo) {
+      case 'Respire':
+      case 'Controle das Emoções - Respire':
       case 'Decisão Sob Pressão':
         return '• Assertividade nas ações tomadas\n• Conclusão de ciclos respiratórios de controle';
       case 'Missão Foco':
+      case 'Atenção - Missão Foco':
         return '• Precisão de foco (% acertos)\n• Tempo de reação e impulsividade';
       case 'Memória Tática':
         return '• Acurácia na identificação do objeto sumido\n• Capacidade de memorização e retenção visual';
       case 'Investigação':
+      case 'Memória Operacional - Investigação':
         return '• Taxa de acertos em detalhes do depoimento\n• Retenção e compreensão de informações verbais';
       case 'Modo Piloto':
+      case 'Controle Inibitório - Modo Piloto':
         return '• Taxa de sucesso na execução de checklists conscientes\n• Tempo de reflexão antes de agir';
       case 'Laboratório Mental':
         return '• Rapidez em transicionar anagramas de letras\n• Flexibilidade em associações fonéticas/ortográficas';
@@ -1457,12 +2723,16 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
         return '• Situações-gatilho mais frequentes\n• Nível de intensidade emocional média';
       case 'Missão Coragem':
         return '• Desafios de exposição gradual concluídos\n• Taxa de sucesso e desistência de tarefas';
+      case 'Ansiedade Social':
+      case 'Regulação - Ansiedade Social':
       case 'O Monstro da Ansiedade':
         return '• Mapeamento corporal de sintomas físicos\n• Eficácia percebida dos exercícios de respiração/relaxamento';
       case 'Ilha das Emoções':
+      case 'Psicoeducação - Ilha das Emoções':
         return '• Frequência de emoções exploradas\n• Estratégias de autorregulação preferidas';
       case 'Cartas dos Sabotadores':
         return '• Sabotadores internos mais ativos/selecionados\n• Força das respostas saudáveis criadas';
+      case 'Ache a Distorção':
       case 'Escape Room Terapêutico':
         return '• Tempo de resolução de enigmas cognitivos\n• Taxa de acerto em conceitos de distorções cognitivas';
       case 'Jornada do Herói Interior':
@@ -1485,59 +2755,64 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
         ),
         const SizedBox(height: 12),
 
-        // Tipo de Jogo (Dropdown)
-        const Text(
-          'Selecione o Jogo',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.muted),
+        // Seleção do Jogo agrupado por Subcategoria
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Selecione o Jogo',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.muted),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                _obterSubcategoriaDoJogo(jogoSelecionado),
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                  letterSpacing: 1.1,
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(color: const Color(0xFFF4F6F9), borderRadius: BorderRadius.circular(12)),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: jogoSelecionado,
-              isExpanded: true,
-              icon: const Icon(LucideIcons.chevronDown, color: AppColors.muted),
-              items: [
-                'Decisão Sob Pressão',
-                'Missão Foco',
-                'Memória Tática',
-                'Investigação',
-                'Modo Piloto',
-                'Laboratório Mental',
-                'Mente Flexível',
-                'Shark Mind',
-                'Universos Paralelos',
-                'Reação Zero',
-                'Detetive dos Pensamentos',
-                'Tribunal dos Pensamentos',
-                'Caçador de Gatilhos',
-                'Missão Coragem',
-                'O Monstro da Ansiedade',
-                'Ilha das Emoções',
-                'Cartas dos Sabotadores',
-                'Escape Room Terapêutico',
-                'Jornada do Herói Interior',
-                'Jogo de Memória'
-              ].map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
-              onChanged: (val) {
-                if (val != null) {
-                  setState(() {
-                    jogoSelecionado = val;
-                    if (val == 'Jogo de Memória') {
-                      tituloController.text = 'Jogo de Memória';
-                      descricaoController.text = 'Treine sua memória de trabalho encontrando os pares de cartas.';
-                    } else if (val == 'Memória Tática') {
-                      tituloController.text = 'Memória Tática';
-                      descricaoController.text = 'Treino de memória operacional visual. Observe objetos do cotidiano, identifique qual sumiu e exercite sua atenção e memória visual.';
-                    } else {
-                      tituloController.text = val;
-                      descricaoController.text = 'Realize a atividade terapêutica do jogo: $val';
-                    }
-                  });
-                }
-              },
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: _abrirModalSelecaoJogo,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4F6F9),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(LucideIcons.gamepad2, color: AppColors.primary, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        jogoSelecionado,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.text),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Subcategoria: ${_obterSubcategoriaDoJogo(jogoSelecionado)}',
+                        style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(LucideIcons.chevronDown, color: AppColors.muted, size: 20),
+              ],
             ),
           ),
         ),

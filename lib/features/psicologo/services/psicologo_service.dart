@@ -1,6 +1,17 @@
+import 'package:dio/dio.dart';
 import '../../../core/api/api_client.dart';
 
 class PsicologoService {
+  Future<Map<String, dynamic>> uploadMediaAtividade(String filePath) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath),
+    });
+    final response = await ApiClient.dio.post(
+      '/Atividades/upload-media',
+      data: formData,
+    );
+    return Map<String, dynamic>.from(response.data);
+  }
   Future<Map<String, dynamic>> obterMe() async {
     final response = await ApiClient.dio.get('/Auth/me');
     return Map<String, dynamic>.from(response.data);
@@ -119,6 +130,7 @@ class PsicologoService {
     return {
       'nome': nome,
       'aprovado': aprovado,
+      'fotoUrl': me['fotoUrl'],
       'plano': plano,
       'pacientesAtivos': pacientesAtivos,
       'atividadesEnviadas': totalAtividades,
@@ -203,16 +215,22 @@ class PsicologoService {
     String? telefone,
     DateTime? dataNascimento,
     String? genero,
+    String? senha,
   }) async {
+    final payload = {
+      'nome': nome,
+      'email': email,
+      'telefone': telefone,
+      'dataNascimento': dataNascimento?.toIso8601String(),
+      'genero': genero,
+    };
+    if (senha != null && senha.isNotEmpty) {
+      payload['senha'] = senha;
+    }
+    
     await ApiClient.dio.put(
       '/Pacientes/$id',
-      data: {
-        'nome': nome,
-        'email': email,
-        'telefone': telefone,
-        'dataNascimento': dataNascimento?.toIso8601String(),
-        'genero': genero,
-      },
+      data: payload,
     );
   }
 

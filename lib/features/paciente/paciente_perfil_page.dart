@@ -7,6 +7,9 @@ import '../../core/auth/auth_storage.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/api/api_client.dart';
 import '../auth/login_page.dart';
+import 'models/avatar_model.dart';
+import 'widgets/avatar_widget.dart';
+import 'criar_avatar_page.dart';
 import 'services/paciente_service.dart';
 
 class PacientePerfilPage extends StatefulWidget {
@@ -950,7 +953,8 @@ class _PacientePerfilPageState extends State<PacientePerfilPage> {
               _CardPerfil(
                 nome: nome,
                 email: email,
-                fotoUrl: me['fotoUrl'] != null && me['fotoUrl'].toString().isNotEmpty
+                rawFotoUrl: me['fotoUrl']?.toString(),
+                fotoUrl: me['fotoUrl'] != null && me['fotoUrl'].toString().isNotEmpty && !me['fotoUrl'].toString().startsWith('avatar:')
                     ? _obterUrlCompleta(me['fotoUrl'])
                     : null,
                 onPickFoto: () {
@@ -962,6 +966,20 @@ class _PacientePerfilPageState extends State<PacientePerfilPage> {
                 carregando: _subindoFoto,
               ),
               const SizedBox(height: 20),
+              _OpcaoPerfil(
+                titulo: 'Personalizar Meu Avatar 🎨',
+                icone: LucideIcons.sparkles,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CriarAvatarPage()),
+                  ).then((_) {
+                    setState(() {
+                      meFuture = service.obterMe();
+                    });
+                  });
+                },
+              ),
               _OpcaoPerfil(
                 titulo: 'Meus dados',
                 icone: LucideIcons.user,
@@ -1018,6 +1036,7 @@ class _PacientePerfilPageState extends State<PacientePerfilPage> {
 class _CardPerfil extends StatelessWidget {
   final String nome;
   final String email;
+  final String? rawFotoUrl;
   final String? fotoUrl;
   final VoidCallback onPickFoto;
   final bool carregando;
@@ -1025,15 +1044,18 @@ class _CardPerfil extends StatelessWidget {
   const _CardPerfil({
     required this.nome,
     required this.email,
+    this.rawFotoUrl,
     this.fotoUrl,
     required this.onPickFoto,
     required this.carregando,
   });
 
-
-
   @override
   Widget build(BuildContext context) {
+    final isHttpUrl = fotoUrl != null && fotoUrl!.startsWith('http');
+    final avatarParsed = rawFotoUrl != null && rawFotoUrl!.startsWith('avatar:') 
+        ? AvatarModel.fromJson(rawFotoUrl) 
+        : const AvatarModel();
     final inicial = nome.isNotEmpty ? nome.substring(0, 1) : '?';
 
     return Container(
@@ -1048,39 +1070,42 @@ class _CardPerfil extends StatelessWidget {
         children: [
           Stack(
             children: [
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: AppColors.softGreen,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 4),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                  image: fotoUrl != null && fotoUrl!.isNotEmpty
-                      ? DecorationImage(
-                          image: NetworkImage(fotoUrl!),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                ),
-                alignment: Alignment.center,
-                child: fotoUrl != null && fotoUrl!.isNotEmpty
-                    ? null
-                    : Text(
-                        inicial,
-                        style: const TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                        ),
+              if (!isHttpUrl)
+                AvatarWidget(avatar: avatarParsed, size: 100)
+              else
+                Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: AppColors.softGreen,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 4),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
                       ),
-              ),
+                    ],
+                    image: fotoUrl != null && fotoUrl!.isNotEmpty
+                        ? DecorationImage(
+                            image: NetworkImage(fotoUrl!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  alignment: Alignment.center,
+                  child: fotoUrl != null && fotoUrl!.isNotEmpty
+                      ? null
+                      : Text(
+                          inicial,
+                          style: const TextStyle(
+                            fontSize: 40,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                ),
               Positioned(
                 bottom: 0,
                 right: 0,

@@ -14,18 +14,40 @@ class DetetivePensamentosPage extends StatefulWidget {
 class _DetetivePensamentosPageState extends State<DetetivePensamentosPage> {
   final service = PacienteService();
   int etapa = 1;
+  int situacaoIndex = 0;
+
+  final List<Map<String, dynamic>> situacoes = [
+    {
+      "titulo": "Situação 1: A Mensagem sem Resposta",
+      "gatilho": "Seu amigo visualizou sua mensagem e não respondeu há mais de 3 horas.",
+      "pensamentos": ['Ele está bravo comigo', 'Talvez esteja ocupado', 'Ele não gosta mais de mim', 'Eu fiz algo de errado'],
+    },
+    {
+      "titulo": "Situação 2: O Chamado do Superior",
+      "gatilho": "Seu chefe/professor pediu para conversar a sós com você no final do dia.",
+      "pensamentos": ['Vou ser demitido/reprovado', 'Eles descobriram um erro meu', 'Querem me dar um novo projeto', 'É apenas uma reunião de rotina'],
+    },
+    {
+      "titulo": "Situação 3: O Convite Recusado",
+      "gatilho": "Você convidou um conhecido para sair e ele disse que não poderá ir hoje.",
+      "pensamentos": ['Ninguém gosta da minha companhia', 'Ele realmente tinha outro compromisso', 'Fui inconveniente em chamar', 'Posso convidar outra pessoa'],
+    },
+    {
+      "titulo": "Situação 4: A Avaliação Injusta",
+      "gatilho": "Seu chefe elogiou o trabalho da equipe, mas não mencionou o seu esforço específico.",
+      "pensamentos": ['Meu trabalho não vale nada', 'Ele me odeia', 'Talvez eu devesse ter falado', 'Foi um elogio geral para todos'],
+    },
+    {
+      "titulo": "Situação 5: A Apresentação",
+      "gatilho": "Você gaguejou brevemente durante uma apresentação importante.",
+      "pensamentos": ['Todos acharam que sou uma fraude', 'Estraguei tudo', 'Ninguém vai me levar a sério', 'Foi só um tropeço normal'],
+    },
+  ];
 
   String? pensamentoEscolhido;
   String? emocaoEscolhida;
   double intensidade = 5;
   final reestruturacaoController = TextEditingController();
-
-  final pensamentos = [
-    'Ele está bravo comigo',
-    'Talvez esteja ocupado',
-    'Não sei o que aconteceu',
-    'Ele não gosta mais de mim'
-  ];
 
   final emocoes = ['Ansiedade', 'Tristeza', 'Frustração', 'Insegurança', 'Raiva'];
 
@@ -173,9 +195,26 @@ class _DetetivePensamentosPageState extends State<DetetivePensamentosPage> {
   }
 
   Widget _buildEtapa1() {
+    final situacao = situacoes[situacaoIndex];
+    final pensamentos = situacao['pensamentos'] as List<String>;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              situacao['titulo'] as String,
+              style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+            Text(
+              'Situação ${situacaoIndex + 1} de ${situacoes.length}',
+              style: const TextStyle(color: AppColors.muted, fontSize: 12),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(20),
@@ -187,11 +226,11 @@ class _DetetivePensamentosPageState extends State<DetetivePensamentosPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('SITUAÇÃO', style: TextStyle(color: AppColors.muted, fontWeight: FontWeight.bold, fontSize: 11)),
+              const Text('SITUAÇÃO GATILHO', style: TextStyle(color: AppColors.muted, fontWeight: FontWeight.bold, fontSize: 11)),
               const SizedBox(height: 8),
               Text(
-                '"Seu amigo visualizou sua mensagem e não respondeu."',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.text),
+                '"${situacao['gatilho']}"',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.text, height: 1.4),
               ),
             ],
           ),
@@ -335,12 +374,25 @@ class _DetetivePensamentosPageState extends State<DetetivePensamentosPage> {
           if (etapa < 3) {
             setState(() => etapa++);
           } else {
-            finalizarJogo();
+            if (situacaoIndex < situacoes.length - 1) {
+              setState(() {
+                situacaoIndex++;
+                etapa = 1;
+                pensamentoEscolhido = null;
+                emocaoEscolhida = null;
+                intensidade = 5;
+                reestruturacaoController.clear();
+              });
+            } else {
+              finalizarJogo();
+            }
           }
         } : null,
         child: salvando
             ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white))
-            : Text(etapa == 3 ? 'Finalizar Desafio' : 'Próximo'),
+            : Text(etapa == 3 
+                ? (situacaoIndex < situacoes.length - 1 ? 'Próxima Situação' : 'Finalizar Desafio') 
+                : 'Próximo'),
       ),
     );
   }

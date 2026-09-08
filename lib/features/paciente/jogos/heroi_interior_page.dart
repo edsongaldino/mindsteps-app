@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme/app_theme.dart';
 import '../services/paciente_service.dart';
+import '../models/avatar_model.dart';
+import '../widgets/avatar_widget.dart';
+import '../criar_avatar_page.dart';
 
 class HeroiInteriorPage extends StatefulWidget {
   final String? atividadePacienteId;
@@ -19,6 +22,7 @@ class _HeroiInteriorPageState extends State<HeroiInteriorPage> {
   int pontos = 650;
   int nivel = 2;
   String tituloHeroi = "Explorador";
+  AvatarModel avatarModel = const AvatarModel();
 
   @override
   void initState() {
@@ -33,6 +37,7 @@ class _HeroiInteriorPageState extends State<HeroiInteriorPage> {
         nome = me['nome'] ?? 'Paciente';
         pontos = me['pontos'] ?? 0;
         nivel = me['nivel'] ?? 1;
+        avatarModel = AvatarModel.fromJson(me['fotoUrl']?.toString());
 
         if (nivel >= 10) {
           tituloHeroi = "Mentor";
@@ -120,11 +125,40 @@ class _HeroiInteriorPageState extends State<HeroiInteriorPage> {
               Center(
                 child: Column(
                   children: [
-                    Container(
-                      width: 110,
-                      height: 110,
-                      decoration: const BoxDecoration(color: AppColors.softGreen, shape: BoxShape.circle),
-                      child: const Icon(LucideIcons.userRoundCheck, size: 56, color: AppColors.primary),
+                    GestureDetector(
+                      onTap: () async {
+                        final updated = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CriarAvatarPage(
+                              currentAvatar: avatarModel,
+                              nivel: nivel,
+                              xp: pontos,
+                            ),
+                          ),
+                        );
+                        if (updated == true) {
+                          _carregarDados();
+                        }
+                      },
+                      child: Stack(
+                        children: [
+                          AvatarWidget(avatar: avatarModel, size: 110),
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                              ),
+                              child: const Icon(LucideIcons.pencil, size: 14, color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Text(

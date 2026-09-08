@@ -35,18 +35,18 @@ class _PacienteJogosPageState extends State<PacienteJogosPage> {
   final List<Map<String, dynamic>> jogosList = [
     {
       'id': 'decisao_pressao',
-      'titulo': 'Decisão Sob Pressão',
-      'subtitulo': 'Evitar reações emocionais impulsivas',
-      'icone': LucideIcons.hourglass,
-      'corFundo': const Color(0xFF0F2C59),
+      'titulo': 'Respire',
+      'subtitulo': 'Treino de controle inibitório e regulação de emoções sob pressão',
+      'icone': LucideIcons.timer,
+      'corFundo': const Color(0xFFE63946),
       'builder': (context) => const DecisaoSobPressaoPage(),
     },
     {
       'id': 'missao_foco',
       'titulo': 'Missão Foco',
-      'subtitulo': 'Ignorar distrações e focar no alvo',
+      'subtitulo': 'Treina a atenção seletiva e o foco sob distração',
       'icone': LucideIcons.target,
-      'corFundo': const Color(0xFF1B365D),
+      'corFundo': const Color(0xFF457B9D),
       'builder': (context) => const MissaoFocoPage(),
     },
     {
@@ -60,7 +60,7 @@ class _PacienteJogosPageState extends State<PacienteJogosPage> {
     {
       'id': 'investigacao',
       'titulo': 'Investigação',
-      'subtitulo': 'Responder com base em depoimentos',
+      'subtitulo': 'Responder com base em depoimentos verbais',
       'icone': LucideIcons.searchCode,
       'corFundo': const Color(0xFF5C3D2E),
       'builder': (context) => const InvestigacaoPage(),
@@ -68,7 +68,7 @@ class _PacienteJogosPageState extends State<PacienteJogosPage> {
     {
       'id': 'modo_piloto',
       'titulo': 'Modo Piloto',
-      'subtitulo': 'Seguir o checklist de desaceleração',
+      'subtitulo': 'Seguir o checklist de desaceleração do impulso',
       'icone': LucideIcons.shieldCheck,
       'corFundo': const Color(0xFF3F37C9),
       'builder': (context) => const ModoPilotoPage(),
@@ -147,8 +147,8 @@ class _PacienteJogosPageState extends State<PacienteJogosPage> {
     },
     {
       'id': 'monstro_ansiedade',
-      'titulo': 'O Monstro da Ansiedade',
-      'subtitulo': 'Externalizar e desenhar sua ansiedade',
+      'titulo': 'Ansiedade Social',
+      'subtitulo': 'Identificar sintomas corporais e pensamentos automáticos',
       'icone': LucideIcons.ghost,
       'corFundo': const Color(0xFF7C3AED),
       'builder': (context) => const MonstroAnsiedadePage(),
@@ -156,7 +156,7 @@ class _PacienteJogosPageState extends State<PacienteJogosPage> {
     {
       'id': 'ilha_emocoes',
       'titulo': 'Ilha das Emoções',
-      'subtitulo': 'Classificar sentimentos navegando em ilhas',
+      'subtitulo': 'Descobrir estratégias de autorregulação para dilemas reais',
       'icone': LucideIcons.palmtree,
       'corFundo': const Color(0xFF059669),
       'builder': (context) => const IlhaEmocoesPage(),
@@ -171,8 +171,8 @@ class _PacienteJogosPageState extends State<PacienteJogosPage> {
     },
     {
       'id': 'escape_room',
-      'titulo': 'Escape Room Terapêutico',
-      'subtitulo': 'Decifrar distorções cognitivas em enigmas',
+      'titulo': 'Ache a Distorção',
+      'subtitulo': 'Decifrar distorções cognitivas em enigmas de TCC',
       'icone': LucideIcons.doorOpen,
       'corFundo': const Color(0xFF4B5563),
       'builder': (context) => const EscapeRoomPage(),

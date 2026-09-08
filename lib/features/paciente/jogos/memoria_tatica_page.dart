@@ -17,20 +17,26 @@ class _MemoriaTaticaPageState extends State<MemoriaTaticaPage> {
   final service = PacienteService();
   bool salvando = false;
   int etapa = 0; // 0: Intro, 1: Memorizar, 2: Identificar, 3: Resultado
+  int rodadaAtual = 1;
+  int acertosRodadas = 0;
 
   final List<Map<String, dynamic>> arquivos = [
-    {"nome": "Chave", "icone": LucideIcons.shield},
-    {"nome": "Livro", "icone": LucideIcons.scale},
-    {"nome": "Planta", "icone": LucideIcons.palmtree},
-    {"nome": "Café", "icone": LucideIcons.zap},
-    {"nome": "Relógio", "icone": LucideIcons.target},
-    {"nome": "Flor", "icone": LucideIcons.star},
+    {"nome": "Escudo", "icone": LucideIcons.shield},
+    {"nome": "Balança", "icone": LucideIcons.scale},
+    {"nome": "Palmeira", "icone": LucideIcons.palmtree},
+    {"nome": "Raio", "icone": LucideIcons.zap},
+    {"nome": "Alvo", "icone": LucideIcons.target},
+    {"nome": "Estrela", "icone": LucideIcons.star},
+    {"nome": "Coração", "icone": LucideIcons.heart},
+    {"nome": "Chave", "icone": LucideIcons.key},
+    {"nome": "Lâmpada", "icone": LucideIcons.lightbulb},
+    {"nome": "Fogo", "icone": LucideIcons.flame},
   ];
 
   List<Map<String, dynamic>> itensAtivos = [];
   String? arquivoSumido;
   String? arquivoSelecionado;
-  int segundosRestantes = 3;
+  int segundosRestantes = 4;
   Timer? timerMemorizacao;
 
   @override
@@ -40,22 +46,31 @@ class _MemoriaTaticaPageState extends State<MemoriaTaticaPage> {
   }
 
   void iniciarJogo() {
-    final random = Random();
-    // Selecionar 4 arquivos aleatórios
-    final listaCopiada = List<Map<String, dynamic>>.from(arquivos)..shuffle(random);
-    final selecionados = listaCopiada.take(4).toList();
+    setState(() {
+      rodadaAtual = 1;
+      acertosRodadas = 0;
+    });
+    iniciarRodada();
+  }
 
-    // Escolher qual vai sumir
+  void iniciarRodada() {
+    final random = Random();
+    int qtdItens = rodadaAtual == 1 ? 4 : (rodadaAtual == 2 ? 6 : (rodadaAtual == 3 ? 8 : (rodadaAtual == 4 ? 9 : 10)));
+
+    final listaCopiada = List<Map<String, dynamic>>.from(arquivos)..shuffle(random);
+    final selecionados = listaCopiada.take(qtdItens).toList();
+
     final indexSumido = random.nextInt(selecionados.length);
     arquivoSumido = selecionados[indexSumido]['nome'] as String;
 
     setState(() {
       etapa = 1;
       itensAtivos = selecionados;
-      segundosRestantes = 4;
+      segundosRestantes = rodadaAtual == 1 ? 5 : (rodadaAtual == 2 ? 4 : (rodadaAtual == 3 ? 3 : 2));
       arquivoSelecionado = null;
     });
 
+    timerMemorizacao?.cancel();
     timerMemorizacao = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) return;
       setState(() {
@@ -73,7 +88,21 @@ class _MemoriaTaticaPageState extends State<MemoriaTaticaPage> {
     if (arquivoSelecionado != null) return;
     setState(() {
       arquivoSelecionado = nome;
+      if (nome == arquivoSumido) {
+        acertosRodadas++;
+      }
     });
+  }
+
+  void proximaRodadaOuFinalizar() {
+    if (rodadaAtual < 5) {
+      setState(() {
+        rodadaAtual++;
+      });
+      iniciarRodada();
+    } else {
+      finalizarJogo();
+    }
   }
 
   Future<void> finalizarJogo() async {

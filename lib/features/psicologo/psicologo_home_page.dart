@@ -3,6 +3,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/auth/auth_storage.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/api/api_client.dart';
 import 'atividades_page.dart';
 import 'mais_page.dart';
 import 'pacientes_page.dart';
@@ -55,20 +56,21 @@ class _PsicologoHomePageState extends State<PsicologoHomePage> {
   void _onFabPressed() {
     if (paginaAtual == 1) {
       pacientesKey.currentState?.exibirDialogoCriar(context);
-    } else if (paginaAtual == 3) {
+    } else if (paginaAtual == 2) {
       atividadesKey.currentState?.exibirDialogoCriar(context);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool temFab = (paginaAtual == 1 || paginaAtual == 3) && aprovado;
+    // FAB aparece em Pacientes (1) e Atividades (2) quando aprovado
+    final bool temFab = (paginaAtual == 1 || paginaAtual == 2) && aprovado;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: IndexedStack(
-          index: paginaAtual > 2 ? paginaAtual - 1 : paginaAtual,
+          index: paginaAtual, // mapeamento direto: 0=Dashboard, 1=Pacientes, 2=Atividades, 3=Mais
           children: paginas,
         ),
       ),
@@ -82,56 +84,94 @@ class _PsicologoHomePageState extends State<PsicologoHomePage> {
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: Theme(
-        data: Theme.of(context).copyWith(
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-        ),
-        child: BottomNavigationBar(
-          currentIndex: paginaAtual,
-          onTap: (index) {
-            if (index == 2) {
-              if (!temFab) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const PsicologoPerfilPage()),
-                );
-              }
-            } else {
-              setState(() => paginaAtual = index);
-            }
-          },
-          backgroundColor: Colors.white,
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: AppColors.muted,
-          selectedFontSize: 11,
-          unselectedFontSize: 11,
-          elevation: 20,
-          items: [
-            const BottomNavigationBarItem(
-              icon: Icon(LucideIcons.house, size: 24),
-              label: 'Dashboard',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(LucideIcons.users, size: 24),
-              label: 'Pacientes',
-            ),
-            BottomNavigationBarItem(
-              icon: temFab
-                  ? const Icon(Icons.circle, color: Colors.transparent)
-                  : const Icon(LucideIcons.user, size: 24),
-              label: temFab ? '' : 'Perfil',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(LucideIcons.clipboardList, size: 24),
-              label: 'Atividades',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.more_horiz, size: 24),
-              label: 'Mais',
-            ),
-          ],
+      bottomNavigationBar: _CustomBottomNav(
+        paginaAtual: paginaAtual,
+        onTap: (index) {
+          setState(() => paginaAtual = index);
+        },
+      ),
+    );
+  }
+}
+
+class _CustomBottomNav extends StatelessWidget {
+  final int paginaAtual;
+  final ValueChanged<int> onTap;
+
+  const _CustomBottomNav({required this.paginaAtual, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    const activeColor = Color(0xFF4F46E5);
+    const inactiveColor = AppColors.muted;
+    const activeBg = Color(0xFFEEF2FF);
+
+    final items = [
+      (icon: LucideIcons.house, label: 'In\u00edcio'),
+      (icon: LucideIcons.users, label: 'Pacientes'),
+      (icon: LucideIcons.clipboardList, label: 'Atividades'),
+      (icon: Icons.more_horiz, label: 'Mais'),
+    ];
+
+    // Mapear paginaAtual -> navIndex
+    // paginas: 0=Dashboard, 1=Pacientes, 2=Atividades, 3=Mais
+    int navIndex = paginaAtual;
+    if (paginaAtual > 3) navIndex = 0;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.07),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(items.length, (i) {
+              final item = items[i];
+              final isSelected = navIndex == i;
+              final color = isSelected ? activeColor : inactiveColor;
+
+              return Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => onTap(i),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? activeBg : Colors.transparent,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Icon(item.icon, size: 22, color: color),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        item.label,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: color,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ),
         ),
       ),
     );
@@ -178,28 +218,27 @@ class _DashboardPsicologoState extends State<_DashboardPsicologo> {
 
         final resumo = snapshot.data ?? {};
         final bool isAprovado = resumo['aprovado'] ?? true;
-        final String plano = resumo['plano'] ?? 'Starter';
-        final int pacientesAtivos = resumo['pacientesAtivos'] ?? 0;
 
         return RefreshIndicator(
           onRefresh: _recarregar,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _TopoDashboard(nome: resumo['nome'] ?? 'Psicólogo'),
-                const SizedBox(height: 16),
-                _CardInfoPlano(plano: plano, pacientesAtivos: pacientesAtivos),
+                _TopoDashboard(
+                  nome: resumo['nome'] ?? 'Psic\u00f3logo',
+                  fotoUrl: resumo['fotoUrl'],
+                ),
+                const SizedBox(height: 20),
                 if (!isAprovado) ...[
-                  const SizedBox(height: 24),
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.warning.withOpacity(0.1),
+                      color: AppColors.warning.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+                      border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: [
@@ -207,10 +246,10 @@ class _DashboardPsicologoState extends State<_DashboardPsicologo> {
                         const SizedBox(width: 14),
                         Expanded(
                           child: Text(
-                            'Sua conta de psicólogo está aguardando aprovação pelo administrador. Recursos de cadastro de pacientes e de novas atividades estão desabilitados até a validação do seu CRP.',
+                            'Sua conta de psic\u00f3logo est\u00e1 aguardando aprova\u00e7\u00e3o pelo administrador. Recursos de cadastro de pacientes e de novas atividades est\u00e3o desabilitados at\u00e9 a valida\u00e7\u00e3o do seu CRP.',
                             style: TextStyle(
                               fontSize: 13,
-                              color: AppColors.text.withOpacity(0.8),
+                              color: AppColors.text.withValues(alpha: 0.8),
                               fontWeight: FontWeight.w600,
                               height: 1.4,
                             ),
@@ -219,34 +258,11 @@ class _DashboardPsicologoState extends State<_DashboardPsicologo> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 20),
                 ],
-                const SizedBox(height: 32),
-                _GridResumo(
-                  pacientesAtivos: resumo['pacientesAtivos'] ?? 0,
-                  atividadesEnviadas: resumo['atividadesEnviadas'] ?? 0,
-                  pendencias: resumo['pendencias'] ?? 0,
-                  adesaoMedia: resumo['adesaoMedia'] ?? 0,
-                ),
-                const SizedBox(height: 32),
-                const _CardHumorSemana(),
-                const SizedBox(height: 32),
-                const Text(
-                  'Atividades pendentes',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.text,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '5 atividades aguardando respostas',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.muted,
-                  ),
-                ),
-                const SizedBox(height: 16),
+                const _BannerImpacto(),
+                const SizedBox(height: 20),
+                const _FeaturesGrid(),
               ],
             ),
           ),
@@ -260,10 +276,7 @@ class _ErroDashboard extends StatelessWidget {
   final String erro;
   final VoidCallback onTentarNovamente;
 
-  const _ErroDashboard({
-    required this.erro,
-    required this.onTentarNovamente,
-  });
+  const _ErroDashboard({required this.erro, required this.onTentarNovamente});
 
   @override
   Widget build(BuildContext context) {
@@ -276,7 +289,7 @@ class _ErroDashboard extends StatelessWidget {
             const Icon(LucideIcons.circleAlert, color: AppColors.danger, size: 42),
             const SizedBox(height: 14),
             const Text(
-              'Não foi possível carregar o dashboard.',
+              'N\u00e3o foi poss\u00edvel carregar o dashboard.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.text),
             ),
@@ -297,70 +310,193 @@ class _ErroDashboard extends StatelessWidget {
 
 class _TopoDashboard extends StatelessWidget {
   final String nome;
-  const _TopoDashboard({required this.nome});
+  final String? fotoUrl;
+  const _TopoDashboard({required this.nome, this.fotoUrl});
+
+  String? _obterUrlCompleta(String? url) {
+    if (url == null || url.isEmpty) return null;
+    if (url.startsWith('http')) return url;
+    final baseUrl = ApiClient.dio.options.baseUrl;
+    final domain = baseUrl.endsWith('/api')
+        ? baseUrl.substring(0, baseUrl.length - 4)
+        : baseUrl;
+    return '$domain$url';
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final fotoCompleta = _obterUrlCompleta(fotoUrl);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Olá, $nome! 👋',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.text,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Acompanhe seus pacientes e atividades em um só lugar.',
-                style: TextStyle(fontSize: 14, color: AppColors.muted),
-              ),
-            ],
-          ),
-        ),
-        Stack(
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            IconButton(
-              onPressed: () {},
-              icon: const Icon(LucideIcons.bell, color: AppColors.primary, size: 28),
-            ),
-            Positioned(
-              right: 12,
-              top: 12,
-              child: Container(
-                width: 10,
-                height: 10,
-                decoration: const BoxDecoration(
-                  color: AppColors.warning,
-                  shape: BoxShape.circle,
+            Row(
+              children: [
+                Image.asset(
+                  'assets/images/logo_horizontal.png',
+                  height: 38,
+                  fit: BoxFit.contain,
                 ),
-              ),
+              ],
+            ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Stack(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Notifica\u00e7\u00f5es em desenvolvimento')),
+                        );
+                      },
+                      child: Container(
+                        width: 42,
+                        height: 42,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(LucideIcons.bell, color: AppColors.danger, size: 20),
+                      ),
+                    ),
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        width: 9,
+                        height: 9,
+                        decoration: BoxDecoration(
+                          color: AppColors.danger,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PsicologoPerfilPage()),
+                    ).then((_) {
+                      // Se houver refresh automatico, isso ajudará
+                    });
+                  },
+                  child: CircleAvatar(
+                    radius: 21,
+                    backgroundColor: AppColors.border,
+                    backgroundImage: fotoCompleta != null ? NetworkImage(fotoCompleta) : null,
+                    child: fotoCompleta == null ? const Icon(LucideIcons.user, color: AppColors.muted, size: 22) : null,
+                  ),
+                ),
+              ],
             ),
           ],
+        ),
+        const SizedBox(height: 22),
+        Text(
+          'Ola, $nome! \u{1F44B}',
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            color: AppColors.text,
+            letterSpacing: -0.5,
+            height: 1.1,
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Obrigado por fazer parte do MindSteps.\nCada passo acompanhado pode ser o in\u00edcio de uma grande transforma\u00e7\u00e3o.',
+          style: TextStyle(
+            fontSize: 14,
+            color: AppColors.muted,
+            height: 1.4,
+            fontWeight: FontWeight.w400,
+          ),
         ),
       ],
     );
   }
 }
 
-class _GridResumo extends StatelessWidget {
-  final int pacientesAtivos;
-  final int atividadesEnviadas;
-  final int pendencias;
-  final int adesaoMedia;
 
-  const _GridResumo({
-    required this.pacientesAtivos,
-    required this.atividadesEnviadas,
-    required this.pendencias,
-    required this.adesaoMedia,
-  });
+
+class _FeaturesGrid extends StatelessWidget {
+  const _FeaturesGrid();
+
+  void _mostrarDetalhes(
+    BuildContext context,
+    String titulo,
+    String descricaoDetalhada,
+    IconData icone,
+    Color cor,
+    Color bgCor,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: bgCor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icone, color: cor, size: 32),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                titulo.replaceAll('\n', ' '),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.text,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                descricaoDetalhada,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.muted,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: cor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: const Text('Entendi', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -368,345 +504,323 @@ class _GridResumo extends StatelessWidget {
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      childAspectRatio: 1.1,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      childAspectRatio: 1.35,
       children: [
-        _CardResumo(
-          '$pacientesAtivos',
-          'Pacientes ativos',
-          LucideIcons.users,
+        _FeatureCard(
+          titulo: 'Atividades\nTerapeuticas',
+          descricao: 'Envie atividades baseadas em evid\u00eancias e fortaleça o processo terap\u00eautico.',
+          icone: LucideIcons.clipboardCheck,
+          iconeColor: const Color(0xFF0D9488),
+          bgColor: const Color(0xFFECFDF5),
+          iconeBgColor: const Color(0xFFD1FAE5),
+          decoIcone: LucideIcons.clipboardList,
+          onTap: () => _mostrarDetalhes(
+            context,
+            'Atividades Terapêuticas',
+            'Envie formulários, questionários e tarefas baseadas em evidências para seus pacientes responderem entre as sessões. Acompanhe as respostas em tempo real.',
+            LucideIcons.clipboardCheck,
+            const Color(0xFF0D9488),
+            const Color(0xFFD1FAE5),
+          ),
         ),
-        _CardResumo(
-          '$atividadesEnviadas',
-          'Atividades\nenviadas',
-          LucideIcons.fileText,
+        _FeatureCard(
+          titulo: 'Jogos\nTerapeuticos',
+          descricao: 'Desenvolva habilidades de forma l\u00fadica e engajadora.',
+          icone: LucideIcons.gamepad2,
+          iconeColor: const Color(0xFF7C3AED),
+          bgColor: const Color(0xFFF5F3FF),
+          iconeBgColor: const Color(0xFFEDE9FE),
+          decoIcone: LucideIcons.gamepad2,
+          onTap: () => _mostrarDetalhes(
+            context,
+            'Jogos Terapêuticos',
+            'Prescreva jogos focados no desenvolvimento cognitivo, como controle inibitório e atenção seletiva, e acompanhe o desempenho através de scores.',
+            LucideIcons.gamepad2,
+            const Color(0xFF7C3AED),
+            const Color(0xFFEDE9FE),
+          ),
         ),
-        _CardResumo(
-          '$pendencias',
-          'Pendências',
-          LucideIcons.clock,
-          isAlert: true,
+        _FeatureCard(
+          titulo: 'Di\u00e1rio de Humor',
+          descricao: 'Acompanhe emo\u00e7\u00f5es e identifique padr\u00f5es ao longo do tempo.',
+          icone: LucideIcons.smile,
+          iconeColor: const Color(0xFF2563EB),
+          bgColor: const Color(0xFFEFF6FF),
+          iconeBgColor: const Color(0xFFDBEAFE),
+          decoIcone: LucideIcons.barChart2,
+          onTap: () => _mostrarDetalhes(
+            context,
+            'Diário de Humor',
+            'Os pacientes podem registrar emoções diárias. Use os gráficos gerados para identificar padrões e gatilhos emocionais nas próximas consultas.',
+            LucideIcons.smile,
+            const Color(0xFF2563EB),
+            const Color(0xFFDBEAFE),
+          ),
         ),
-        _CardResumo(
-          '$adesaoMedia%',
-          'Adesão média',
-          LucideIcons.trendingUp,
-          isSuccess: true,
+        _FeatureCard(
+          titulo: 'Evolu\u00e7\u00e3o do\nPaciente',
+          descricao: 'Visualize progresso, ades\u00e3o e indicadores para orientar suas interven\u00e7\u00f5es.',
+          icone: LucideIcons.barChart2,
+          iconeColor: const Color(0xFFD97706),
+          bgColor: const Color(0xFFFFFBEB),
+          iconeBgColor: const Color(0xFFFEF3C7),
+          decoIcone: LucideIcons.trendingUp,
+          onTap: () => _mostrarDetalhes(
+            context,
+            'Evolução do Paciente',
+            'Acesse dashboards individuais com o histórico de adesão e progresso do paciente em todas as atividades propostas.',
+            LucideIcons.barChart2,
+            const Color(0xFFD97706),
+            const Color(0xFFFEF3C7),
+          ),
+        ),
+        _FeatureCard(
+          titulo: 'Check-ins',
+          descricao: 'Colete informa\u00e7\u00f5es r\u00e1pidas e mantenha o v\u00ednculo entre as sess\u00f5es.',
+          icone: LucideIcons.messageCircle,
+          iconeColor: const Color(0xFFDC2626),
+          bgColor: const Color(0xFFFEF2F2),
+          iconeBgColor: const Color(0xFFFEE2E2),
+          decoIcone: LucideIcons.heart,
+          onTap: () => _mostrarDetalhes(
+            context,
+            'Check-ins',
+            'Envie perguntas rápidas para saber como o paciente está se sentindo ao longo da semana, fortalecendo a aliança terapêutica.',
+            LucideIcons.messageCircle,
+            const Color(0xFFDC2626),
+            const Color(0xFFFEE2E2),
+          ),
+        ),
+        _FeatureCard(
+          titulo: 'Registros\nTerapeuticos',
+          descricao: 'Use os registros como ponto de partida para sess\u00f5es mais produtivas.',
+          icone: LucideIcons.fileText,
+          iconeColor: const Color(0xFF4338CA),
+          bgColor: const Color(0xFFEEF2FF),
+          iconeBgColor: const Color(0xFFE0E7FF),
+          decoIcone: LucideIcons.fileText,
+          onTap: () => _mostrarDetalhes(
+            context,
+            'Registros Terapêuticos',
+            'Os pacientes preenchem RPDs (Registro de Pensamentos Disfuncionais) e outros protocolos diretamente pelo app, chegando mais preparados para a sessão.',
+            LucideIcons.fileText,
+            const Color(0xFF4338CA),
+            const Color(0xFFE0E7FF),
+          ),
         ),
       ],
     );
   }
 }
 
-class _CardResumo extends StatelessWidget {
-  final String valor;
+class _FeatureCard extends StatelessWidget {
   final String titulo;
+  final String descricao;
   final IconData icone;
-  final bool isAlert;
-  final bool isSuccess;
+  final Color iconeColor;
+  final Color bgColor;
+  final Color iconeBgColor;
+  final IconData decoIcone;
+  final VoidCallback onTap;
 
-  const _CardResumo(
-    this.valor,
-    this.titulo,
-    this.icone, {
-    this.isAlert = false,
-    this.isSuccess = false,
+  const _FeatureCard({
+    required this.titulo,
+    required this.descricao,
+    required this.icone,
+    required this.iconeColor,
+    required this.bgColor,
+    required this.iconeBgColor,
+    required this.decoIcone,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    Color iconColor = AppColors.primary;
-    if (isAlert) iconColor = AppColors.danger;
-    if (isSuccess) iconColor = AppColors.secondary;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border.withOpacity(0.5)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: Material(
+        color: bgColor,
+        child: InkWell(
+          onTap: onTap,
+          child: Stack(
             children: [
-              Text(
-                valor,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.text,
-                ),
+              Positioned(
+                bottom: -10,
+                right: -10,
+                child: Icon(decoIcone, size: 70, color: iconeColor.withValues(alpha: 0.09)),
               ),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icone, color: iconColor, size: 20),
-              ),
-            ],
-          ),
-          const Spacer(),
-          Text(
-            titulo,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.muted,
-              fontWeight: FontWeight.w600,
-              height: 1.2,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CardHumorSemana extends StatelessWidget {
-  const _CardHumorSemana();
-
-  @override
-  Widget build(BuildContext context) {
-    final pontos = [0.3, 0.4, 0.35, 0.5, 0.45, 0.7, 0.6];
-    final dias = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border.withOpacity(0.5)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Humor médio da semana',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.text,
-                ),
-              ),
-              Icon(LucideIcons.smile, color: AppColors.secondary, size: 20),
-            ],
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            height: 140,
-            child: Stack(
-              children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _linhaGuia('5'),
-                    _linhaGuia('4'),
-                    _linhaGuia('3'),
-                    _linhaGuia('2'),
-                    _linhaGuia('1'),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 24, right: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: List.generate(pontos.length, (index) {
-                      return Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            margin: EdgeInsets.only(bottom: 130 * pontos[index]),
-                            decoration: BoxDecoration(
-                              color: AppColors.secondary,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: iconeBgColor,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(icone, color: iconeColor, size: 18),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            titulo,
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.text,
+                              height: 1.2,
                             ),
                           ),
-                        ],
-                      );
-                    }),
-                  ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      descricao,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        color: Color(0xFF64748B),
+                        fontWeight: FontWeight.w400,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.only(left: 24, right: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(dias.length, (index) {
-                return Text(
-                  dias[index],
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.muted,
-                    fontWeight: FontWeight.w500,
-                  ),
-                );
-              }),
-            ),
-          ),
-        ],
+        ),
       ),
-    );
-  }
-
-  Widget _linhaGuia(String num) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 16,
-          child: Text(
-            num,
-            style: const TextStyle(color: AppColors.muted, fontSize: 10),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Container(
-            height: 1,
-            color: AppColors.border.withOpacity(0.5),
-          ),
-        ),
-      ],
     );
   }
 }
 
-class _CardInfoPlano extends StatelessWidget {
-  final String plano;
-  final int pacientesAtivos;
-
-  const _CardInfoPlano({
-    required this.plano,
-    required this.pacientesAtivos,
-  });
+class _BannerImpacto extends StatelessWidget {
+  const _BannerImpacto();
 
   @override
   Widget build(BuildContext context) {
-    final String planoLimpo = (plano == null || plano.trim().isEmpty) ? 'Starter' : plano.trim();
-    final String nomePlanoFormatado = planoLimpo.toLowerCase() == 'starter' ? 'Atual' : (planoLimpo[0].toUpperCase() + planoLimpo.substring(1).toLowerCase());
-    
-    int? limitePacientes;
-    if (planoLimpo.toLowerCase() == 'starter') {
-      limitePacientes = 5;
-    } else if (planoLimpo.toLowerCase() == 'essencial') {
-      limitePacientes = 20;
-    }
-
-    final bool atingiuLimite = limitePacientes != null && pacientesAtivos >= limitePacientes;
-    final String progressoText = limitePacientes != null 
-        ? '$pacientesAtivos de $limitePacientes ativos' 
-        : '$pacientesAtivos ativos (Sem limite)';
-        
-    final double percent = limitePacientes != null 
-        ? (pacientesAtivos / limitePacientes).clamp(0.0, 1.0) 
-        : 1.0;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: atingiuLimite ? const Color(0xFFFFF4F4) : AppColors.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: atingiuLimite ? AppColors.danger.withOpacity(0.3) : AppColors.border,
-          width: 1.5,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        height: 175,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFECEFFD), Color(0xFFF0F4FF)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              top: 22,
+              left: 22,
+              right: 175,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    atingiuLimite ? LucideIcons.circleAlert : LucideIcons.shieldCheck,
-                    color: atingiuLimite ? AppColors.danger : AppColors.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Plano $nomePlanoFormatado',
+                  const Text(
+                    'SEU IMPACTO IMPORTA',
                     style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: atingiuLimite ? AppColors.danger : AppColors.text,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF7C3AED),
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Pequenas a\u00e7\u00f5es,\ngrandes mudan\u00e7as.',
+                    style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF0F172A),
+                      height: 1.1,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Voc\u00ea faz parte de hist\u00f3rias\nmais saud\u00e1veis todos os dias.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.text.withValues(alpha: 0.55),
+                      height: 1.4,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ],
               ),
-              if (limitePacientes != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: atingiuLimite ? AppColors.danger.withOpacity(0.1) : AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    progressoText,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: atingiuLimite ? AppColors.danger : AppColors.primary,
-                    ),
-                  ),
+            ),
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: SizedBox(
+                height: 175,
+                width: 165,
+                child: Image.asset(
+                  'assets/images/doctor_banner.jpg',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                 ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          if (limitePacientes != null) ...[
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: percent,
-                backgroundColor: AppColors.border,
-                color: atingiuLimite ? AppColors.danger : AppColors.primary,
-                minHeight: 6,
               ),
             ),
-            const SizedBox(height: 12),
-          ],
-          Text(
-            atingiuLimite 
-                ? 'Você atingiu o limite de pacientes ativos do seu plano. Para cadastrar novos pacientes, faça o upgrade.'
-                : 'Informações e configurações do plano disponíveis na plataforma web.',
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.muted,
-              height: 1.4,
+            Positioned(
+              top: 75,
+              right: 12,
+              child: Transform.rotate(
+                angle: -0.15,
+                child: Container(
+                  width: 98,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.06),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Text(
+                    'Sa\u00fade mental\ntamb\u00e9m se\nconstr\u00f3i juntos.',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF4338CA),
+                      height: 1.4,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
             ),
-          ),
-        ],
+            Positioned(
+              top: 140,
+              right: 106,
+              child: Icon(
+                LucideIcons.heart,
+                size: 15,
+                color: const Color(0xFF7C3AED).withValues(alpha: 0.65),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

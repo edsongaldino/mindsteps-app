@@ -39,8 +39,10 @@ class _JogoMemoriaPageState extends State<JogoMemoriaPage>
 
   // Cronômetro
   Timer? _timer;
-  int segundosJogo = 0;
+  int segundosRestantes = 60;
+  int tempoTotalNivel = 60;
   bool jogoConcluido = false;
+  bool tempoEsgotado = false;
   bool salvando = false;
   String dificuldadeEfetiva = 'Médio';
 
@@ -80,29 +82,27 @@ class _JogoMemoriaPageState extends State<JogoMemoriaPage>
     }
   }
 
+  int _getTempoLimite(int nivel) {
+    if (nivel <= 1) return 60;
+    if (nivel == 2) return 50;
+    if (nivel == 3) return 40;
+    if (nivel == 4) return 30;
+    return 25;
+  }
+
   void _iniciarJogo(int nivel) {
-    final String dificuldade = widget.dificuldade;
+    pacienteNivel = nivel;
+    tempoTotalNivel = _getTempoLimite(nivel);
+    segundosRestantes = tempoTotalNivel;
 
     int paresCount;
-    if (dificuldade == 'Fácil') {
-      paresCount = 3;
-      dificuldadeEfetiva = 'Fácil (6 cartas)';
-    } else if (dificuldade == 'Difícil') {
-      paresCount = 8;
-      dificuldadeEfetiva = 'Difícil (16 cartas)';
-    } else if (dificuldade == 'Evolutivo') {
-      if (nivel <= 1) paresCount = 3;
-      else if (nivel == 2) paresCount = 4;
-      else if (nivel == 3) paresCount = 6;
-      else if (nivel == 4) paresCount = 8;
-      else paresCount = 10;
-      dificuldadeEfetiva = 'Evolutivo – Nível $nivel';
-    } else {
-      // Médio (padrão)
-      paresCount = 6;
-      dificuldadeEfetiva = 'Médio (12 cartas)';
-    }
+    if (nivel <= 1) paresCount = 3;
+    else if (nivel == 2) paresCount = 4;
+    else if (nivel == 3) paresCount = 6;
+    else if (nivel == 4) paresCount = 8;
+    else paresCount = 10;
 
+    dificuldadeEfetiva = 'Nível $nivel ($paresCount pares - ${tempoTotalNivel}s)';
     totalPares = paresCount;
 
     // Pool de itens
@@ -147,14 +147,22 @@ class _JogoMemoriaPageState extends State<JogoMemoriaPage>
     movimentos = 0;
     paresEncontrados = 0;
     jogoConcluido = false;
-    segundosJogo = 0;
+    tempoEsgotado = false;
+
     indexPrimeiraCarta = null;
     bloqueado = false;
 
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) { t.cancel(); return; }
-      setState(() => segundosJogo++);
+      setState(() {
+        if (segundosRestantes > 0) {
+          segundosRestantes--;
+        } else {
+          t.cancel();
+          tempoEsgotado = true;
+        }
+      });
     });
   }
 
@@ -162,6 +170,12 @@ class _JogoMemoriaPageState extends State<JogoMemoriaPage>
     setState(() {
       carregandoNivel = false;
       _iniciarJogo(pacienteNivel);
+    });
+  }
+
+  void _proximoNivel() {
+    setState(() {
+      _iniciarJogo(pacienteNivel + 1);
     });
   }
 
@@ -211,15 +225,16 @@ class _JogoMemoriaPageState extends State<JogoMemoriaPage>
       return;
     }
     setState(() => salvando = true);
-    final m = (segundosJogo ~/ 60).toString().padLeft(2, '0');
-    final s = (segundosJogo % 60).toString().padLeft(2, '0');
+    final tempoGasto = tempoTotalNivel - segundosRestantes;
+    final m = (tempoGasto ~/ 60).toString().padLeft(2, '0');
+    final s = (tempoGasto % 60).toString().padLeft(2, '0');
     try {
       await service.registrarJogo(
         jogoId: 'jogo_memoria',
         dadosPlay: {
+          'nivel': pacienteNivel,
           'movimentos': movimentos,
-          'tempo': '$m:$s',
-          'tempoSegundos': segundosJogo,
+          'tempoGasto': '$m:$s',
           'dificuldade': dificuldadeEfetiva,
           'pares': totalPares,
         },
@@ -231,8 +246,8 @@ class _JogoMemoriaPageState extends State<JogoMemoriaPage>
   }
 
   String get _tempoFormatado {
-    final m = (segundosJogo ~/ 60).toString().padLeft(2, '0');
-    final s = (segundosJogo % 60).toString().padLeft(2, '0');
+    final m = (segundosRestantes ~/ 60).toString().padLeft(2, '0');
+    final s = (segundosRestantes % 60).toString().padLeft(2, '0');
     return '$m:$s';
   }
 
@@ -321,6 +336,10 @@ class _JogoMemoriaPageState extends State<JogoMemoriaPage>
                       child: Column(
                         children: [
                           _buildGrid(),
+                          if (tempoEsgotado) ...[
+                            const SizedBox(height: 24),
+                            _buildTempoEsgotado(),
+                          ],
                           if (jogoConcluido) ...[
                             const SizedBox(height: 24),
                             _buildResultado(),
@@ -333,9 +352,9 @@ class _JogoMemoriaPageState extends State<JogoMemoriaPage>
                 ],
               ),
             ),
-      bottomNavigationBar: jogoConcluido
+      bottomNavigationBar: (jogoConcluido || tempoEsgotado)
           ? Container(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
@@ -346,44 +365,84 @@ class _JogoMemoriaPageState extends State<JogoMemoriaPage>
                   ),
                 ],
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
+              child: tempoEsgotado
+                  ? ElevatedButton.icon(
                       onPressed: _reiniciarJogo,
-                      icon: const Icon(LucideIcons.refreshCw, size: 18),
-                      label: const Text('Jogar Novamente'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        side: const BorderSide(color: AppColors.primary),
-                        foregroundColor: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: salvando ? null : _concluir,
-                      icon: salvando
-                          ? const SizedBox(
-                              width: 18, height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Icon(LucideIcons.check, size: 18),
-                      label: const Text('Concluir'),
+                      icon: const Icon(LucideIcons.rotateCcw, size: 18),
+                      label: const Text('Tentar Novamente Este Nível', style: TextStyle(fontWeight: FontWeight.bold)),
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: AppColors.danger,
                         foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _proximoNivel,
+                            icon: const Icon(LucideIcons.arrowRight, size: 18),
+                            label: Text('Subir p/ Nível ${pacienteNivel + 1}'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              side: const BorderSide(color: AppColors.primary),
+                              foregroundColor: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: salvando ? null : _concluir,
+                            icon: salvando
+                                ? const SizedBox(
+                                    width: 18, height: 18,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  )
+                                : const Icon(LucideIcons.check, size: 18),
+                            label: const Text('Concluir'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
             )
           : null,
+    );
+  }
+
+  Widget _buildTempoEsgotado() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.danger.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.danger, width: 2),
+      ),
+      child: Column(
+        children: [
+          const Icon(LucideIcons.timerOff, color: AppColors.danger, size: 40),
+          const SizedBox(height: 12),
+          const Text(
+            'Tempo Esgotado!',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.danger),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'O tempo limite para o Nível $pacienteNivel acabou.\nVocê pode repetir quantas vezes quiser para treinar sua velocidade!',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 14, color: AppColors.text, height: 1.4),
+          ),
+        ],
+      ),
     );
   }
 

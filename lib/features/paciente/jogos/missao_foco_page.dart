@@ -152,7 +152,7 @@ class _MissaoFocoPageState extends State<MissaoFocoPage> {
         backgroundColor: backgroundColor,
         elevation: 0,
         title: const Text(
-          'MISSÃO FOCO',
+          'ATENÇÃO - MISSÃO FOCO',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,

@@ -17,6 +17,8 @@ class _MonstroAnsiedadePageState extends State<MonstroAnsiedadePage> {
 
   final nomeController = TextEditingController(text: 'Catastrofossauro');
   final medoController = TextEditingController(text: 'E se tudo der errado?');
+  final corpoController = TextEditingController(text: 'Aperto no peito e garganta seca');
+  final pensamentoAutomaticoController = TextEditingController(text: 'Vão perceber que estou nervoso e rir de mim');
   String corSelecionada = 'Roxo';
   String formatoSelecionado = 'Chifrudo';
 
@@ -41,6 +43,8 @@ class _MonstroAnsiedadePageState extends State<MonstroAnsiedadePage> {
           'cor': corSelecionada,
           'formato': formatoSelecionado,
           'medo': medoController.text.trim(),
+          'localCorpo': corpoController.text.trim(),
+          'pensamentoAutomatico': pensamentoAutomaticoController.text.trim(),
           'acao': acaoEnfrentamento,
         },
         atividadePacienteId: widget.atividadePacienteId,
@@ -91,7 +95,7 @@ class _MonstroAnsiedadePageState extends State<MonstroAnsiedadePage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('O Monstro da Ansiedade', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        title: const Text('REGULAÇÃO - ANSIEDADE SOCIAL', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -102,8 +106,8 @@ class _MonstroAnsiedadePageState extends State<MonstroAnsiedadePage> {
             children: [
               Center(
                 child: Container(
-                  width: 140,
-                  height: 140,
+                  width: 120,
+                  height: 120,
                   decoration: BoxDecoration(
                     color: AppColors.softPurple,
                     shape: BoxShape.circle,
@@ -111,24 +115,46 @@ class _MonstroAnsiedadePageState extends State<MonstroAnsiedadePage> {
                   ),
                   child: const Icon(
                     LucideIcons.ghost,
-                    size: 80,
+                    size: 64,
                     color: AppColors.primary,
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
-              const Text('Nome do seu monstro', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              const SizedBox(height: 20),
+              const Text('Nome do seu monstro / ansiedade', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
               const SizedBox(height: 8),
               TextField(
                 controller: nomeController,
                 decoration: const InputDecoration(filled: true, fillColor: Colors.white),
               ),
               const SizedBox(height: 16),
-              const Text('Que frase/medo ele costuma sussurrar?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              const Text('Como você se sente / medo principal', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
               const SizedBox(height: 8),
               TextField(
                 controller: medoController,
                 decoration: const InputDecoration(filled: true, fillColor: Colors.white),
+              ),
+              const SizedBox(height: 16),
+              const Text('Onde sentiu no corpo? (Sintomas físicos)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: corpoController,
+                decoration: const InputDecoration(
+                  hintText: 'Ex: Aperto no peito, suor nas mãos, nó na garganta...',
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text('Qual foi o seu pensamento automático?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: pensamentoAutomaticoController,
+                decoration: const InputDecoration(
+                  hintText: 'Ex: Todos vão reparar em mim e me julgar...',
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
               ),
               const SizedBox(height: 20),
               Row(

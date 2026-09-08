@@ -76,12 +76,15 @@ class _PacienteAtividadesPageState extends State<PacienteAtividadesPage> {
       final atividadeId = atividade['id']?.toString() ?? '';
 
       switch (nomeJogo) {
+        case 'Respire':
+        case 'Controle das Emoções - Respire':
         case 'Decisão Sob Pressão':
         case 'Semáforo das Emoções':
         case 'Semáforo Emocional':
           gamePage = DecisaoSobPressaoPage(atividadePacienteId: atividadeId);
           break;
         case 'Missão Foco':
+        case 'Atenção - Missão Foco':
           gamePage = MissaoFocoPage(atividadePacienteId: atividadeId);
           break;
         case 'Memória Tática':
@@ -115,9 +118,11 @@ class _PacienteAtividadesPageState extends State<PacienteAtividadesPage> {
           }
           break;
         case 'Investigação':
+        case 'Memória Operacional - Investigação':
           gamePage = InvestigacaoPage(atividadePacienteId: atividadeId);
           break;
         case 'Modo Piloto':
+        case 'Controle Inibitório - Modo Piloto':
           gamePage = ModoPilotoPage(atividadePacienteId: atividadeId);
           break;
         case 'Laboratório Mental':
@@ -148,15 +153,19 @@ class _PacienteAtividadesPageState extends State<PacienteAtividadesPage> {
         case 'Missão Coragem':
           gamePage = MissaoCoragemPage(atividadePacienteId: atividadeId);
           break;
+        case 'Ansiedade Social':
+        case 'Regulação - Ansiedade Social':
         case 'O Monstro da Ansiedade':
           gamePage = MonstroAnsiedadePage(atividadePacienteId: atividadeId);
           break;
         case 'Ilha das Emoções':
+        case 'Psicoeducação - Ilha das Emoções':
           gamePage = IlhaEmocoesPage(atividadePacienteId: atividadeId);
           break;
         case 'Cartas dos Sabotadores':
           gamePage = CartasSabotadoresPage(atividadePacienteId: atividadeId);
           break;
+        case 'Ache a Distorção':
         case 'Escape Room Terapêutico':
           gamePage = EscapeRoomPage(atividadePacienteId: atividadeId);
           break;

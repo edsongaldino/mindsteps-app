@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/auth/auth_storage.dart';
@@ -145,6 +147,119 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Erro ao enviar mensagem: $e')),
+            );
+          }
+          rethrow;
+        }
+      },
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icone,
+    bool obscureText = false,
+    TextInputType keyboardType = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.text),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: controller,
+            obscureText: obscureText,
+            keyboardType: keyboardType,
+            inputFormatters: inputFormatters,
+            style: const TextStyle(fontSize: 14, color: AppColors.text),
+            decoration: InputDecoration(
+              prefixIcon: Icon(icone, size: 18, color: AppColors.muted),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: AppColors.border.withOpacity(0.5)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: AppColors.border.withOpacity(0.5)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              ),
+              hintText: 'Digite o ${label.toLowerCase()}',
+              hintStyle: const TextStyle(color: AppColors.muted, fontSize: 13),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _exibirDialogoEditar(BuildContext context, Map<String, dynamic> paciente) {
+    final usuario = paciente['usuario'];
+    final nomeController = TextEditingController(text: usuario?['nome'] ?? paciente['nome']);
+    final emailController = TextEditingController(text: usuario?['email'] ?? paciente['email']);
+    final telefoneInicial = usuario?['telefone'] ?? paciente['telefone'] ?? '';
+    final maskFormatter = MaskTextInputFormatter(
+      mask: '(##) #####-####',
+      filter: { "#": RegExp(r'[0-9]') },
+      initialText: telefoneInicial,
+    );
+    final telefoneController = TextEditingController(text: maskFormatter.getMaskedText());
+    final senhaController = TextEditingController();
+
+    _exibirPainelLateral(
+      context: context,
+      titulo: 'Editar Paciente',
+      textoConfirmar: 'Salvar',
+      campos: [
+        _buildTextField(
+          controller: nomeController,
+          label: 'Nome',
+          icone: LucideIcons.user,
+        ),
+        _buildTextField(
+          controller: emailController,
+          label: 'Email',
+          icone: LucideIcons.mail,
+          keyboardType: TextInputType.emailAddress,
+        ),
+        _buildTextField(
+          controller: telefoneController,
+          label: 'Telefone',
+          icone: LucideIcons.phone,
+          keyboardType: TextInputType.phone,
+          inputFormatters: [maskFormatter],
+        ),
+        _buildTextField(
+          controller: senhaController,
+          label: 'Nova senha (opcional)',
+          icone: LucideIcons.lock,
+          obscureText: true,
+        ),
+      ],
+      onConfirmar: () async {
+        try {
+          await service.atualizarPaciente(
+            id: paciente['id'].toString(),
+            nome: nomeController.text.trim(),
+            email: emailController.text.trim(),
+            telefone: telefoneController.text.replaceAll(RegExp(r'\D'), ''),
+            senha: senhaController.text.trim(),
+          );
+          _recarregar();
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Erro: $e')),
             );
           }
           rethrow;
@@ -338,9 +453,36 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: AppColors.text),
-            onPressed: () {},
+          Padding(
+            padding: const EdgeInsets.only(right: 16, top: 10, bottom: 10),
+            child: TextButton.icon(
+              onPressed: () async {
+                try {
+                  final dados = await dadosFuture;
+                  final paciente = dados['paciente'];
+                  if (paciente != null) {
+                    if (context.mounted) {
+                      _exibirDialogoEditar(context, paciente);
+                    }
+                  } else {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Dados do paciente n\u00e3o encontrados.')));
+                    }
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
+                  }
+                }
+              },
+              icon: const Icon(LucideIcons.edit, size: 16, color: AppColors.text),
+              label: const Text('Editar', style: TextStyle(color: AppColors.text, fontWeight: FontWeight.w600, fontSize: 14)),
+              style: TextButton.styleFrom(
+                backgroundColor: const Color(0xFFE2E8F0).withValues(alpha: 0.5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+              ),
+            ),
           ),
         ],
         backgroundColor: AppColors.background,

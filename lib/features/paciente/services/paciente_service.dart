@@ -276,4 +276,22 @@ class PacienteService {
     buffer.write('}');
     return buffer.toString();
   }
+
+  Future<void> atualizarPerfil({
+    required String pacienteId,
+    required String nome,
+    required String email,
+    String? telefone,
+    String? fotoUrl,
+  }) async {
+    await ApiClient.dio.put(
+      '/Pacientes/$pacienteId',
+      data: {
+        'nome': nome,
+        'email': email,
+        'telefone': telefone,
+        'fotoUrl': fotoUrl,
+      },
+    );
+  }
 }

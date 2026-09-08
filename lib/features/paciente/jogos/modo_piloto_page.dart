@@ -16,33 +16,76 @@ class _ModoPilotoPageState extends State<ModoPilotoPage> {
   final service = PacienteService();
   bool salvando = false;
   int etapa = 0; // 0: Alerta/Impulso, 1: Plano, 2: Sucesso
+  int cenarioAtualIndex = 0;
 
-  final String alertaGatilho = "Seu amigo faz um comentário no grupo que te irrita profundamente.";
-
-  final List<Map<String, dynamic>> checklistPlan = [
-    {"texto": "Respirar fundo por 5 segundos", "feito": false, "icone": LucideIcons.wind},
-    {"texto": "Pensar nas possíveis consequências de responder com raiva", "feito": false, "icone": LucideIcons.brainCircuit},
-    {"texto": "Escolher uma resposta assertiva ou ignorar a provocação", "feito": false, "icone": LucideIcons.squareCheck},
-    {"texto": "Agir conforme sua escolha consciente", "feito": false, "icone": LucideIcons.rocket},
+  final List<Map<String, dynamic>> cenarios = [
+    {
+      "titulo": "Situação 1: Provocação no Grupo",
+      "gatilho": "Seu amigo faz um comentário no grupo de mensagens que te irrita profundamente.",
+      "nivelImpulso": 85,
+    },
+    {
+      "titulo": "Situação 2: Crítica Injusta",
+      "gatilho": "Você recebe uma crítica injusta sobre a sua tarefa na frente de várias pessoas.",
+      "nivelImpulso": 90,
+    },
+    {
+      "titulo": "Situação 3: Furada de Fila",
+      "gatilho": "Alguém fura a fila diretamente na sua frente quando você está atrasado.",
+      "nivelImpulso": 75,
+    },
+    {
+      "titulo": "Situação 4: Falha Tecnológica Urgente",
+      "gatilho": "Seu celular/computador trava no exato instante em que você precisa enviar um arquivo urgente.",
+      "nivelImpulso": 95,
+    },
   ];
+
+  late List<List<Map<String, dynamic>>> checklistsPorCenario;
+
+  @override
+  void initState() {
+    super.initState();
+    checklistsPorCenario = List.generate(
+      cenarios.length,
+      (_) => [
+        {"texto": "Respirar fundo por 5 segundos antes de reagir", "feito": false, "icone": LucideIcons.wind},
+        {"texto": "Avaliar as consequências de responder com raiva ou impulso", "feito": false, "icone": LucideIcons.brainCircuit},
+        {"texto": "Escolher uma resposta assertiva ou pausar a conversa", "feito": false, "icone": LucideIcons.squareCheck},
+        {"texto": "Agir conforme sua escolha consciente e calma", "feito": false, "icone": LucideIcons.rocket},
+      ],
+    );
+  }
 
   void toggleCheck(int index) {
     setState(() {
-      checklistPlan[index]['feito'] = !checklistPlan[index]['feito'];
+      checklistsPorCenario[cenarioAtualIndex][index]['feito'] =
+          !checklistsPorCenario[cenarioAtualIndex][index]['feito'];
     });
   }
 
-  Future<void> finalizarJogo() async {
-    final todosFeitos = checklistPlan.every((element) => element['feito'] as bool);
+  void proximoCenarioOuFinalizar() {
+    final checklistAtual = checklistsPorCenario[cenarioAtualIndex];
+    final todosFeitos = checklistAtual.every((element) => element['feito'] as bool);
     if (!todosFeitos) return;
 
+    if (cenarioAtualIndex < cenarios.length - 1) {
+      setState(() {
+        cenarioAtualIndex++;
+        etapa = 0; // Volta para Alerta do próximo cenário
+      });
+    } else {
+      finalizarJogo();
+    }
+  }
+
+  Future<void> finalizarJogo() async {
     setState(() => salvando = true);
     try {
       await service.registrarJogo(
         jogoId: 'modo_piloto',
         dadosPlay: {
-          'gatilho': alertaGatilho,
-          'etapas_concluidas': checklistPlan.length,
+          'cenarios_concluidos': cenarios.length,
           'controle_impulso': 'Alto',
         },
         atividadePacienteId: widget.atividadePacienteId,
@@ -75,7 +118,7 @@ class _ModoPilotoPageState extends State<ModoPilotoPage> {
         backgroundColor: backgroundColor,
         elevation: 0,
         title: const Text(
-          'MODO PILOTO',
+          'CONTROLE INIBITÓRIO',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
@@ -92,6 +135,24 @@ class _ModoPilotoPageState extends State<ModoPilotoPage> {
       body: SafeArea(
         child: Column(
           children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Row(
+                children: List.generate(cenarios.length, (index) {
+                  final ativo = index <= cenarioAtualIndex;
+                  return Expanded(
+                    child: Container(
+                      height: 4,
+                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                      decoration: BoxDecoration(
+                        color: ativo ? AppColors.danger : AppColors.border,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
@@ -119,9 +180,11 @@ class _ModoPilotoPageState extends State<ModoPilotoPage> {
   }
 
   Widget _buildAlertaImpulso(Color cardColor, Color accentColor) {
+    final cenario = cenarios[cenarioAtualIndex];
+    final int impulso = cenario['nivelImpulso'] as int;
+
     return Column(
       children: [
-        const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
@@ -129,12 +192,12 @@ class _ModoPilotoPageState extends State<ModoPilotoPage> {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: AppColors.danger),
           ),
-          child: const Text(
-            'CONTROLE INIBITÓRIO',
-            style: TextStyle(color: AppColors.danger, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+          child: Text(
+            'SITUAÇÃO ${cenarioAtualIndex + 1} DE ${cenarios.length}',
+            style: const TextStyle(color: AppColors.danger, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2),
           ),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 24),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(24),
@@ -154,20 +217,20 @@ class _ModoPilotoPageState extends State<ModoPilotoPage> {
             children: [
               const Icon(LucideIcons.bell, size: 48, color: AppColors.danger),
               const SizedBox(height: 18),
-              const Text(
-                'ALERTA DE GATILHO',
-                style: TextStyle(color: AppColors.textLight, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+              Text(
+                cenario['titulo'] as String,
+                style: const TextStyle(color: AppColors.textLight, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5),
               ),
               const SizedBox(height: 12),
               Text(
-                alertaGatilho,
+                cenario['gatilho'] as String,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.text, height: 1.4),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 40),
+        const SizedBox(height: 32),
         Column(
           children: [
             const Text(
@@ -187,27 +250,27 @@ class _ModoPilotoPageState extends State<ModoPilotoPage> {
                 child: Row(
                   children: [
                     Expanded(
-                      flex: 85,
+                      flex: impulso,
                       child: Container(
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(colors: [Colors.orange, AppColors.danger]),
                         ),
                       ),
                     ),
-                    const Expanded(
-                      flex: 15,
-                      child: SizedBox(),
+                    Expanded(
+                      flex: 100 - impulso,
+                      child: const SizedBox(),
                     ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 8),
-            const Row(
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Baixo', style: TextStyle(color: AppColors.muted, fontSize: 11)),
-                Text('CRÍTICO (85%)', style: TextStyle(color: AppColors.danger, fontSize: 11, fontWeight: FontWeight.bold)),
+                const Text('Baixo', style: TextStyle(color: AppColors.muted, fontSize: 11)),
+                Text('NÍVEL $impulso%', style: const TextStyle(color: AppColors.danger, fontSize: 11, fontWeight: FontWeight.bold)),
               ],
             ),
           ],
@@ -217,20 +280,22 @@ class _ModoPilotoPageState extends State<ModoPilotoPage> {
   }
 
   Widget _buildPlanoDeVoo(Color cardColor, Color accentColor) {
+    final checklist = checklistsPorCenario[cenarioAtualIndex];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'SEU PLANO DE CONTROLE',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.text, letterSpacing: 1.2),
+        Text(
+          'PLANO DE CONTROLE INIBITÓRIO (${cenarioAtualIndex + 1}/${cenarios.length})',
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.text, letterSpacing: 1.1),
         ),
         const SizedBox(height: 6),
         const Text(
-          'Marque os passos para desarmar o seu impulso.',
-          style: TextStyle(color: AppColors.textLight, fontSize: 14),
+          'Marque todos os passos para desarmar o seu impulso nesta situação.',
+          style: TextStyle(color: AppColors.textLight, fontSize: 13),
         ),
-        const SizedBox(height: 24),
-        ...checklistPlan.asMap().entries.map((entry) {
+        const SizedBox(height: 20),
+        ...checklist.asMap().entries.map((entry) {
           final index = entry.key;
           final item = entry.value;
           final feito = item['feito'] as bool;
@@ -238,23 +303,16 @@ class _ModoPilotoPageState extends State<ModoPilotoPage> {
             onTap: () => toggleCheck(index),
             child: Container(
               margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: feito ? AppColors.success.withOpacity(0.12) : cardColor,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: feito ? AppColors.success : AppColors.border, width: feito ? 2 : 1),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.01),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  )
-                ],
               ),
               child: Row(
                 children: [
-                  Icon(item['icone'] as IconData, color: feito ? AppColors.success : AppColors.muted, size: 24),
-                  const SizedBox(width: 16),
+                  Icon(item['icone'] as IconData, color: feito ? AppColors.success : AppColors.muted, size: 22),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Text(
                       item['texto'] as String,
@@ -266,8 +324,8 @@ class _ModoPilotoPageState extends State<ModoPilotoPage> {
                     ),
                   ),
                   Container(
-                    width: 24,
-                    height: 24,
+                    width: 22,
+                    height: 22,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(color: feito ? AppColors.success : AppColors.muted, width: 2),
@@ -287,7 +345,7 @@ class _ModoPilotoPageState extends State<ModoPilotoPage> {
   Widget _buildSucesso(Color cardColor, Color accentColor) {
     return Column(
       children: [
-        const SizedBox(height: 40),
+        const SizedBox(height: 30),
         Center(
           child: Container(
             padding: const EdgeInsets.all(24),
@@ -303,19 +361,19 @@ class _ModoPilotoPageState extends State<ModoPilotoPage> {
             ),
           ),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 24),
         const Text(
-          'Piloto Automático Desativado!',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.text),
+          'Controle Inibitório Concluído!',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.text),
         ),
         const SizedBox(height: 12),
-        const Padding(
+        Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Text(
-            'Sucesso! Você assumiu o controle manual das suas ações. '
-            'Seguir um plan lógico (Respirar ➔ Pensar ➔ Escolher ➔ Agir) nos permite inibir reações que geram arrependimento posterior.',
+            'Excelente! Você desativou o impulso automático nas ${cenarios.length} situações. '
+            'Exercitar a pausa consciente (Respirar ➔ Avaliar ➔ Escolher ➔ Agir) fortifica seu controle inibitório no dia a dia.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textLight, fontSize: 14, height: 1.5),
+            style: const TextStyle(color: AppColors.textLight, fontSize: 14, height: 1.5),
           ),
         ),
       ],
@@ -350,16 +408,19 @@ class _ModoPilotoPageState extends State<ModoPilotoPage> {
             minimumSize: const Size(double.infinity, 56),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
-          child: const Text('Entrar em modo piloto', style: TextStyle(fontWeight: FontWeight.bold)),
+          child: const Text('Iniciar Controle Inibitório', style: TextStyle(fontWeight: FontWeight.bold)),
         ),
       );
     }
 
-    final todosFeitos = checklistPlan.every((element) => element['feito'] as bool);
+    final checklist = checklistsPorCenario[cenarioAtualIndex];
+    final todosFeitos = checklist.every((element) => element['feito'] as bool);
+    final isUltimo = cenarioAtualIndex == cenarios.length - 1;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
       child: ElevatedButton(
-        onPressed: (todosFeitos && !salvando) ? finalizarJogo : null,
+        onPressed: (todosFeitos && !salvando) ? proximoCenarioOuFinalizar : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: accentColor,
           foregroundColor: Colors.white,
@@ -368,7 +429,8 @@ class _ModoPilotoPageState extends State<ModoPilotoPage> {
         ),
         child: salvando
             ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-            : const Text('Confirmar Ações', style: TextStyle(fontWeight: FontWeight.bold)),
+            : Text(isUltimo ? 'Finalizar Atividade' : 'Próxima Situação (${cenarioAtualIndex + 1}/${cenarios.length})',
+                style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }

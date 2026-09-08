@@ -38,20 +38,37 @@ class _PacienteResponderAtividadePageState
   List<String> perguntas = [];
   List<bool> checklistStatus = [];
 
-  // --- Estados do Jogo de Memória ---
-  List<Map<String, dynamic>> cartas = []; // Cada item: {'id': int, 'valor': String, 'revelada': bool, 'combinada': bool}
+  // --- Estados para Leitura (Tipo 6) ---
+  String? leituraTextoCorpo;
+  int leituraTempoMinutos = 3;
+  List<String> leituraPerguntas = [];
+  Map<int, TextEditingController> leituraPerguntasControllers = {};
+
+  // --- Estados para Exercício Prático (Tipo 3) ---
+  List<String> exercicioPassos = [];
+  List<bool> exercicioPassosConcluidos = [];
+  int exercicioDuracaoMinutos = 5;
+  bool exercicioMedirPrePos = true;
+  int nivelTensaoPre = 5;
+  int nivelTensaoPos = 3;
+
+  // --- Estados para RPD (Tipo 2) ---
+  List<String> rpdColunas = [];
+  Map<String, TextEditingController> rpdControllers = {};
+  int rpdIntensidadeEmo = 70;
+  int rpdIntensidadeReval = 30;
+
+  // --- Estados do Jogo de Memória (Tipo 7) ---
+  List<Map<String, dynamic>> cartas = [];
   int? indexPrimeiraCarta;
   bool bloqueado = false;
   int movimentos = 0;
   int paresEncontrados = 0;
   int totalPares = 0;
-  
-  // Cronômetro
   Timer? _timerJogo;
   int segundosJogo = 0;
   bool jogoConcluido = false;
   String? dificuldadeEfetiva;
-
   int pacienteNivel = 1;
   bool carregandoInfoPaciente = false;
 
@@ -199,20 +216,87 @@ class _PacienteResponderAtividadePageState
     try {
       if (widget.conteudoJson.isNotEmpty) {
         final decoded = jsonDecode(widget.conteudoJson);
-        if (decoded is Map && decoded.containsKey('perguntas')) {
-          perguntas = List<String>.from(decoded['perguntas']);
+        if (decoded is Map) {
+          // Perguntas genéricas
+          if (decoded.containsKey('perguntas') && decoded['perguntas'] is List) {
+            perguntas = List<String>.from(decoded['perguntas']);
+          }
+
+          // Checklist (Tipo 4)
           if (widget.tipo == 4) {
+            if (decoded.containsKey('itens') && decoded['itens'] is List) {
+              perguntas = List<String>.from(decoded['itens']);
+            }
             checklistStatus = List.generate(perguntas.length, (_) => false);
+          }
+
+          // Leitura (Tipo 6)
+          if (widget.tipo == 6) {
+            leituraTextoCorpo = decoded['textoCorpo']?.toString();
+            leituraTempoMinutos = decoded['tempoEstimadoMinutos'] as int? ?? 3;
+            if (decoded.containsKey('perguntasFixacao') && decoded['perguntasFixacao'] is List) {
+              leituraPerguntas = List<String>.from(decoded['perguntasFixacao']);
+            } else if (perguntas.isNotEmpty) {
+              leituraPerguntas = List<String>.from(perguntas);
+            }
+            for (int i = 0; i < leituraPerguntas.length; i++) {
+              leituraPerguntasControllers[i] = TextEditingController();
+            }
+          }
+
+          // Exercício Prático (Tipo 3)
+          if (widget.tipo == 3) {
+            if (decoded.containsKey('passos') && decoded['passos'] is List) {
+              exercicioPassos = List<String>.from(decoded['passos']);
+            } else if (perguntas.isNotEmpty) {
+              exercicioPassos = List<String>.from(perguntas);
+            } else {
+              exercicioPassos = [
+                'Sente-se confortavelmente e relaxe os ombros.',
+                'Inspire suavemente pelo nariz contando até 4.',
+                'Segure o ar nos pulmões por 2 segundos.',
+                'Expire devagar pela boca contando até 6.',
+              ];
+            }
+            exercicioPassosConcluidos = List.generate(exercicioPassos.length, (_) => false);
+            exercicioDuracaoMinutos = decoded['duracaoMinutos'] as int? ?? 5;
+            exercicioMedirPrePos = decoded['medirPrePos'] as bool? ?? true;
+          }
+
+          // RPD (Tipo 2)
+          if (widget.tipo == 2) {
+            if (decoded.containsKey('colunas') && decoded['colunas'] is List) {
+              rpdColunas = List<String>.from(decoded['colunas']);
+            } else {
+              rpdColunas = [
+                'Situação (Onde/Quando)',
+                'Emoções & Intensidade (0-100)',
+                'Pensamento Automático Disfuncional',
+                'Resposta Alternativa / Racional',
+                'Reavaliação Emocional (0-100)',
+              ];
+            }
+            for (var col in rpdColunas) {
+              rpdControllers[col] = TextEditingController();
+            }
           }
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Erro ao parsear conteúdo JSON: $e');
+    }
   }
 
   @override
   void dispose() {
     respostaController.dispose();
     _timerJogo?.cancel();
+    for (var c in leituraPerguntasControllers.values) {
+      c.dispose();
+    }
+    for (var c in rpdControllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -236,14 +320,39 @@ class _PacienteResponderAtividadePageState
         'dificuldade': dificuldadeEfetiva,
       });
     } else if (widget.tipo == 4) {
-      // Checklist: serialize booleans or checked items
+      // Checklist
       final mapResultado = {};
       for (int i = 0; i < perguntas.length; i++) {
         mapResultado[perguntas[i]] = checklistStatus[i];
       }
       respostaFinal = jsonEncode(mapResultado);
-
-      // Require at least something? Or maybe checklist can be saved empty.
+    } else if (widget.tipo == 2) {
+      // RPD
+      final mapRpd = <String, dynamic>{};
+      for (var col in rpdColunas) {
+        mapRpd[col] = rpdControllers[col]?.text.trim() ?? '';
+      }
+      mapRpd['intensidadeEmocionalInicial'] = rpdIntensidadeEmo;
+      mapRpd['intensidadeEmocionalFinal'] = rpdIntensidadeReval;
+      respostaFinal = jsonEncode(mapRpd);
+    } else if (widget.tipo == 3) {
+      // Exercício Prático
+      final mapExercicio = <String, dynamic>{
+        'duracaoMinutos': exercicioDuracaoMinutos,
+        'passosConcluidos': exercicioPassosConcluidos,
+        'tensaoAntes': nivelTensaoPre,
+        'tensaoDepois': nivelTensaoPos,
+        'comentario': respostaController.text.trim(),
+      };
+      respostaFinal = jsonEncode(mapExercicio);
+    } else if (widget.tipo == 6) {
+      // Leitura Psicoeducativa
+      final mapLeitura = <String, dynamic>{
+        'leituraConcluida': true,
+        'respostasFixacao': leituraPerguntas.asMap().map((i, p) => MapEntry(p, leituraPerguntasControllers[i]?.text.trim() ?? '')),
+        'comentario': respostaController.text.trim(),
+      };
+      respostaFinal = jsonEncode(mapLeitura);
     } else {
       respostaFinal = respostaController.text.trim();
       if (respostaFinal.isEmpty) {
@@ -611,6 +720,295 @@ class _PacienteResponderAtividadePageState
     );
   }
 
+  Widget _buildFormularioRPD() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Registro de Pensamentos (RPD)',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.text),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Preencha cada etapa para identificar e reestruturar seus pensamentos.',
+          style: TextStyle(fontSize: 14, color: AppColors.muted),
+        ),
+        const SizedBox(height: 20),
+        ...rpdColunas.map((coluna) {
+          final isEmo = coluna.toLowerCase().contains('emoçã') || coluna.toLowerCase().contains('intensidade');
+          final isReval = coluna.toLowerCase().contains('reavaliaçã');
+          final controller = rpdControllers[coluna] ?? TextEditingController();
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  coluna,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary),
+                ),
+                const SizedBox(height: 10),
+                if (isEmo) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Intensidade Inicial:', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+                      Text('$rpdIntensidadeEmo%', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.secondary)),
+                    ],
+                  ),
+                  Slider(
+                    value: rpdIntensidadeEmo.toDouble(),
+                    min: 0,
+                    max: 100,
+                    divisions: 20,
+                    activeColor: AppColors.secondary,
+                    onChanged: (val) => setState(() => rpdIntensidadeEmo = val.round()),
+                  ),
+                ] else if (isReval) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Intensidade após Reavaliação:', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+                      Text('$rpdIntensidadeReval%', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.secondary)),
+                    ],
+                  ),
+                  Slider(
+                    value: rpdIntensidadeReval.toDouble(),
+                    min: 0,
+                    max: 100,
+                    divisions: 20,
+                    activeColor: AppColors.secondary,
+                    onChanged: (val) => setState(() => rpdIntensidadeReval = val.round()),
+                  ),
+                ],
+                TextField(
+                  controller: controller,
+                  maxLines: isEmo || isReval ? 2 : 3,
+                  decoration: InputDecoration(
+                    hintText: 'Digite aqui...',
+                    hintStyle: const TextStyle(color: AppColors.muted, fontSize: 13),
+                    fillColor: const Color(0xFFF4F6F9),
+                    filled: true,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildExercicioPratico() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Instruções do Exercício',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.text),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(color: AppColors.softGreen, borderRadius: BorderRadius.circular(8)),
+              child: Text(
+                '⏱️ $exercicioDuracaoMinutos min',
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.secondary),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (exercicioMedirPrePos) ...[
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Como você se sente ANTES de iniciar? (0 a 10)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text)),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('0 (Calmo)', style: TextStyle(fontSize: 11, color: AppColors.muted)),
+                    Text('$nivelTensaoPre / 10', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.primary)),
+                    const Text('10 (Muito Ansioso)', style: TextStyle(fontSize: 11, color: AppColors.muted)),
+                  ],
+                ),
+                Slider(
+                  value: nivelTensaoPre.toDouble(),
+                  min: 0,
+                  max: 10,
+                  divisions: 10,
+                  activeColor: AppColors.primary,
+                  onChanged: (val) => setState(() => nivelTensaoPre = val.round()),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+
+        ...List.generate(exercicioPassos.length, (index) {
+          final concluido = index < exercicioPassosConcluidos.length ? exercicioPassosConcluidos[index] : false;
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: concluido ? AppColors.secondary : AppColors.border),
+            ),
+            child: CheckboxListTile(
+              title: Text(
+                '${index + 1}. ${exercicioPassos[index]}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: concluido ? AppColors.muted : AppColors.text,
+                  decoration: concluido ? TextDecoration.lineThrough : null,
+                ),
+              ),
+              value: concluido,
+              activeColor: AppColors.secondary,
+              checkColor: Colors.white,
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() => exercicioPassosConcluidos[index] = val);
+                }
+              },
+            ),
+          );
+        }),
+
+        if (exercicioMedirPrePos) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.secondary.withOpacity(0.4))),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Como você se sente DEPOIS de concluir? (0 a 10)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text)),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('0 (Relaxado)', style: TextStyle(fontSize: 11, color: AppColors.muted)),
+                    Text('$nivelTensaoPos / 10', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.secondary)),
+                    const Text('10 (Ansioso)', style: TextStyle(fontSize: 11, color: AppColors.muted)),
+                  ],
+                ),
+                Slider(
+                  value: nivelTensaoPos.toDouble(),
+                  min: 0,
+                  max: 10,
+                  divisions: 10,
+                  activeColor: AppColors.secondary,
+                  onChanged: (val) => setState(() => nivelTensaoPos = val.round()),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildLeituraPsicoeducativa() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2))],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(color: const Color(0xFFFFF0F0), borderRadius: BorderRadius.circular(10)),
+                        child: const Icon(LucideIcons.bookOpen, color: AppColors.primary, size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      const Text('Leitura Informativa', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.text)),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(color: AppColors.softGreen, borderRadius: BorderRadius.circular(8)),
+                    child: Text('Leitura de $leituraTempoMinutos min', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.secondary)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                leituraTextoCorpo ?? widget.descricao,
+                style: const TextStyle(fontSize: 14, color: AppColors.text, height: 1.6),
+              ),
+            ],
+          ),
+        ),
+        if (leituraPerguntas.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          const Text(
+            'Perguntas de Fixação',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.text),
+          ),
+          const SizedBox(height: 4),
+          const Text('Responda às questões com base no texto lido:', style: TextStyle(fontSize: 13, color: AppColors.muted)),
+          const SizedBox(height: 14),
+          ...List.generate(leituraPerguntas.length, (index) {
+            final controller = leituraPerguntasControllers[index] ?? TextEditingController();
+            return Container(
+              margin: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('${index + 1}. ${leituraPerguntas[index]}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text)),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: controller,
+                    maxLines: 2,
+                    decoration: InputDecoration(
+                      hintText: 'Sua resposta...',
+                      filled: true,
+                      fillColor: const Color(0xFFF4F6F9),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -639,7 +1037,7 @@ class _PacienteResponderAtividadePageState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (widget.descricao.isNotEmpty) ...[
+                  if (widget.descricao.isNotEmpty && widget.tipo != 6) ...[
                     Text(
                       widget.descricao,
                       style: const TextStyle(fontSize: 15, color: AppColors.muted, height: 1.5),
@@ -648,8 +1046,14 @@ class _PacienteResponderAtividadePageState
                   ],
                   if (widget.tipo == 7)
                     _buildMemoryGame()
+                  else if (widget.tipo == 2)
+                    _buildFormularioRPD()
+                  else if (widget.tipo == 3)
+                    _buildExercicioPratico()
                   else if (widget.tipo == 4)
                     _buildChecklist()
+                  else if (widget.tipo == 6)
+                    _buildLeituraPsicoeducativa()
                   else
                     _buildRespostaLivre(),
                   const SizedBox(height: 32),
