@@ -190,7 +190,7 @@ class _DashboardPacienteState extends State<_DashboardPaciente> {
                 const _CardAtividadeHoje(),
                 const SizedBox(height: 18),
                 _BotaoPrincipal(
-                  texto: 'Registrar pensamento (TCC)',
+                  texto: 'Registrar pensamento',
                   onPressed: () {
                     Navigator.push(
                       context,

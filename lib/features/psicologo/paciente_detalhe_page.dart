@@ -7,6 +7,8 @@ import '../../core/theme/app_theme.dart';
 import '../../core/auth/auth_storage.dart';
 import 'services/psicologo_service.dart';
 import 'enviar_atividade_page.dart';
+import 'widgets/resposta_atividade_widget.dart';
+import 'widgets/paciente_avatar_widget.dart';
 import '../../core/api/api_client.dart';
 
 class PacienteDetalhePage extends StatefulWidget {
@@ -23,7 +25,8 @@ class PacienteDetalhePage extends StatefulWidget {
   State<PacienteDetalhePage> createState() => _PacienteDetalhePageState();
 }
 
-class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTickerProviderStateMixin {
+class _PacienteDetalhePageState extends State<PacienteDetalhePage>
+    with SingleTickerProviderStateMixin {
   final service = PsicologoService();
   late Future<Map<String, dynamic>> dadosFuture;
   late TabController _tabController;
@@ -60,22 +63,30 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
       });
     }
     final checkins = await service.listarCheckinsPaciente(widget.pacienteId);
-    final registros = await service.listarRegistrosPensamentosPaciente(widget.pacienteId);
-    final atividades = await service.listarAtividadesPaciente(widget.pacienteId);
+    final registros = await service.listarRegistrosPensamentosPaciente(
+      widget.pacienteId,
+    );
+    final atividades = await service.listarAtividadesPaciente(
+      widget.pacienteId,
+    );
     final mensagens = await service.listarMensagensPaciente(widget.pacienteId);
-    
+
     // Dados de plano e bloqueio de IA
     final me = await service.obterMe();
     final planoRaw = me['plano']?.toString();
     final plano = (planoRaw == null || planoRaw.isEmpty) ? 'Starter' : planoRaw;
-    final isIaLocked = plano.toString().toLowerCase() != 'profissional' && plano.toString().toLowerCase() != 'clinica';
+    final isIaLocked =
+        plano.toString().toLowerCase() != 'profissional' &&
+        plano.toString().toLowerCase() != 'clinica';
 
     List<dynamic> iaInsights = [];
     String? iaError;
 
     if (!isIaLocked) {
       try {
-        final res = await ApiClient.dio.get('/Pacientes/${widget.pacienteId}/ia-insights');
+        final res = await ApiClient.dio.get(
+          '/Pacientes/${widget.pacienteId}/ia-insights',
+        );
         if (res.data is List) {
           iaInsights = res.data;
         }
@@ -119,7 +130,8 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
         _buildTextAreaField(
           controller: textController,
           label: 'Mensagem',
-          hintText: 'Ex: Muito orgulhosa de ver sua dedicação esta semana! Continue firme...',
+          hintText:
+              'Ex: Muito orgulhosa de ver sua dedicação esta semana! Continue firme...',
         ),
       ],
       onConfirmar: () async {
@@ -170,7 +182,11 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
         children: [
           Text(
             label,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.text),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: AppColors.text,
+            ),
           ),
           const SizedBox(height: 8),
           TextField(
@@ -181,18 +197,28 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
             style: const TextStyle(fontSize: 14, color: AppColors.text),
             decoration: InputDecoration(
               prefixIcon: Icon(icone, size: 18, color: AppColors.muted),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(color: AppColors.border.withOpacity(0.5)),
+                borderSide: BorderSide(
+                  color: AppColors.border.withOpacity(0.5),
+                ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(color: AppColors.border.withOpacity(0.5)),
+                borderSide: BorderSide(
+                  color: AppColors.border.withOpacity(0.5),
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 1.5,
+                ),
               ),
               hintText: 'Digite o ${label.toLowerCase()}',
               hintStyle: const TextStyle(color: AppColors.muted, fontSize: 13),
@@ -203,17 +229,26 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
     );
   }
 
-  void _exibirDialogoEditar(BuildContext context, Map<String, dynamic> paciente) {
+  void _exibirDialogoEditar(
+    BuildContext context,
+    Map<String, dynamic> paciente,
+  ) {
     final usuario = paciente['usuario'];
-    final nomeController = TextEditingController(text: usuario?['nome'] ?? paciente['nome']);
-    final emailController = TextEditingController(text: usuario?['email'] ?? paciente['email']);
+    final nomeController = TextEditingController(
+      text: usuario?['nome'] ?? paciente['nome'],
+    );
+    final emailController = TextEditingController(
+      text: usuario?['email'] ?? paciente['email'],
+    );
     final telefoneInicial = usuario?['telefone'] ?? paciente['telefone'] ?? '';
     final maskFormatter = MaskTextInputFormatter(
       mask: '(##) #####-####',
-      filter: { "#": RegExp(r'[0-9]') },
+      filter: {"#": RegExp(r'[0-9]')},
       initialText: telefoneInicial,
     );
-    final telefoneController = TextEditingController(text: maskFormatter.getMaskedText());
+    final telefoneController = TextEditingController(
+      text: maskFormatter.getMaskedText(),
+    );
     final senhaController = TextEditingController();
 
     _exibirPainelLateral(
@@ -258,9 +293,9 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
           _recarregar();
         } catch (e) {
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Erro: $e')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Erro: $e')));
           }
           rethrow;
         }
@@ -278,7 +313,11 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.text),
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: AppColors.text,
+          ),
         ),
         const SizedBox(height: 8),
         TextField(
@@ -297,7 +336,10 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.5,
+              ),
             ),
             hintText: hintText,
             hintStyle: const TextStyle(color: AppColors.muted, fontSize: 13),
@@ -332,7 +374,9 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
                   width: MediaQuery.of(context).size.width * 0.85,
                   height: double.infinity,
                   decoration: const BoxDecoration(
-                    border: Border(left: BorderSide(color: AppColors.border, width: 1)),
+                    border: Border(
+                      left: BorderSide(color: AppColors.border, width: 1),
+                    ),
                   ),
                   child: SafeArea(
                     child: Padding(
@@ -352,7 +396,10 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(LucideIcons.x, color: AppColors.muted),
+                                icon: const Icon(
+                                  LucideIcons.x,
+                                  color: AppColors.muted,
+                                ),
                                 onPressed: () => Navigator.pop(ctx),
                               ),
                             ],
@@ -371,9 +418,13 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
                             children: [
                               Expanded(
                                 child: OutlinedButton(
-                                  onPressed: salvando ? null : () => Navigator.pop(ctx),
+                                  onPressed: salvando
+                                      ? null
+                                      : () => Navigator.pop(ctx),
                                   style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
                                     ),
@@ -396,13 +447,17 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
                                           } catch (_) {
                                             // Error is handled inside onConfirmar
                                           } finally {
-                                            setDialogState(() => salvando = false);
+                                            setDialogState(
+                                              () => salvando = false,
+                                            );
                                           }
                                         },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.primary,
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
                                     ),
@@ -413,7 +468,10 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
                                           height: 18,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2.5,
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  Colors.white,
+                                                ),
                                           ),
                                         )
                                       : Text(textoConfirmar),
@@ -428,7 +486,7 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
                 ),
               ),
             );
-          }
+          },
         );
       },
       transitionBuilder: (ctx, anim1, anim2, child) {
@@ -466,20 +524,41 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
                     }
                   } else {
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Dados do paciente n\u00e3o encontrados.')));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Dados do paciente n\u00e3o encontrados.',
+                          ),
+                        ),
+                      );
                     }
                   }
                 } catch (e) {
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('Erro: $e')));
                   }
                 }
               },
-              icon: const Icon(LucideIcons.edit, size: 16, color: AppColors.text),
-              label: const Text('Editar', style: TextStyle(color: AppColors.text, fontWeight: FontWeight.w600, fontSize: 14)),
+              icon: const Icon(
+                LucideIcons.edit,
+                size: 16,
+                color: AppColors.text,
+              ),
+              label: const Text(
+                'Editar',
+                style: TextStyle(
+                  color: AppColors.text,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
               style: TextButton.styleFrom(
                 backgroundColor: const Color(0xFFE2E8F0).withValues(alpha: 0.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 padding: const EdgeInsets.symmetric(horizontal: 14),
               ),
             ),
@@ -500,6 +579,12 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
           }
 
           final dados = snapshot.data!;
+          final pacienteObj = dados['paciente'] as Map<String, dynamic>? ?? {};
+          final usuario = pacienteObj['usuario'] as Map<String, dynamic>?;
+          final fotoUrl = pacienteObj['fotoUrl']?.toString() ??
+              usuario?['fotoUrl']?.toString() ??
+              pacienteObj['avatar']?.toString() ??
+              usuario?['avatar']?.toString();
           final checkins = List<dynamic>.from(dados['checkins'] ?? []);
           final registros = List<dynamic>.from(dados['registros'] ?? []);
           final atividades = List<dynamic>.from(dados['atividades'] ?? []);
@@ -512,6 +597,7 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
                   nome: widget.nome,
                   nivel: dados['paciente']?['nivel'] ?? 1,
                   pontos: dados['paciente']?['pontos'] ?? 0,
+                  fotoUrl: fotoUrl,
                   aprovado: aprovado,
                   onEnviarMensagem: () => _exibirDialogMensagem(context),
                 ),
@@ -523,8 +609,14 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
                   unselectedLabelColor: AppColors.muted,
                   indicatorColor: AppColors.primary,
                   indicatorWeight: 3,
-                  labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                  unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  labelStyle: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
                   tabs: const [
                     Tab(text: 'Resumo'),
                     Tab(text: 'Atividades'),
@@ -555,7 +647,8 @@ class _PacienteDetalhePageState extends State<PacienteDetalhePage> with SingleTi
                       _AbaAnotacoes(
                         pacienteId: widget.pacienteId,
                         mensagens: List<dynamic>.from(dados['mensagens'] ?? []),
-                        anotacoesIniciais: dados['paciente']?['anotacoes'] ?? '',
+                        anotacoesIniciais:
+                            dados['paciente']?['anotacoes'] ?? '',
                       ),
                     ],
                   ),
@@ -596,6 +689,7 @@ class _CabecalhoPaciente extends StatelessWidget {
   final String nome;
   final int nivel;
   final int pontos;
+  final String? fotoUrl;
   final bool aprovado;
   final VoidCallback onEnviarMensagem;
 
@@ -603,27 +697,20 @@ class _CabecalhoPaciente extends StatelessWidget {
     required this.nome,
     required this.nivel,
     required this.pontos,
+    this.fotoUrl,
     required this.aprovado,
     required this.onEnviarMensagem,
   });
 
   @override
   Widget build(BuildContext context) {
-    final inicial = nome.isNotEmpty ? nome.substring(0, 1) : '?';
-
     return Column(
       children: [
-        CircleAvatar(
+        PacienteAvatarWidget(
+          fotoUrl: fotoUrl,
+          nome: nome,
           radius: 40,
-          backgroundColor: AppColors.softGreen,
-          child: Text(
-            inicial,
-            style: const TextStyle(
-              color: AppColors.primary,
-              fontWeight: FontWeight.bold,
-              fontSize: 32,
-            ),
-          ),
+          showBorder: true,
         ),
         const SizedBox(height: 16),
         Text(
@@ -668,9 +755,16 @@ class _CabecalhoPaciente extends StatelessWidget {
               icon: const Icon(LucideIcons.messageSquareHeart, size: 14),
               label: const Text('Enviar Motivação'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: aprovado ? AppColors.softPurple : Colors.grey.shade200,
-                foregroundColor: aprovado ? AppColors.primary : Colors.grey.shade500,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                backgroundColor: aprovado
+                    ? AppColors.softPurple
+                    : Colors.grey.shade200,
+                foregroundColor: aprovado
+                    ? AppColors.primary
+                    : Colors.grey.shade500,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 elevation: 0,
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -709,13 +803,16 @@ class _AbaResumo extends StatelessWidget {
 
     final totalAtiv = atividades.length;
     final totalConcluidas = concluidas.length;
-    final adesao = totalAtiv > 0 ? (totalConcluidas / totalAtiv * 100).round() : 0;
+    final adesao = totalAtiv > 0
+        ? (totalConcluidas / totalAtiv * 100).round()
+        : 0;
 
     final List<Map<String, dynamic>> itensResumo = [];
 
     // Adicionar atividades concluídas
     for (var a in atividades) {
-      final isConcluida = a['status'] == 3 ||
+      final isConcluida =
+          a['status'] == 3 ||
           a['status']?.toString() == '3' ||
           a['status']?.toString().toLowerCase() == 'concluida' ||
           a['status']?.toString().toLowerCase() == 'concluído';
@@ -725,7 +822,9 @@ class _AbaResumo extends StatelessWidget {
           'tipo': 'atividade',
           'titulo': a['atividade']?['titulo'] ?? a['titulo'] ?? 'Atividade',
           'subtitulo': 'Atividade concluída',
-          'data': DateTime.tryParse(dataConStr?.toString() ?? '')?.toLocal() ?? DateTime.fromMillisecondsSinceEpoch(0),
+          'data':
+              DateTime.tryParse(dataConStr?.toString() ?? '')?.toLocal() ??
+              DateTime.fromMillisecondsSinceEpoch(0),
           'dados': a,
         });
       }
@@ -737,8 +836,11 @@ class _AbaResumo extends StatelessWidget {
       itensResumo.add({
         'tipo': 'checkin',
         'titulo': 'Check-in Emocional',
-        'subtitulo': 'Humor: ${_humorTexto(c['humor'])} (Intensidade: ${c['intensidade']}/10)',
-        'data': DateTime.tryParse(criadoEmStr?.toString() ?? '')?.toLocal() ?? DateTime.fromMillisecondsSinceEpoch(0),
+        'subtitulo':
+            'Humor: ${_humorTexto(c['humor'])} (Intensidade: ${c['intensidade']}/10)',
+        'data':
+            DateTime.tryParse(criadoEmStr?.toString() ?? '')?.toLocal() ??
+            DateTime.fromMillisecondsSinceEpoch(0),
         'dados': c,
       });
     }
@@ -750,7 +852,9 @@ class _AbaResumo extends StatelessWidget {
         'tipo': 'registro',
         'titulo': 'Registro de Pensamentos',
         'subtitulo': 'Situação: ${r['situacao']}',
-        'data': DateTime.tryParse(criadoEmStr?.toString() ?? '')?.toLocal() ?? DateTime.fromMillisecondsSinceEpoch(0),
+        'data':
+            DateTime.tryParse(criadoEmStr?.toString() ?? '')?.toLocal() ??
+            DateTime.fromMillisecondsSinceEpoch(0),
         'dados': r,
       });
     }
@@ -768,14 +872,21 @@ class _AbaResumo extends StatelessWidget {
         children: [
           const Text(
             'Resumo geral',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.text),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.text,
+            ),
           ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _ItemEstatistica('Adesão média', '$adesao%'),
-              _ItemEstatistica('Atividades concluídas', '$totalConcluidas / $totalAtiv'),
+              _ItemEstatistica(
+                'Atividades concluídas',
+                '$totalConcluidas / $totalAtiv',
+              ),
               _ItemEstatistica('Check-ins', '${checkins.length}'),
             ],
           ),
@@ -784,7 +895,11 @@ class _AbaResumo extends StatelessWidget {
           const SizedBox(height: 32),
           const Text(
             'Últimas atividades',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.text),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.text,
+            ),
           ),
           const SizedBox(height: 16),
           if (recentes.isEmpty)
@@ -848,12 +963,20 @@ class _ItemEstatistica extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 11, color: AppColors.muted, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            fontSize: 11,
+            color: AppColors.muted,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           valor,
-          style: const TextStyle(fontSize: 18, color: AppColors.text, fontWeight: FontWeight.w800),
+          style: const TextStyle(
+            fontSize: 18,
+            color: AppColors.text,
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ],
     );
@@ -873,7 +996,11 @@ class _GraficoHumorMock extends StatelessWidget {
       children: [
         const Text(
           'Humor médio',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.text),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.text,
+          ),
         ),
         const SizedBox(height: 24),
         SizedBox(
@@ -895,9 +1022,18 @@ class _GraficoHumorMock extends StatelessWidget {
                     Column(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Container(height: 1, color: AppColors.border.withOpacity(0.5)),
-                        Container(height: 1, color: AppColors.border.withOpacity(0.5)),
-                        Container(height: 1, color: AppColors.border.withOpacity(0.5)),
+                        Container(
+                          height: 1,
+                          color: AppColors.border.withOpacity(0.5),
+                        ),
+                        Container(
+                          height: 1,
+                          color: AppColors.border.withOpacity(0.5),
+                        ),
+                        Container(
+                          height: 1,
+                          color: AppColors.border.withOpacity(0.5),
+                        ),
                       ],
                     ),
                     Row(
@@ -910,11 +1046,16 @@ class _GraficoHumorMock extends StatelessWidget {
                             Container(
                               width: 10,
                               height: 10,
-                              margin: EdgeInsets.only(bottom: 130 * pontos[index]),
+                              margin: EdgeInsets.only(
+                                bottom: 130 * pontos[index],
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.secondary,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
                               ),
                             ),
                           ],
@@ -935,7 +1076,11 @@ class _GraficoHumorMock extends StatelessWidget {
             children: List.generate(dias.length, (index) {
               return Text(
                 dias[index],
-                style: const TextStyle(fontSize: 11, color: AppColors.muted, fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.muted,
+                  fontWeight: FontWeight.w500,
+                ),
               );
             }),
           ),
@@ -998,26 +1143,40 @@ class _ItemAtividade extends StatelessWidget {
                 children: [
                   Text(
                     titulo,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.text),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.text,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitulo,
-                    style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.muted,
+                    ),
                   ),
                 ],
               ),
             ),
             if (onTap != null)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primary,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   iconeAcao,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
                 ),
               ),
           ],
@@ -1052,7 +1211,8 @@ class _AbaAtividades extends StatelessWidget {
       itemCount: atividades.length,
       itemBuilder: (context, index) {
         final ativ = Map<String, dynamic>.from(atividades[index]);
-        final titulo = ativ['atividade']?['titulo'] ?? ativ['titulo'] ?? 'Atividade';
+        final titulo =
+            ativ['atividade']?['titulo'] ?? ativ['titulo'] ?? 'Atividade';
         final status = ativ['status'];
         final dataEnvioStr = ativ['dataEnvio'];
 
@@ -1060,7 +1220,8 @@ class _AbaAtividades extends StatelessWidget {
         if (dataEnvioStr != null) {
           try {
             final dt = DateTime.parse(dataEnvioStr.toString()).toLocal();
-            subtitulo = 'Enviada em ${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}';
+            subtitulo =
+                'Enviada em ${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}';
           } catch (_) {}
         }
 
@@ -1068,7 +1229,8 @@ class _AbaAtividades extends StatelessWidget {
         Color corIcone = AppColors.warning;
         String descStatus = 'Pendente';
 
-        final isConcluida = status == 3 ||
+        final isConcluida =
+            status == 3 ||
             status?.toString() == '3' ||
             status?.toString().toLowerCase() == 'concluida' ||
             status?.toString().toLowerCase() == 'concluído';
@@ -1077,7 +1239,9 @@ class _AbaAtividades extends StatelessWidget {
           iconeStatus = Icons.check_circle;
           corIcone = AppColors.secondary;
           descStatus = 'Concluída';
-        } else if (status == 4 || status?.toString() == '4' || status?.toString().toLowerCase() == 'atrasada') {
+        } else if (status == 4 ||
+            status?.toString() == '4' ||
+            status?.toString().toLowerCase() == 'atrasada') {
           iconeStatus = Icons.error_outline;
           corIcone = AppColors.danger;
           descStatus = 'Atrasada';
@@ -1152,7 +1316,8 @@ Color _humorCor(dynamic humor) {
 
 void _verDetalhesAtividade(BuildContext context, Map<String, dynamic> ativ) {
   final status = ativ['status'];
-  final isConcluida = status == 3 ||
+  final isConcluida =
+      status == 3 ||
       status?.toString() == '3' ||
       status?.toString().toLowerCase() == 'concluida' ||
       status?.toString().toLowerCase() == 'concluído';
@@ -1166,7 +1331,8 @@ void _verDetalhesAtividade(BuildContext context, Map<String, dynamic> ativ) {
   if (dataEnvioStr != null) {
     try {
       final dt = DateTime.parse(dataEnvioStr.toString()).toLocal();
-      dataEnvio = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+      dataEnvio =
+          '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
     } catch (_) {}
   }
 
@@ -1174,7 +1340,8 @@ void _verDetalhesAtividade(BuildContext context, Map<String, dynamic> ativ) {
   if (dataConStr != null) {
     try {
       final dt = DateTime.parse(dataConStr.toString()).toLocal();
-      dataCon = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+      dataCon =
+          '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
     } catch (_) {}
   }
 
@@ -1182,7 +1349,8 @@ void _verDetalhesAtividade(BuildContext context, Map<String, dynamic> ativ) {
   if (dataLimiteStr != null) {
     try {
       final dt = DateTime.parse(dataLimiteStr.toString()).toLocal();
-      dataLimite = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+      dataLimite =
+          '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
     } catch (_) {}
   }
 
@@ -1194,179 +1362,184 @@ void _verDetalhesAtividade(BuildContext context, Map<String, dynamic> ativ) {
     ),
     backgroundColor: AppColors.background,
     builder: (ctx) {
-      return Padding(
-        padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 24,
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+      final titulo = ativ['atividade']?['titulo'] ??
+          ativ['titulo'] ??
+          'Atividade';
+
+      return ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(ctx).size.height * 0.88,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Align(
-              alignment: Alignment.center,
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Row(
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  isConcluida ? LucideIcons.circleCheck : LucideIcons.circleAlert,
-                  color: isConcluida ? AppColors.secondary : AppColors.warning,
-                  size: 28,
+                Align(
+                  alignment: Alignment.center,
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    ativ['atividade']?['titulo'] ?? ativ['titulo'] ?? 'Atividade',
-                    style: const TextStyle(
-                      fontSize: 18,
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Icon(
+                      isConcluida
+                          ? LucideIcons.circleCheck
+                          : LucideIcons.circleAlert,
+                      color: isConcluida ? AppColors.secondary : AppColors.warning,
+                      size: 28,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        titulo,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.text,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                if (ativ['atividade']?['descricao'] != null &&
+                    ativ['atividade']?['descricao'].toString().isNotEmpty ==
+                        true) ...[
+                  Text(
+                    ativ['atividade']?['descricao'],
+                    style: const TextStyle(fontSize: 14, color: AppColors.muted),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    children: [
+                      _LinhaInfoDetalhe('Data de envio', dataEnvio),
+                      if (dataLimite.isNotEmpty) ...[
+                        const Divider(height: 16),
+                        _LinhaInfoDetalhe('Data limite', dataLimite),
+                      ],
+                      if (isConcluida && dataCon.isNotEmpty) ...[
+                        const Divider(height: 16),
+                        _LinhaInfoDetalhe('Concluída em', dataCon),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                if (isConcluida) ...[
+                  const Text(
+                    'Resposta do Paciente',
+                    style: TextStyle(
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: AppColors.text,
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (ativ['atividade']?['descricao'] != null && ativ['atividade']?['descricao'].toString().isNotEmpty == true) ...[
-              Text(
-                ativ['atividade']?['descricao'],
-                style: const TextStyle(fontSize: 14, color: AppColors.muted),
-              ),
-              const SizedBox(height: 16),
-            ],
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.card,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Column(
-                children: [
-                  _LinhaInfoDetalhe('Data de envio', dataEnvio),
-                  if (dataLimite.isNotEmpty) ...[
-                    const Divider(height: 16),
-                    _LinhaInfoDetalhe('Data limite', dataLimite),
-                  ],
-                  if (isConcluida && dataCon.isNotEmpty) ...[
-                    const Divider(height: 16),
-                    _LinhaInfoDetalhe('Concluída em', dataCon),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            if (isConcluida) ...[
-              const Text(
-                'Resposta do Paciente',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.text,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.softGreen.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.softGreen.withOpacity(0.5)),
-                ),
-                child: Text(
-                  resposta ?? 'Sem resposta por texto.',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.text,
-                    height: 1.4,
+                  const SizedBox(height: 12),
+                  RespostaAtividadeWidget(
+                    resposta: resposta,
+                    tituloAtividade: titulo,
+                    dadosAtividade: ativ,
                   ),
-                ),
-              ),
-              if (notaHumorVal != null) ...[
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Humor reportado na conclusão',
+                  if (notaHumorVal != null) ...[
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Humor reportado na conclusão',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.text,
+                          ),
+                        ),
+                        Text(
+                          '$notaHumorVal/10',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: LinearProgressIndicator(
+                        value: (int.tryParse(notaHumorVal.toString()) ?? 5) / 10.0,
+                        minHeight: 8,
+                        backgroundColor: AppColors.border,
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ] else ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                    ),
+                    child: const Text(
+                      'Esta atividade ainda não foi concluída pelo paciente.',
                       style: TextStyle(
                         fontSize: 14,
+                        color: AppColors.warning,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.text,
                       ),
                     ),
-                    Text(
-                      '$notaHumorVal/10',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                  ),
+                ],
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: (int.tryParse(notaHumorVal.toString()) ?? 5) / 10.0,
-                    minHeight: 8,
-                    backgroundColor: AppColors.border,
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    child: const Text(
+                      'Fechar',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ],
-            ] else ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.warning.withOpacity(0.3)),
-                ),
-                child: const Text(
-                  'Esta atividade ainda não foi concluída pelo paciente.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.warning,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(ctx),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: const Text(
-                  'Fechar',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
             ),
-          ],
+          ),
         ),
       );
     },
@@ -1374,8 +1547,6 @@ void _verDetalhesAtividade(BuildContext context, Map<String, dynamic> ativ) {
 }
 
 void _verDetalhesCheckin(BuildContext context, Map<String, dynamic> checkin) {
-  final humorVal = checkin['humor'];
-  final intensidade = checkin['intensidade'];
   final emocao = checkin['emocaoPrincipal'] ?? 'Não informada';
   final obs = checkin['observacao'];
   final criadoEmStr = checkin['criadoEm'];
@@ -1388,9 +1559,126 @@ void _verDetalhesCheckin(BuildContext context, Map<String, dynamic> checkin) {
     } catch (_) {}
   }
 
-  final String txtHumor = _humorTexto(humorVal);
-  final IconData iconHumor = _humorIcone(humorVal);
-  final Color corHumor = _humorCor(humorVal);
+  IconData getIconeEmocao(String e) {
+    switch (e) {
+      case 'Amor':
+        return LucideIcons.heart;
+      case 'Alegria':
+        return LucideIcons.smile;
+      case 'Calma':
+        return LucideIcons.smile;
+      case 'Gratidão':
+        return LucideIcons.smilePlus;
+      case 'Tranquilidade':
+        return LucideIcons.smile;
+      case 'Raiva':
+        return LucideIcons.angry;
+      case 'Ansiedade':
+        return LucideIcons.frown;
+      case 'Tristeza':
+        return LucideIcons.frown;
+      case 'Estresse':
+        return LucideIcons.zap;
+      case 'Tédio':
+        return LucideIcons.meh;
+      case 'Irritação':
+        return LucideIcons.flame;
+      case 'Confusão':
+        return LucideIcons.helpCircle;
+      case 'Cansaço':
+        return LucideIcons.moon;
+      case 'Esperança':
+        return LucideIcons.sun;
+      case 'Motivação':
+        return LucideIcons.rocket;
+      case 'Outra':
+        return LucideIcons.moreHorizontal;
+      default:
+        return LucideIcons.smile;
+    }
+  }
+
+  Color getCorEmocao(String e) {
+    switch (e) {
+      case 'Amor':
+        return Colors.pink;
+      case 'Alegria':
+        return Colors.orange;
+      case 'Calma':
+        return Colors.blue;
+      case 'Gratidão':
+        return Colors.green;
+      case 'Tranquilidade':
+        return Colors.purple;
+      case 'Raiva':
+        return Colors.red;
+      case 'Ansiedade':
+        return Colors.deepOrange;
+      case 'Tristeza':
+        return Colors.orange;
+      case 'Estresse':
+        return Colors.deepPurple;
+      case 'Tédio':
+        return Colors.teal;
+      case 'Irritação':
+        return Colors.redAccent;
+      case 'Confusão':
+        return Colors.grey;
+      case 'Cansaço':
+        return Colors.indigo;
+      case 'Esperança':
+        return Colors.green;
+      case 'Motivação':
+        return Colors.pinkAccent;
+      case 'Outra':
+        return Colors.blueGrey;
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  Color getCorFundoEmocao(String e) {
+    switch (e) {
+      case 'Amor':
+        return const Color(0xFFFFE5E5);
+      case 'Alegria':
+        return const Color(0xFFFFF2E5);
+      case 'Calma':
+        return const Color(0xFFE5F0FF);
+      case 'Gratidão':
+        return const Color(0xFFE5FFE5);
+      case 'Tranquilidade':
+        return const Color(0xFFF3E5F5);
+      case 'Raiva':
+        return const Color(0xFFFFE5E5);
+      case 'Ansiedade':
+        return const Color(0xFFFFEBE5);
+      case 'Tristeza':
+        return const Color(0xFFFFF2E5);
+      case 'Estresse':
+        return const Color(0xFFEBE5FF);
+      case 'Tédio':
+        return const Color(0xFFE5FFFA);
+      case 'Irritação':
+        return const Color(0xFFFFE5E5);
+      case 'Confusão':
+        return const Color(0xFFF0F0F0);
+      case 'Cansaço':
+        return const Color(0xFFE5F0FF);
+      case 'Esperança':
+        return const Color(0xFFE5FFE5);
+      case 'Motivação':
+        return const Color(0xFFFFE5F2);
+      case 'Outra':
+        return const Color(0xFFF0F0F0);
+      default:
+        return const Color(0xFFF5F3FF);
+    }
+  }
+
+  final iconEmocao = getIconeEmocao(emocao);
+  final corEmocao = getCorEmocao(emocao);
+  final corFundoEmocao = getCorFundoEmocao(emocao);
 
   showModalBottomSheet(
     context: context,
@@ -1425,15 +1713,6 @@ void _verDetalhesCheckin(BuildContext context, Map<String, dynamic> checkin) {
             const SizedBox(height: 24),
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: corHumor.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(iconHumor, color: corHumor, size: 32),
-                ),
-                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1449,7 +1728,10 @@ void _verDetalhesCheckin(BuildContext context, Map<String, dynamic> checkin) {
                       const SizedBox(height: 4),
                       Text(
                         dataCheckin,
-                        style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.muted,
+                        ),
                       ),
                     ],
                   ),
@@ -1458,19 +1740,46 @@ void _verDetalhesCheckin(BuildContext context, Map<String, dynamic> checkin) {
             ),
             const SizedBox(height: 24),
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
               decoration: BoxDecoration(
                 color: AppColors.card,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.border),
               ),
-              child: Column(
+              child: Row(
                 children: [
-                  _LinhaInfoDetalhe('Humor geral', txtHumor),
-                  const Divider(height: 16),
-                  _LinhaInfoDetalhe('Intensidade do humor', '$intensidade/10'),
-                  const Divider(height: 16),
-                  _LinhaInfoDetalhe('Emoção principal', emocao),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: corFundoEmocao,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(iconEmocao, color: corEmocao, size: 36),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Emoção principal',
+                          style: TextStyle(
+                            color: AppColors.muted,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          emocao,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                            color: AppColors.text,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1493,11 +1802,15 @@ void _verDetalhesCheckin(BuildContext context, Map<String, dynamic> checkin) {
                 border: Border.all(color: AppColors.softGreen.withOpacity(0.5)),
               ),
               child: Text(
-                (obs != null && obs.toString().trim().isNotEmpty) ? obs : 'Paciente não deixou observações adicionais para este check-in.',
+                (obs != null && obs.toString().trim().isNotEmpty)
+                    ? obs
+                    : 'Paciente não deixou observações adicionais para este check-in.',
                 style: TextStyle(
                   fontSize: 14,
                   color: AppColors.text,
-                  fontStyle: (obs != null && obs.toString().trim().isNotEmpty) ? FontStyle.normal : FontStyle.italic,
+                  fontStyle: (obs != null && obs.toString().trim().isNotEmpty)
+                      ? FontStyle.normal
+                      : FontStyle.italic,
                   height: 1.4,
                 ),
               ),
@@ -1543,7 +1856,8 @@ void _verDetalhesRegistro(BuildContext context, Map<String, dynamic> registro) {
   if (criadoEmStr != null) {
     try {
       final dt = DateTime.parse(criadoEmStr.toString()).toLocal();
-      dataRegistro = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} às ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+      dataRegistro =
+          '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} às ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
     } catch (_) {}
   }
 
@@ -1587,7 +1901,11 @@ void _verDetalhesRegistro(BuildContext context, Map<String, dynamic> registro) {
                         color: Colors.amber.withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(LucideIcons.brain, color: Colors.amber, size: 32),
+                      child: const Icon(
+                        LucideIcons.brain,
+                        color: Colors.amber,
+                        size: 32,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -1605,7 +1923,10 @@ void _verDetalhesRegistro(BuildContext context, Map<String, dynamic> registro) {
                           const SizedBox(height: 4),
                           Text(
                             dataRegistro,
-                            style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.muted,
+                            ),
                           ),
                         ],
                       ),
@@ -1615,19 +1936,35 @@ void _verDetalhesRegistro(BuildContext context, Map<String, dynamic> registro) {
                 const SizedBox(height: 24),
                 _SecaoBlocoDetalhe('Situação / Gatilho', sit),
                 _SecaoBlocoDetalhe('Pensamento Automático', pAutomatico),
-                _SecaoBlocoDetalhe('Emoção & Intensidade Inicial', '$emo (Intensidade: $intEmocao/10)'),
-                
-                if (evAFavor != null && evAFavor.toString().trim().isNotEmpty)
-                  _SecaoBlocoDetalhe('Evidências a favor do pensamento', evAFavor),
-                
-                if (evContra != null && evContra.toString().trim().isNotEmpty)
-                  _SecaoBlocoDetalhe('Evidências contra o pensamento', evContra),
+                _SecaoBlocoDetalhe(
+                  'Emoção & Intensidade Inicial',
+                  '$emo (Intensidade: $intEmocao/10)',
+                ),
 
-                if (pAlternativo != null && pAlternativo.toString().trim().isNotEmpty)
-                  _SecaoBlocoDetalhe('Pensamento Alternativo / Reestruturado', pAlternativo),
+                if (evAFavor != null && evAFavor.toString().trim().isNotEmpty)
+                  _SecaoBlocoDetalhe(
+                    'Evidências a favor do pensamento',
+                    evAFavor,
+                  ),
+
+                if (evContra != null && evContra.toString().trim().isNotEmpty)
+                  _SecaoBlocoDetalhe(
+                    'Evidências contra o pensamento',
+                    evContra,
+                  ),
+
+                if (pAlternativo != null &&
+                    pAlternativo.toString().trim().isNotEmpty)
+                  _SecaoBlocoDetalhe(
+                    'Pensamento Alternativo / Reestruturado',
+                    pAlternativo,
+                  ),
 
                 if (intFinal != null)
-                  _SecaoBlocoDetalhe('Intensidade da Emoção Final', '$intFinal/10'),
+                  _SecaoBlocoDetalhe(
+                    'Intensidade da Emoção Final',
+                    '$intFinal/10',
+                  ),
 
                 const SizedBox(height: 24),
                 SizedBox(
@@ -1715,11 +2052,19 @@ class _LinhaInfoDetalhe extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 13, color: AppColors.muted, fontWeight: FontWeight.w500),
+          style: const TextStyle(
+            fontSize: 13,
+            color: AppColors.muted,
+            fontWeight: FontWeight.w500,
+          ),
         ),
         Text(
           valor,
-          style: const TextStyle(fontSize: 13, color: AppColors.text, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontSize: 13,
+            color: AppColors.text,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ],
     );
@@ -1766,19 +2111,24 @@ class _AbaEvolucao extends StatelessWidget {
       return sum + ((nivel > 0 ? nivel : 1) * 10);
     });
 
-    final datasCheckinUnicas = checkins.map((c) {
-      final criadoEmStr = c['criadoEm'] ?? c['dataCriacao'] ?? '';
-      try {
-        final dt = DateTime.parse(criadoEmStr.toString()).toLocal();
-        return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
-      } catch (_) {
-        return '';
-      }
-    }).where((date) => date.isNotEmpty).toSet();
+    final datasCheckinUnicas = checkins
+        .map((c) {
+          final criadoEmStr = c['criadoEm'] ?? c['dataCriacao'] ?? '';
+          try {
+            final dt = DateTime.parse(criadoEmStr.toString()).toLocal();
+            return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+          } catch (_) {
+            return '';
+          }
+        })
+        .where((date) => date.isNotEmpty)
+        .toSet();
 
     final pontosCheckins = datasCheckinUnicas.length * 10;
 
-    final registrosAvulsos = registros.where((r) => r['atividadePacienteId'] == null).toList();
+    final registrosAvulsos = registros
+        .where((r) => r['atividadePacienteId'] == null)
+        .toList();
     final pontosRegistros = registrosAvulsos.length * 15;
 
     return SingleChildScrollView(
@@ -1791,10 +2141,7 @@ class _AbaEvolucao extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [
-                  Color(0xFF11998E),
-                  Color(0xFF38EF7D),
-                ],
+                colors: [Color(0xFF11998E), Color(0xFF38EF7D)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -1923,8 +2270,10 @@ class _AbaEvolucao extends StatelessWidget {
             )
           else
             ...concluidas.map((ativ) {
-              final titulo = ativ['titulo'] ?? ativ['atividade']?['titulo'] ?? 'Atividade';
-              final desc = ativ['descricao'] ?? ativ['atividade']?['descricao'] ?? '';
+              final titulo =
+                  ativ['titulo'] ?? ativ['atividade']?['titulo'] ?? 'Atividade';
+              final desc =
+                  ativ['descricao'] ?? ativ['atividade']?['descricao'] ?? '';
               final nivel = ativ['nivel'] as int? ?? 1;
               final xpGanhos = (nivel > 0 ? nivel : 1) * 10;
               final dataConclusaoStr = ativ['dataConclusao'];
@@ -1932,8 +2281,11 @@ class _AbaEvolucao extends StatelessWidget {
               String dataFormatada = '';
               if (dataConclusaoStr != null) {
                 try {
-                  final dt = DateTime.parse(dataConclusaoStr.toString()).toLocal();
-                  dataFormatada = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+                  final dt = DateTime.parse(
+                    dataConclusaoStr.toString(),
+                  ).toLocal();
+                  dataFormatada =
+                      '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
                 } catch (_) {
                   dataFormatada = '';
                 }
@@ -2009,13 +2361,13 @@ class _AbaEvolucao extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFF8E2DE2),
-                            Color(0xFF4A00E0),
-                          ],
+                          colors: [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -2049,10 +2401,7 @@ class _AbaEvolucao extends StatelessWidget {
               padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFF8E2DE2),
-                    Color(0xFF4A00E0),
-                  ],
+                  colors: [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -2246,10 +2595,7 @@ class _LinhaDetalhamentoXP extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 detalhe,
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppColors.muted,
-                ),
+                style: const TextStyle(fontSize: 11, color: AppColors.muted),
               ),
             ],
           ),
@@ -2290,7 +2636,9 @@ class _AbaAnotacoesState extends State<_AbaAnotacoes> {
   @override
   void initState() {
     super.initState();
-    _anotacoesController = TextEditingController(text: widget.anotacoesIniciais);
+    _anotacoesController = TextEditingController(
+      text: widget.anotacoesIniciais,
+    );
   }
 
   @override
@@ -2302,7 +2650,10 @@ class _AbaAnotacoesState extends State<_AbaAnotacoes> {
   Future<void> _salvarAnotacoes() async {
     setState(() => _salvando = true);
     try {
-      await service.atualizarAnotacoesPaciente(widget.pacienteId, _anotacoesController.text.trim());
+      await service.atualizarAnotacoesPaciente(
+        widget.pacienteId,
+        _anotacoesController.text.trim(),
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -2313,9 +2664,9 @@ class _AbaAnotacoesState extends State<_AbaAnotacoes> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao salvar anotações: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao salvar anotações: $e')));
       }
     } finally {
       if (mounted) {
@@ -2329,8 +2680,12 @@ class _AbaAnotacoesState extends State<_AbaAnotacoes> {
     // Sort messages from newest to oldest
     final msgs = List<dynamic>.from(widget.mensagens);
     msgs.sort((a, b) {
-      final da = DateTime.tryParse(a['criadoEm']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final db = DateTime.tryParse(b['criadoEm']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final da =
+          DateTime.tryParse(a['criadoEm']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      final db =
+          DateTime.tryParse(b['criadoEm']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0);
       return db.compareTo(da);
     });
 
@@ -2371,7 +2726,8 @@ class _AbaAnotacoesState extends State<_AbaAnotacoes> {
               maxLines: 8,
               style: const TextStyle(fontSize: 14, color: AppColors.text),
               decoration: const InputDecoration(
-                hintText: 'Escreva aqui suas observações sobre a evolução, sessões e comportamento do paciente...',
+                hintText:
+                    'Escreva aqui suas observações sobre a evolução, sessões e comportamento do paciente...',
                 hintStyle: TextStyle(color: AppColors.muted, fontSize: 13),
                 contentPadding: EdgeInsets.all(16),
                 border: InputBorder.none,
@@ -2387,14 +2743,20 @@ class _AbaAnotacoesState extends State<_AbaAnotacoes> {
                   ? const SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Icon(LucideIcons.save, size: 16),
               label: Text(_salvando ? 'Salvando...' : 'Salvar Anotações'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -2440,7 +2802,8 @@ class _AbaAnotacoesState extends State<_AbaAnotacoes> {
                 if (dataStr != null) {
                   try {
                     final dt = DateTime.parse(dataStr.toString()).toLocal();
-                    dataFormatada = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} às ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+                    dataFormatada =
+                        '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} às ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
                   } catch (_) {}
                 }
 
@@ -2460,41 +2823,64 @@ class _AbaAnotacoesState extends State<_AbaAnotacoes> {
                         children: [
                           Row(
                             children: const [
-                              Icon(LucideIcons.messageSquareHeart, color: AppColors.primary, size: 16),
+                              Icon(
+                                LucideIcons.messageSquareHeart,
+                                color: AppColors.primary,
+                                size: 16,
+                              ),
                               SizedBox(width: 6),
                               Text(
                                 'Mensagem Motivacional',
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary,
+                                ),
                               ),
                             ],
                           ),
                           Text(
                             dataFormatada,
-                            style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.muted,
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 10),
                       Text(
                         msg['conteudo'] ?? '',
-                        style: const TextStyle(fontSize: 13, color: AppColors.text, height: 1.4),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.text,
+                          height: 1.4,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           Icon(
-                            msg['lida'] == true ? LucideIcons.checkCheck : LucideIcons.check,
-                            color: msg['lida'] == true ? AppColors.secondary : AppColors.muted,
+                            msg['lida'] == true
+                                ? LucideIcons.checkCheck
+                                : LucideIcons.check,
+                            color: msg['lida'] == true
+                                ? AppColors.secondary
+                                : AppColors.muted,
                             size: 14,
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            msg['lida'] == true ? 'Lida pelo paciente' : 'Enviada',
+                            msg['lida'] == true
+                                ? 'Lida pelo paciente'
+                                : 'Enviada',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w500,
-                              color: msg['lida'] == true ? AppColors.secondary : AppColors.muted,
+                              color: msg['lida'] == true
+                                  ? AppColors.secondary
+                                  : AppColors.muted,
                             ),
                           ),
                         ],

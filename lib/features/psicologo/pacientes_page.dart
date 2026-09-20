@@ -7,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/api/api_client.dart';
 import 'paciente_detalhe_page.dart';
 import 'services/psicologo_service.dart';
+import 'widgets/paciente_avatar_widget.dart';
 
 class PacientesPage extends StatefulWidget {
   const PacientesPage({super.key});
@@ -91,7 +92,10 @@ class PacientesPageState extends State<PacientesPage> {
                     final nome =
                         usuario?['nome'] ?? paciente['nome'] ?? 'Paciente';
                     final id = paciente['id']?.toString() ?? '';
-                    final fotoUrl = paciente['fotoUrl']?.toString();
+                    final fotoUrl = paciente['fotoUrl']?.toString() ??
+                        usuario?['fotoUrl']?.toString() ??
+                        paciente['avatar']?.toString() ??
+                        usuario?['avatar']?.toString();
 
                     return _PacienteItem(
                       id: id,
@@ -471,19 +475,8 @@ class _PacienteItem extends StatelessWidget {
     required this.onEdit,
   });
 
-  String? _obterUrlCompleta(String? url) {
-    if (url == null || url.isEmpty) return null;
-    final baseUrl = ApiClient.dio.options.baseUrl;
-    final domain = baseUrl.endsWith('/api')
-        ? baseUrl.substring(0, baseUrl.length - 4)
-        : baseUrl;
-    return '$domain$url';
-  }
-
   @override
   Widget build(BuildContext context) {
-    final inicial = nome.isNotEmpty ? nome.substring(0, 1) : '?';
-    
     // Mocking the percentage and icon based on name length for visual variety
     int percentage = 50 + (nome.length * 5) % 50; 
     IconData moodIcon = LucideIcons.smile;
@@ -496,8 +489,6 @@ class _PacienteItem extends StatelessWidget {
       moodIcon = LucideIcons.frown;
       moodColor = AppColors.danger;
     }
-
-    final fullFotoUrl = _obterUrlCompleta(fotoUrl);
 
     return GestureDetector(
       onTap: () {
@@ -517,10 +508,10 @@ class _PacienteItem extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.card,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border.withOpacity(0.5)),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -528,22 +519,10 @@ class _PacienteItem extends StatelessWidget {
         ),
         child: Row(
           children: [
-            CircleAvatar(
+            PacienteAvatarWidget(
+              fotoUrl: fotoUrl,
+              nome: nome,
               radius: 24,
-              backgroundColor: AppColors.softGreen,
-              backgroundImage: fullFotoUrl != null
-                  ? NetworkImage(fullFotoUrl)
-                  : null,
-              child: fullFotoUrl != null
-                  ? null
-                  : Text(
-                      inicial,
-                      style: const TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
             ),
             const SizedBox(width: 16),
             Expanded(

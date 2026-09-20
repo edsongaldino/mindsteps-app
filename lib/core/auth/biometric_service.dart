@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'dart:developer' as developer;
 
 import 'package:local_auth/local_auth.dart';
@@ -22,16 +22,18 @@ class BiometricService {
   static const String _secEmailKey = 'biometric_email_key';
   static const String _secPasswordKey = 'biometric_password_key';
 
-  /// Verifica se o dispositivo suporta autenticacao biometrica ou por PIN.
+  /// Verifica se o dispositivo suporta biometria REAL (face ou digital)
+  /// cadastrada. Retorna false se apenas PIN/padrao estiver configurado.
   Future<bool> isBiometricAvailable() async {
     try {
       final bool isSupported = await _localAuth.isDeviceSupported();
       if (!isSupported) return false;
-      // canCheckBiometrics = true quando Face ID ou digital estao cadastrados
+      // canCheckBiometrics so e true quando ha biometria CADASTRADA (face/digital)
       final bool canCheck = await _localAuth.canCheckBiometrics;
-      // Mesmo sem biometria cadastrada, se o dispositivo suporta autenticacao
-      // local (PIN, padrao), exibimos o botao e usamos como fallback.
-      return canCheck || isSupported;
+      if (!canCheck) return false;
+      // Verifica se ha algum tipo de biometria disponivel
+      final List<BiometricType> available = await _localAuth.getAvailableBiometrics();
+      return available.isNotEmpty;
     } catch (e) {
       developer.log('BiometricService.isBiometricAvailable error: $e');
       return false;
@@ -48,9 +50,21 @@ class BiometricService {
     }
   }
 
-  /// Executa o prompt de autenticacao (Face ID / Touch ID / PIN).
-  /// biometricOnly: false permite fallback para PIN quando biometria falha,
-  /// o que e necessario para o iOS funcionar corretamente em producao.
+  /// Retorna true se o dispositivo possui Face ID / reconhecimento facial.
+  Future<bool> hasFaceId() async {
+    try {
+      final biometrics = await _localAuth.getAvailableBiometrics();
+      return biometrics.contains(BiometricType.face);
+    } catch (e) {
+      developer.log('BiometricService.hasFaceId error: $e');
+      return false;
+    }
+  }
+
+  /// Executa o prompt de autenticacao (Face ID / Touch ID).
+  /// biometricOnly: true para garantir que apenas biometria seja aceita
+  /// (evita fallback para PIN que confunde usuarios que esperam face scan).
+  /// Em caso de falha por biometria nao cadastrada, retorna false graciosamente.
   Future<bool> authenticate() async {
     try {
       final result = await _localAuth.authenticate(

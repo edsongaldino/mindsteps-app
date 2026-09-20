@@ -29,24 +29,55 @@ class _LoginPageState extends State<LoginPage> {
   final _biometricService = BiometricService();
   bool biometriaDisponivel = false;
   bool biometriaHabilitada = false;
+  bool lembrarAcesso = false;
+  bool temFaceId = false;
 
   @override
   void initState() {
     super.initState();
+    _carregarCredenciaisLembradas();
     _checarBiometria();
+  }
+
+  Future<void> _carregarCredenciaisLembradas() async {
+    final credenciais = await AuthStorage.obterCredenciaisLembradas();
+    if (credenciais != null && mounted) {
+      setState(() {
+        lembrarAcesso = true;
+        if (credenciais['email'] != null && credenciais['email']!.isNotEmpty) {
+          emailController.text = credenciais['email']!;
+        }
+        if (credenciais['senha'] != null && credenciais['senha']!.isNotEmpty) {
+          senhaController.text = credenciais['senha']!;
+        }
+      });
+    }
   }
 
   Future<void> _checarBiometria() async {
     final disponivel = await _biometricService.isBiometricAvailable();
     final habilitada = await _biometricService.isBiometricEnabled();
+    final faceId = disponivel ? await _biometricService.hasFaceId() : false;
     if (mounted) {
       setState(() {
         biometriaDisponivel = disponivel;
         biometriaHabilitada = habilitada;
+        temFaceId = faceId;
       });
       if (disponivel && habilitada) {
+        // Valida se as credenciais ainda existem antes de auto-acionar
+        final credenciais = await _biometricService.getSavedCredentials();
+        if (credenciais == null) {
+          // Credenciais foram perdidas (ex: reinstalacao, wipe do Keychain).
+          // Limpa o flag para nao mostrar erro e re-pergunta na proxima vez.
+          await _biometricService.clearCredentials();
+          if (mounted) {
+            setState(() => biometriaHabilitada = false);
+          }
+          return;
+        }
         // Delay slightly to let the build finish before spawning biometric prompt
-        Future.delayed(const Duration(milliseconds: 500), () {
+        Future.delayed(const Duration(milliseconds: 600), () {
           if (mounted && !carregando) {
             _autenticarComBiometria();
           }
@@ -60,18 +91,20 @@ class _LoginPageState extends State<LoginPage> {
     final credenciais = await _biometricService.getSavedCredentials();
     if (credenciais == null) {
       if (mounted) {
+        // Biometria ainda nao foi habilitada — orienta o usuario a logar normalmente primeiro
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: AppColors.danger,
+            backgroundColor: AppColors.secondary,
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             content: const Row(
               children: [
-                Icon(LucideIcons.circleAlert, color: Colors.white, size: 20),
+                Icon(LucideIcons.info, color: Colors.white, size: 20),
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Credenciais de biometria não encontradas. Por favor, digite seu e-mail e senha.',
+                    'Entre com e-mail e senha uma vez para habilitar o acesso por biometria.',
                     style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -101,6 +134,13 @@ class _LoginPageState extends State<LoginPage> {
       await AuthStorage.salvarPerfil(perfil);
       await AuthStorage.salvarAprovado(aprovado);
       NotificationManager().sincronizarToken();
+
+      if (lembrarAcesso) {
+        await AuthStorage.salvarCredenciaisLembradas(
+          credenciais['email']!,
+          credenciais['senha']!,
+        );
+      }
 
       if (!mounted) return;
 
@@ -184,6 +224,12 @@ class _LoginPageState extends State<LoginPage> {
         await AuthStorage.salvarPerfil(perfil);
         await AuthStorage.salvarAprovado(aprovado);
         NotificationManager().sincronizarToken();
+
+        if (lembrarAcesso) {
+          await AuthStorage.salvarCredenciaisLembradas(email, senha);
+        } else {
+          await AuthStorage.limparCredenciaisLembradas();
+        }
 
         if (biometriaDisponivel && !biometriaHabilitada) {
           if (mounted) {
@@ -281,7 +327,7 @@ class _LoginPageState extends State<LoginPage> {
   void _mostrarModalNaoPossuiConta() {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.6),
+      barrierColor: Colors.black.withValues(alpha: 0.6),
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         child: Container(
@@ -345,7 +391,7 @@ class _LoginPageState extends State<LoginPage> {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF7FAF9),
-                  border: Border.all(color: AppColors.secondary.withOpacity(0.12)),
+                  border: Border.all(color: AppColors.secondary.withValues(alpha: 0.12)),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
@@ -359,7 +405,7 @@ class _LoginPageState extends State<LoginPage> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.secondary.withOpacity(0.08)),
+                            border: Border.all(color: AppColors.secondary.withValues(alpha: 0.08)),
                           ),
                           child: const Icon(
                             LucideIcons.user,
@@ -398,7 +444,7 @@ class _LoginPageState extends State<LoginPage> {
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       child: Divider(
-                        color: AppColors.secondary.withOpacity(0.08),
+                        color: AppColors.secondary.withValues(alpha: 0.08),
                         height: 1,
                       ),
                     ),
@@ -411,7 +457,7 @@ class _LoginPageState extends State<LoginPage> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.secondary.withOpacity(0.08)),
+                            border: Border.all(color: AppColors.secondary.withValues(alpha: 0.08)),
                           ),
                           child: const Icon(
                             LucideIcons.briefcase,
@@ -507,7 +553,7 @@ class _LoginPageState extends State<LoginPage> {
               width: 250,
               height: 250,
               decoration: BoxDecoration(
-                color: AppColors.secondary.withOpacity(0.12),
+                color: AppColors.secondary.withValues(alpha: 0.12),
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(180),
                   bottomRight: Radius.circular(80),
@@ -524,7 +570,7 @@ class _LoginPageState extends State<LoginPage> {
               width: 180,
               height: 180,
               decoration: BoxDecoration(
-                color: AppColors.secondary.withOpacity(0.08),
+                color: AppColors.secondary.withValues(alpha: 0.08),
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(120),
                   bottomRight: Radius.circular(50),
@@ -648,32 +694,73 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   
-                  // Esqueci minha senha (centered & underlined)
-                  Center(
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const RecuperarSenhaPage()),
-                        );
-                      },
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: const Text(
-                        'Esqueci minha senha',
-                        style: TextStyle(
-                          color: AppColors.secondary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          decoration: TextDecoration.underline,
+                  // Lembrar acesso (Checkbox) & Esqueci minha senha
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      InkWell(
+                        onTap: () {
+                          setState(() => lembrarAcesso = !lembrarAcesso);
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: Checkbox(
+                                  value: lembrarAcesso,
+                                  onChanged: (val) {
+                                    setState(() => lembrarAcesso = val ?? false);
+                                  },
+                                  activeColor: AppColors.secondary,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(5),
+                                  ),
+                                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Lembrar acesso',
+                                style: TextStyle(
+                                  color: AppColors.text,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const RecuperarSenhaPage()),
+                          );
+                        },
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const Text(
+                          'Esqueci minha senha',
+                          style: TextStyle(
+                            color: AppColors.secondary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 24),
                   
@@ -701,21 +788,32 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       if (biometriaDisponivel) ...[
                         const SizedBox(width: 12),
-                        InkWell(
-                          onTap: carregando ? null : _autenticarComBiometria,
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            height: 52,
-                            width: 52,
-                            decoration: BoxDecoration(
-                              color: AppColors.secondary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppColors.secondary.withOpacity(0.2)),
-                            ),
-                            child: const Icon(
-                              LucideIcons.fingerprint,
-                              color: AppColors.secondary,
-                              size: 26,
+                        Tooltip(
+                          message: biometriaHabilitada
+                              ? (temFaceId ? 'Entrar com Face ID' : 'Entrar com digital')
+                              : 'Biometria não habilitada',
+                          child: InkWell(
+                            onTap: carregando ? null : _autenticarComBiometria,
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              height: 52,
+                              width: 52,
+                              decoration: BoxDecoration(
+                                color: biometriaHabilitada
+                                    ? AppColors.secondary.withValues(alpha: 0.1)
+                                    : AppColors.muted.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: biometriaHabilitada
+                                      ? AppColors.secondary.withValues(alpha: 0.25)
+                                      : AppColors.muted.withValues(alpha: 0.15),
+                                ),
+                              ),
+                              child: Icon(
+                                temFaceId ? LucideIcons.scanFace : LucideIcons.fingerprint,
+                                color: biometriaHabilitada ? AppColors.secondary : AppColors.muted,
+                                size: 26,
+                              ),
                             ),
                           ),
                         ),
@@ -763,32 +861,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _socialButton(Widget content, {required VoidCallback onTap}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(100),
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          border: Border.all(color: AppColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 6,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Center(
-          child: content,
-        ),
       ),
     );
   }

@@ -117,48 +117,7 @@ class _PacienteRegistroPensamentoPageState
                 divisions: 10,
                 onChanged: (v) => setState(() => intensidadeEmocao = v),
               ),
-              const Divider(height: 40),
-              const Text(
-                'Desafiando o pensamento',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.text,
-                ),
-              ),
-              const SizedBox(height: 16),
-              _CampoTexto(
-                label: 'Evidências a favor',
-                hint: 'O que confirma esse pensamento?',
-                controller: evidenciasAFavorController,
-                maxLines: 2,
-              ),
-              const SizedBox(height: 16),
-              _CampoTexto(
-                label: 'Evidências contra',
-                hint: 'O que contradiz esse pensamento?',
-                controller: evidenciasContraController,
-                maxLines: 2,
-              ),
-              const SizedBox(height: 16),
-              _CampoTexto(
-                label: 'Pensamento Alternativo',
-                hint: 'Uma forma mais equilibrada de ver a situação',
-                controller: pensamentoAlternativoController,
-                maxLines: 3,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Intensidade final (0-10): ${intensidadeFinal.toInt()}',
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-              Slider(
-                value: intensidadeFinal,
-                min: 0,
-                max: 10,
-                divisions: 10,
-                onChanged: (v) => setState(() => intensidadeFinal = v),
-              ),
+
               const SizedBox(height: 30),
               SizedBox(
                 width: double.infinity,
