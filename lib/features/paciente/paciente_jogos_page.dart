@@ -16,7 +16,6 @@ import 'jogos/modo_piloto_page.dart';
 import 'jogos/laboratorio_mental_page.dart';
 import 'jogos/mente_flexivel_page.dart';
 import 'jogos/shark_mind_page.dart';
-import 'jogos/universos_paralelos_page.dart';
 import 'jogos/reacao_zero_page.dart';
 import 'jogos/cartas_sabotadores_page.dart';
 import 'jogos/escape_room_page.dart';
@@ -35,7 +34,7 @@ class _PacienteJogosPageState extends State<PacienteJogosPage> {
   final List<Map<String, dynamic>> jogosList = [
     {
       'id': 'decisao_pressao',
-      'titulo': 'Respire',
+      'titulo': 'Controle de Reações',
       'subtitulo': 'Treino de controle inibitório e regulação de emoções sob pressão',
       'icone': LucideIcons.timer,
       'corFundo': const Color(0xFFE63946),
@@ -96,14 +95,6 @@ class _PacienteJogosPageState extends State<PacienteJogosPage> {
       'icone': LucideIcons.speech,
       'corFundo': const Color(0xFFF77F00),
       'builder': (context) => const SharkMindPage(),
-    },
-    {
-      'id': 'universos_paralelos',
-      'titulo': 'Universos Paralelos',
-      'subtitulo': 'Criar respostas para cenários E se...',
-      'icone': LucideIcons.globe,
-      'corFundo': const Color(0xFFD62828),
-      'builder': (context) => const UniversosParalelosPage(),
     },
     {
       'id': 'reacao_zero',

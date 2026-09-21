@@ -1,4 +1,5 @@
 import '../../../core/api/api_client.dart';
+import '../../../core/notifications/local_notification_manager.dart';
 
 class PacienteService {
   Future<Map<String, dynamic>> obterMe() async {
@@ -138,6 +139,22 @@ class PacienteService {
         'tipo': 'activity',
         'data': act['dataEnvio'],
       });
+
+      // Agenda localmente lembrete de vencimento
+      final dataLimiteRaw = act['dataLimite'];
+      if (dataLimiteRaw != null) {
+        try {
+          final dataVencimento = DateTime.parse(dataLimiteRaw.toString());
+          // Evitar depender diretamente de imports locais não definidos no escopo deste serviço,
+          // mas como o manager inicializa globalmente, podemos agendar.
+          // Import será adicionado no topo.
+          LocalNotificationManager().agendarVencimentoAtividade(
+            act['id']?.toString() ?? '',
+            act['titulo']?.toString() ?? 'Atividade',
+            dataVencimento,
+          );
+        } catch (_) {}
+      }
     }
 
     // Mensagens não lidas

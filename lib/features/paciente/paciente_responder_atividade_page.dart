@@ -72,6 +72,11 @@ class _PacienteResponderAtividadePageState
   int pacienteNivel = 1;
   bool carregandoInfoPaciente = false;
 
+  // Tipo 8: Atividade Personalizada
+  List<Map<String, dynamic>> formPerguntas = [];
+  Map<String, dynamic> formRespostas = {};
+  Map<String, TextEditingController> formControllers = {};
+
   @override
   void initState() {
     super.initState();
@@ -280,6 +285,21 @@ class _PacienteResponderAtividadePageState
               rpdControllers[col] = TextEditingController();
             }
           }
+
+          // Atividade Personalizada (Tipo 8)
+          if (widget.tipo == 8) {
+            if (decoded.containsKey('perguntas') && decoded['perguntas'] is List) {
+              formPerguntas = List<Map<String, dynamic>>.from(decoded['perguntas']);
+              for (var p in formPerguntas) {
+                final id = p['id'] as String;
+                if (p['tipo'] == 'resposta_curta' || p['tipo'] == 'resposta_longa' || p['tipo'] == 'data') {
+                  formControllers[id] = TextEditingController();
+                } else if (p['tipo'] == 'multipla_escolha') {
+                  formRespostas[id] = <String>[];
+                }
+              }
+            }
+          }
         }
       }
     } catch (e) {
@@ -295,6 +315,9 @@ class _PacienteResponderAtividadePageState
       c.dispose();
     }
     for (var c in rpdControllers.values) {
+      c.dispose();
+    }
+    for (var c in formControllers.values) {
       c.dispose();
     }
     super.dispose();
@@ -353,6 +376,56 @@ class _PacienteResponderAtividadePageState
         'comentario': respostaController.text.trim(),
       };
       respostaFinal = jsonEncode(mapLeitura);
+    } else if (widget.tipo == 8) {
+      // Validar obrigatórias
+      for (var p in formPerguntas) {
+        if (p['obrigatoria'] == true) {
+          final id = p['id'] as String;
+          final tipo = p['tipo'] as String;
+          bool hasValue = false;
+          
+          if (['resposta_curta', 'resposta_longa', 'data'].contains(tipo)) {
+            hasValue = formControllers[id]?.text.trim().isNotEmpty ?? false;
+          } else if (tipo == 'multipla_escolha') {
+            final list = formRespostas[id] as List<String>?;
+            hasValue = list != null && list.isNotEmpty;
+          } else {
+            hasValue = formRespostas.containsKey(id) && formRespostas[id] != null;
+          }
+          
+          if (!hasValue) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Preencha todas as perguntas obrigatórias.')),
+            );
+            return;
+          }
+        }
+      }
+      
+      // Coletar respostas
+      final mapRespostas = formPerguntas.map((p) {
+        final id = p['id'] as String;
+        final tipo = p['tipo'] as String;
+        dynamic valor;
+        
+        if (['resposta_curta', 'resposta_longa', 'data'].contains(tipo)) {
+          valor = formControllers[id]?.text.trim();
+        } else {
+          valor = formRespostas[id];
+        }
+        
+        return {
+          'perguntaId': id,
+          'enunciado': p['enunciado'],
+          'tipo': tipo,
+          'resposta': valor,
+        };
+      }).toList();
+      
+      respostaFinal = jsonEncode({
+        'tipoAtividade': 'personalizada',
+        'respostas': mapRespostas,
+      });
     } else {
       respostaFinal = respostaController.text.trim();
       if (respostaFinal.isEmpty) {
@@ -1009,6 +1082,239 @@ class _PacienteResponderAtividadePageState
     );
   }
 
+  // --- ATIVIDADE PERSONALIZADA (TIPO 8) ---
+  Widget _buildAtividadePersonalizada() {
+    if (formPerguntas.isEmpty) {
+      return const Text('Esta atividade não possui perguntas configuradas.', style: TextStyle(color: AppColors.muted));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...formPerguntas.map((p) {
+          final id = p['id'] as String;
+          final tipo = p['tipo'] as String;
+          final obrigatoria = p['obrigatoria'] == true;
+          final enunciado = p['enunciado'] as String;
+          
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                RichText(
+                  text: TextSpan(
+                    text: enunciado,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.text, height: 1.4),
+                    children: [
+                      if (obrigatoria)
+                        const TextSpan(text: ' *', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildCampoFormularioPersonalizado(id, tipo, p),
+              ],
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  Widget _buildCampoFormularioPersonalizado(String id, String tipo, Map<String, dynamic> config) {
+    switch (tipo) {
+      case 'resposta_curta':
+        return TextField(
+          controller: formControllers[id],
+          decoration: InputDecoration(
+            hintText: 'Sua resposta...',
+            filled: true,
+            fillColor: const Color(0xFFF4F6F9),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          ),
+        );
+      case 'resposta_longa':
+        return TextField(
+          controller: formControllers[id],
+          maxLines: 4,
+          decoration: InputDecoration(
+            hintText: 'Sua resposta detalhada...',
+            filled: true,
+            fillColor: const Color(0xFFF4F6F9),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          ),
+        );
+      case 'sim_nao':
+        final valor = formRespostas[id] as String?;
+        return Row(
+          children: [
+            Expanded(
+              child: ChoiceChip(
+                label: const Center(child: Text('Sim')),
+                selected: valor == 'Sim',
+                onSelected: (s) => setState(() => formRespostas[id] = s ? 'Sim' : null),
+                selectedColor: AppColors.primary.withOpacity(0.1),
+                labelStyle: TextStyle(
+                  color: valor == 'Sim' ? AppColors.primary : AppColors.muted,
+                  fontWeight: valor == 'Sim' ? FontWeight.bold : FontWeight.normal,
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ChoiceChip(
+                label: const Center(child: Text('Não')),
+                selected: valor == 'Não',
+                onSelected: (s) => setState(() => formRespostas[id] = s ? 'Não' : null),
+                selectedColor: AppColors.primary.withOpacity(0.1),
+                labelStyle: TextStyle(
+                  color: valor == 'Não' ? AppColors.primary : AppColors.muted,
+                  fontWeight: valor == 'Não' ? FontWeight.bold : FontWeight.normal,
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ],
+        );
+      case 'escolha_unica':
+        final opcoes = List<String>.from(config['opcoes'] ?? []);
+        return Column(
+          children: opcoes.map((op) {
+            return RadioListTile<String>(
+              title: Text(op),
+              value: op,
+              groupValue: formRespostas[id] as String?,
+              onChanged: (val) => setState(() => formRespostas[id] = val),
+              contentPadding: EdgeInsets.zero,
+              activeColor: AppColors.primary,
+            );
+          }).toList(),
+        );
+      case 'multipla_escolha':
+        final opcoes = List<String>.from(config['opcoes'] ?? []);
+        final selecionadas = formRespostas[id] as List<String>? ?? <String>[];
+        return Column(
+          children: opcoes.map((op) {
+            final isSelected = selecionadas.contains(op);
+            return CheckboxListTile(
+              title: Text(op),
+              value: isSelected,
+              onChanged: (val) {
+                setState(() {
+                  if (val == true) {
+                    selecionadas.add(op);
+                  } else {
+                    selecionadas.remove(op);
+                  }
+                  formRespostas[id] = selecionadas;
+                });
+              },
+              contentPadding: EdgeInsets.zero,
+              activeColor: AppColors.primary,
+            );
+          }).toList(),
+        );
+      case 'lista_suspensa':
+        final opcoes = List<String>.from(config['opcoes'] ?? []);
+        return DropdownButtonFormField<String>(
+          value: formRespostas[id] as String?,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: const Color(0xFFF4F6F9),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          ),
+          hint: const Text('Selecione uma opção'),
+          items: opcoes.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+          onChanged: (val) => setState(() => formRespostas[id] = val),
+        );
+      case 'escala':
+        final min = (config['escalaMin'] as int?) ?? 0;
+        final max = (config['escalaMax'] as int?) ?? 10;
+        final minLabel = (config['escalaMinLabel'] as String?) ?? 'Nada';
+        final maxLabel = (config['escalaMaxLabel'] as String?) ?? 'Muito';
+        final valor = (formRespostas[id] as double?) ?? min.toDouble();
+        return Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(minLabel, style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+                Text(maxLabel, style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+              ],
+            ),
+            Slider(
+              value: valor,
+              min: min.toDouble(),
+              max: max.toDouble(),
+              divisions: (max - min) > 0 ? (max - min) : 1,
+              label: valor.round().toString(),
+              activeColor: AppColors.primary,
+              onChanged: (v) => setState(() => formRespostas[id] = v),
+            ),
+          ],
+        );
+      case 'data':
+        final ctrl = formControllers[id]!;
+        return TextField(
+          controller: ctrl,
+          readOnly: true,
+          decoration: InputDecoration(
+            hintText: 'Selecione uma data',
+            filled: true,
+            fillColor: const Color(0xFFF4F6F9),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            suffixIcon: const Icon(LucideIcons.calendar),
+          ),
+          onTap: () async {
+            final date = await showDatePicker(
+              context: context,
+              initialDate: DateTime.now(),
+              firstDate: DateTime(1900),
+              lastDate: DateTime(2100),
+            );
+            if (date != null) {
+              setState(() {
+                ctrl.text = '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+              });
+            }
+          },
+        );
+      case 'emocoes':
+        final val = formRespostas[id] as String?;
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            'Alegria', 'Tristeza', 'Raiva', 'Medo', 'Calma', 'Ansiedade'
+          ].map((emo) {
+            final isSelected = val == emo;
+            return InkWell(
+              onTap: () => setState(() => formRespostas[id] = emo),
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.primary : const Color(0xFFF4F6F9),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  emo,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : AppColors.text,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        );
+      default:
+        return const Text('Tipo de pergunta não suportado', style: TextStyle(color: Colors.red));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1054,6 +1360,8 @@ class _PacienteResponderAtividadePageState
                     _buildChecklist()
                   else if (widget.tipo == 6)
                     _buildLeituraPsicoeducativa()
+                  else if (widget.tipo == 8)
+                    _buildAtividadePersonalizada()
                   else
                     _buildRespostaLivre(),
                   const SizedBox(height: 32),

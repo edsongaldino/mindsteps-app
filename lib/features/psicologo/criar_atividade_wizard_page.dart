@@ -101,6 +101,11 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
   String dificuldadeJogo = 'Evolutivo'; // Fácil, Médio, Difícil, Evolutivo
   final customPalavrasController = TextEditingController(text: 'Alegria, Tristeza, Raiva, Medo, Nojo, Surpresa');
 
+  // Tipo 8: Atividade Personalizada
+  final tituloPersonalizadaController = TextEditingController();
+  final orientacoesPersonalizadaController = TextEditingController();
+  List<Map<String, dynamic>> perguntasPersonalizadas = [];
+
   // Passo 3: Configurações
   String tipoResposta = 'Texto (resposta livre)';
   bool atividadeObrigatoria = true;
@@ -147,6 +152,8 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
     novaLeituraPerguntaController.dispose();
     feedbackController.dispose();
     customPalavrasController.dispose();
+    tituloPersonalizadaController.dispose();
+    orientacoesPersonalizadaController.dispose();
     for (var c in perguntasControllers) {
       c.dispose();
     }
@@ -267,6 +274,14 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
         tipoResposta = 'Jogo Interativo';
         jogoSelecionado = 'Memória Tática';
         break;
+      case 8: // Atividade Personalizada
+        tituloPersonalizadaController.clear();
+        orientacoesPersonalizadaController.clear();
+        perguntasPersonalizadas = [];
+        tituloController.text = '';
+        descricaoController.text = '';
+        tipoResposta = 'Formulário Personalizado';
+        break;
     }
     _sincronizarControllers();
   }
@@ -378,7 +393,10 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
   }
 
   Future<void> concluirWizard() async {
-    if (tituloController.text.trim().isEmpty) {
+    final tituloEfetivo = tipoSelecionado == 8 ? tituloPersonalizadaController.text : tituloController.text;
+    final descricaoEfetiva = tipoSelecionado == 8 ? orientacoesPersonalizadaController.text : descricaoController.text;
+
+    if (tituloEfetivo.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Por favor, informe o título da atividade.')),
       );
@@ -450,7 +468,6 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
           };
           break;
         case 7: // Jogo
-        default:
           conteudoReal = {
             'tipoAtividade': 'jogo',
             'tipoJogo': jogoSelecionado,
@@ -460,6 +477,13 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
             'palavrasPersonalizadas': modoJogo == 'Palavras' && temaJogo == 'Personalizado'
                 ? customPalavrasController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList()
                 : null,
+          };
+          break;
+        case 8: // Atividade Personalizada
+        default:
+          conteudoReal = {
+            'tipoAtividade': 'personalizada',
+            'perguntas': perguntasPersonalizadas,
           };
           break;
       }
@@ -482,8 +506,8 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
 
       // Chamada da API para persistir a atividade
       final String novaAtividadeId = await service.criarAtividade(
-        titulo: tituloController.text,
-        descricao: descricaoController.text,
+        titulo: tituloEfetivo,
+        descricao: descricaoEfetiva,
         tipo: tipoSelecionado,
         conteudo: jsonEncode(conteudoReal),
         configuracoes: configuracoes,
@@ -669,6 +693,7 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
       {'id': 5, 'titulo': 'Áudio', 'desc': 'Áudio explicativo ou meditação guiada.', 'cor': const Color(0xFFEAF4F7), 'icone': LucideIcons.headphones},
       {'id': 6, 'titulo': 'Leitura', 'desc': 'Textos psicoeducativos para o paciente ler.', 'cor': const Color(0xFFFFF0F0), 'icone': LucideIcons.bookOpen},
       {'id': 7, 'titulo': 'Jogo', 'desc': 'Jogos interativos de memória e cognitivos.', 'cor': const Color(0xFFE8F5E9), 'icone': LucideIcons.gamepad2},
+      {'id': 8, 'titulo': 'Atividade personalizada', 'desc': 'Crie uma atividade com perguntas e campos de resposta personalizados.', 'cor': const Color(0xFFEDE9FE), 'icone': LucideIcons.filePlus2},
     ];
 
     return Column(
@@ -1755,39 +1780,41 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
         ),
         const SizedBox(height: 24),
         
-        const Text(
-          'Título da atividade',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: tituloController,
-          decoration: InputDecoration(
-            hintText: 'Ex: Diário de gratidão',
-            filled: true,
-            fillColor: const Color(0xFFF4F6F9),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        if (tipoSelecionado != 8) ...[
+          const Text(
+            'Título da atividade',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
           ),
-        ),
-        const SizedBox(height: 20),
+          const SizedBox(height: 8),
+          TextField(
+            controller: tituloController,
+            decoration: InputDecoration(
+              hintText: 'Ex: Diário de gratidão',
+              filled: true,
+              fillColor: const Color(0xFFF4F6F9),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            ),
+          ),
+          const SizedBox(height: 20),
 
-        const Text(
-          'Descrição para o paciente',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: descricaoController,
-          maxLines: 4,
-          maxLength: 500,
-          decoration: InputDecoration(
-            hintText: 'Explique como realizar o exercício...',
-            filled: true,
-            fillColor: const Color(0xFFF4F6F9),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          const Text(
+            'Descrição para o paciente',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
           ),
-        ),
-        const SizedBox(height: 20),
+          const SizedBox(height: 8),
+          TextField(
+            controller: descricaoController,
+            maxLines: 4,
+            maxLength: 500,
+            decoration: InputDecoration(
+              hintText: 'Explique como realizar o exercício...',
+              filled: true,
+              fillColor: const Color(0xFFF4F6F9),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
 
         if (tipoSelecionado == 1) _buildConteudoReflexao(),
         if (tipoSelecionado == 2) _buildConteudoRPD(),
@@ -1799,9 +1826,573 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
         ],
         if (tipoSelecionado == 6) _buildConteudoLeitura(),
         if (tipoSelecionado == 7) _buildConfiguracaoJogo(),
+        if (tipoSelecionado == 8) _buildConteudoPersonalizada(),
       ],
     );
   }
+
+  // --- MÉTODOS PARA ATIVIDADE PERSONALIZADA ---
+  Widget _buildConteudoPersonalizada() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'INFORMAÇÕES DA ATIVIDADE',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.muted, letterSpacing: 1),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Título da atividade *',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: tituloPersonalizadaController,
+          maxLength: 100,
+          decoration: InputDecoration(
+            hintText: 'Ex: Como foi minha semana?',
+            filled: true,
+            fillColor: const Color(0xFFF4F6F9),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            counterText: '',
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'Orientações ao paciente',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: orientacoesPersonalizadaController,
+          maxLines: 4,
+          maxLength: 500,
+          decoration: InputDecoration(
+            hintText: 'Ex: Responda pensando nos últimos 7 dias.',
+            filled: true,
+            fillColor: const Color(0xFFF4F6F9),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 32),
+        const Text(
+          'PERGUNTAS DA ATIVIDADE',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.muted, letterSpacing: 1),
+        ),
+        const SizedBox(height: 16),
+        if (perguntasPersonalizadas.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4F6F9),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0), style: BorderStyle.solid),
+            ),
+            child: const Center(
+              child: Column(
+                children: [
+                  Icon(LucideIcons.listPlus, size: 32, color: AppColors.muted),
+                  SizedBox(height: 12),
+                  Text('Nenhuma pergunta adicionada', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.text)),
+                  SizedBox(height: 4),
+                  Text('Adicione perguntas para criar seu formulário.', style: TextStyle(fontSize: 13, color: AppColors.muted), textAlign: TextAlign.center),
+                ],
+              ),
+            ),
+          )
+        else
+          ReorderableListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: perguntasPersonalizadas.length,
+            onReorder: (oldIndex, newIndex) {
+              setState(() {
+                if (oldIndex < newIndex) {
+                  newIndex -= 1;
+                }
+                final item = perguntasPersonalizadas.removeAt(oldIndex);
+                perguntasPersonalizadas.insert(newIndex, item);
+              });
+            },
+            itemBuilder: (context, index) {
+              final p = perguntasPersonalizadas[index];
+              return Container(
+                key: ValueKey(p['id']),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2)),
+                  ],
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          p['enunciado'],
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (p['obrigatoria'])
+                        Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text('Obrigatória', style: TextStyle(fontSize: 10, color: Colors.red, fontWeight: FontWeight.bold)),
+                        ),
+                    ],
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Row(
+                      children: [
+                        Icon(_obterIconeTipoPergunta(p['tipo']), size: 14, color: AppColors.primary),
+                        const SizedBox(width: 4),
+                        Text(_obterLabelTipoPergunta(p['tipo']), style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(LucideIcons.edit2, size: 18, color: AppColors.muted),
+                        onPressed: () => _mostrarDialogoEditarPergunta(index),
+                      ),
+                      IconButton(
+                        icon: const Icon(LucideIcons.trash2, size: 18, color: Colors.red),
+                        onPressed: () {
+                          setState(() {
+                            perguntasPersonalizadas.removeAt(index);
+                          });
+                        },
+                      ),
+                      const Icon(LucideIcons.gripVertical, size: 20, color: AppColors.muted),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _mostrarBottomSheetTipoPergunta,
+            icon: const Icon(LucideIcons.plusCircle, size: 18),
+            label: const Text('Adicionar pergunta'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary, width: 1.5),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  IconData _obterIconeTipoPergunta(String tipo) {
+    switch (tipo) {
+      case 'resposta_curta': return LucideIcons.type;
+      case 'resposta_longa': return LucideIcons.alignLeft;
+      case 'sim_nao': return LucideIcons.checkSquare;
+      case 'escolha_unica': return LucideIcons.listFilter;
+      case 'multipla_escolha': return LucideIcons.listChecks;
+      case 'lista_suspensa': return LucideIcons.chevronDownSquare;
+      case 'escala': return LucideIcons.slidersHorizontal;
+      case 'data': return LucideIcons.calendarDays;
+      case 'emocoes': return LucideIcons.smilePlus;
+      default: return LucideIcons.helpCircle;
+    }
+  }
+
+  String _obterLabelTipoPergunta(String tipo) {
+    switch (tipo) {
+      case 'resposta_curta': return 'Resposta curta';
+      case 'resposta_longa': return 'Resposta longa (parágrafo)';
+      case 'sim_nao': return 'Sim / Não';
+      case 'escolha_unica': return 'Escolha única';
+      case 'multipla_escolha': return 'Múltipla escolha';
+      case 'lista_suspensa': return 'Lista suspensa';
+      case 'escala': return 'Escala de intensidade';
+      case 'data': return 'Data';
+      case 'emocoes': return 'Seleção de emoções';
+      default: return 'Desconhecido';
+    }
+  }
+
+  void _mostrarBottomSheetTipoPergunta() {
+    final tipos = [
+      {'tipo': 'resposta_curta', 'desc': 'Texto em uma linha'},
+      {'tipo': 'resposta_longa', 'desc': 'Texto em várias linhas'},
+      {'tipo': 'sim_nao', 'desc': 'Opções Sim e Não'},
+      {'tipo': 'escolha_unica', 'desc': 'Apenas uma opção pode ser selecionada'},
+      {'tipo': 'multipla_escolha', 'desc': 'Mais de uma opção pode ser selecionada'},
+      {'tipo': 'lista_suspensa', 'desc': 'Menu com várias opções'},
+      {'tipo': 'escala', 'desc': 'Seletor de valores de 0 a 10'},
+      {'tipo': 'data', 'desc': 'Seleção de data no calendário'},
+      {'tipo': 'emocoes', 'desc': 'Seleção visual de emoções'},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Adicionar pergunta', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  IconButton(
+                    icon: const Icon(LucideIcons.x),
+                    onPressed: () => Navigator.pop(ctx),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: tipos.length,
+                itemBuilder: (ctx, i) {
+                  final t = tipos[i];
+                  return ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(_obterIconeTipoPergunta(t['tipo'] as String), color: AppColors.primary),
+                    ),
+                    title: Text(_obterLabelTipoPergunta(t['tipo'] as String), style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text(t['desc'] as String, style: const TextStyle(fontSize: 12)),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _adicionarNovaPergunta(t['tipo'] as String);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _adicionarNovaPergunta(String tipo) {
+    setState(() {
+      perguntasPersonalizadas.add({
+        'id': DateTime.now().millisecondsSinceEpoch.toString(),
+        'tipo': tipo,
+        'enunciado': 'Nova pergunta',
+        'obrigatoria': true,
+        if (['escolha_unica', 'multipla_escolha', 'lista_suspensa'].contains(tipo))
+          'opcoes': ['Opção 1', 'Opção 2'],
+        if (tipo == 'escala') ...{
+          'escalaMin': 0,
+          'escalaMax': 10,
+          'escalaMinLabel': 'Nada',
+          'escalaMaxLabel': 'Muito',
+        },
+      });
+    });
+    _mostrarDialogoEditarPergunta(perguntasPersonalizadas.length - 1);
+  }
+
+  void _mostrarDialogoEditarPergunta(int index) {
+    final pergunta = Map<String, dynamic>.from(perguntasPersonalizadas[index]);
+    final enunciadoController = TextEditingController(text: pergunta['enunciado']);
+    bool obrigatoria = pergunta['obrigatoria'] ?? true;
+    List<String> opcoes = List<String>.from(pergunta['opcoes'] ?? []);
+    
+    // Configurações para escala
+    int escalaMin = pergunta['escalaMin'] ?? 0;
+    int escalaMax = pergunta['escalaMax'] ?? 10;
+    final escalaMinLabelController = TextEditingController(text: pergunta['escalaMinLabel'] ?? 'Nada');
+    final escalaMaxLabelController = TextEditingController(text: pergunta['escalaMaxLabel'] ?? 'Muito');
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              insetPadding: const EdgeInsets.all(16),
+              child: Container(
+                width: MediaQuery.of(context).size.width,
+                padding: const EdgeInsets.all(24),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Editar Pergunta', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          IconButton(
+                            icon: const Icon(LucideIcons.x),
+                            onPressed: () => Navigator.pop(ctx),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(_obterIconeTipoPergunta(pergunta['tipo']), size: 16, color: AppColors.primary),
+                            const SizedBox(width: 8),
+                            Text(_obterLabelTipoPergunta(pergunta['tipo']), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      const Text('Enunciado', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: enunciadoController,
+                        maxLines: 3,
+                        minLines: 1,
+                        decoration: InputDecoration(
+                          hintText: 'Digite a pergunta...',
+                          filled: true,
+                          fillColor: const Color(0xFFF4F6F9),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Pergunta obrigatória', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        subtitle: const Text('O paciente deverá preencher para enviar', style: TextStyle(fontSize: 12)),
+                        value: obrigatoria,
+                        activeColor: AppColors.primary,
+                        onChanged: (val) => setStateDialog(() => obrigatoria = val),
+                      ),
+                      
+                      if (['escolha_unica', 'multipla_escolha', 'lista_suspensa'].contains(pergunta['tipo'])) ...[
+                        const Divider(height: 32),
+                        const Text('Opções de Resposta', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        const SizedBox(height: 12),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: opcoes.length,
+                          itemBuilder: (context, i) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    pergunta['tipo'] == 'multipla_escolha' ? LucideIcons.square : 
+                                    pergunta['tipo'] == 'escolha_unica' ? LucideIcons.circle : 
+                                    LucideIcons.minus,
+                                    size: 16, color: AppColors.muted,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextFormField(
+                                      initialValue: opcoes[i],
+                                      onChanged: (val) => opcoes[i] = val,
+                                      decoration: InputDecoration(
+                                        isDense: true,
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                        filled: true,
+                                        fillColor: const Color(0xFFF4F6F9),
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(LucideIcons.trash2, size: 18, color: Colors.red),
+                                    onPressed: () => setStateDialog(() => opcoes.removeAt(i)),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                        TextButton.icon(
+                          onPressed: () => setStateDialog(() => opcoes.add('Nova Opção')),
+                          icon: const Icon(LucideIcons.plus, size: 18),
+                          label: const Text('Adicionar Opção'),
+                        ),
+                      ],
+
+                      if (pergunta['tipo'] == 'escala') ...[
+                        const Divider(height: 32),
+                        const Text('Configuração da Escala', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Mínimo', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+                                  DropdownButtonFormField<int>(
+                                    value: escalaMin,
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      filled: true,
+                                      fillColor: const Color(0xFFF4F6F9),
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                    ),
+                                    items: [0, 1].map((e) => DropdownMenuItem(value: e, child: Text(e.toString()))).toList(),
+                                    onChanged: (v) => setStateDialog(() => escalaMin = v!),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Máximo', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+                                  DropdownButtonFormField<int>(
+                                    value: escalaMax,
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      filled: true,
+                                      fillColor: const Color(0xFFF4F6F9),
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                    ),
+                                    items: [3, 4, 5, 7, 10].map((e) => DropdownMenuItem(value: e, child: Text(e.toString()))).toList(),
+                                    onChanged: (v) => setStateDialog(() => escalaMax = v!),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Rótulo Mínimo', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+                                  TextField(
+                                    controller: escalaMinLabelController,
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      hintText: 'Ex: Nada',
+                                      filled: true,
+                                      fillColor: const Color(0xFFF4F6F9),
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Rótulo Máximo', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+                                  TextField(
+                                    controller: escalaMaxLabelController,
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      hintText: 'Ex: Muito',
+                                      filled: true,
+                                      fillColor: const Color(0xFFF4F6F9),
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+
+                      const SizedBox(height: 32),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: () {
+                            if (enunciadoController.text.trim().isEmpty) return;
+                            
+                            setState(() {
+                              pergunta['enunciado'] = enunciadoController.text.trim();
+                              pergunta['obrigatoria'] = obrigatoria;
+                              
+                              if (['escolha_unica', 'multipla_escolha', 'lista_suspensa'].contains(pergunta['tipo'])) {
+                                pergunta['opcoes'] = opcoes.where((e) => e.trim().isNotEmpty).toList();
+                              } else if (pergunta['tipo'] == 'escala') {
+                                pergunta['escalaMin'] = escalaMin;
+                                pergunta['escalaMax'] = escalaMax;
+                                pergunta['escalaMinLabel'] = escalaMinLabelController.text.trim();
+                                pergunta['escalaMaxLabel'] = escalaMaxLabelController.text.trim();
+                              }
+
+                              perguntasPersonalizadas[index] = pergunta;
+                            });
+                            Navigator.pop(ctx);
+                          },
+                          child: const Text('Salvar Pergunta', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+  // --- FIM DOS MÉTODOS PARA ATIVIDADE PERSONALIZADA ---
 
   List<String> _obterOpcoesTipoResposta() {
     switch (tipoSelecionado) {
@@ -1819,6 +2410,8 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
         return ['Confirmação + Perguntas de Fixação', 'Apenas confirmação de leitura'];
       case 7:
         return ['Jogo Interativo'];
+      case 8:
+        return ['Formulário Personalizado'];
       default:
         return ['Texto (resposta livre)'];
     }
@@ -2208,11 +2801,20 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(color: const Color(0xFFF0F4FF), borderRadius: BorderRadius.circular(12)),
+                    child: const Icon(LucideIcons.fileText, color: AppColors.primary),
+                  ),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Text(
-                      tituloController.text,
+                      tipoSelecionado == 8 
+                          ? (tituloPersonalizadaController.text.isEmpty ? 'Sem título' : tituloPersonalizadaController.text)
+                          : tituloController.text,
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.text),
                     ),
                   ),
@@ -2229,7 +2831,9 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
               ),
               const SizedBox(height: 10),
               Text(
-                descricaoController.text,
+                tipoSelecionado == 8 
+                    ? (orientacoesPersonalizadaController.text.isEmpty ? 'Sem orientações' : orientacoesPersonalizadaController.text)
+                    : descricaoController.text,
                 style: const TextStyle(fontSize: 13, color: AppColors.muted, height: 1.4),
               ),
               const SizedBox(height: 16),
@@ -2242,6 +2846,8 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
                 _buildRevisaoItem('Jogo:', '$jogoSelecionado ($modoJogo)'),
                 _buildRevisaoItem('Tema:', temaJogo),
                 _buildRevisaoItem('Dificuldade:', dificuldadeJogo),
+              ] else if (tipoSelecionado == 8) ...[
+                _buildRevisaoItem('Perguntas do Formulário:', '${perguntasPersonalizadas.length} perguntas'),
               ] else ...[
                 _buildRevisaoItem('Perguntas Criadas:', '${perguntasGuiadas.length} perguntas'),
               ],
@@ -2449,7 +3055,7 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
     {
       'subcategoria': 'REGULAÇÃO EMOCIONAL',
       'jogos': [
-        'Respire',
+        'Controle de Reações',
         'Ansiedade Social',
       ],
     },
@@ -2474,7 +3080,6 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
         'Mente Flexível',
         'Laboratório Mental',
         'Shark Mind',
-        'Universos Paralelos',
       ],
     },
     {
@@ -2636,6 +3241,7 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
 
   String _getDescricaoDetalhadaJogo(String jogo) {
     switch (jogo) {
+      case 'Controle de Reações':
       case 'Respire':
       case 'Controle das Emoções - Respire':
       case 'Decisão Sob Pressão':
@@ -2657,8 +3263,6 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
         return '[FLEXIBILIDADE COGNITIVA] Classificação dinâmica de objetos de acordo com regras imprevisíveis (cor, tamanho, lados, quantidade).';
       case 'Shark Mind':
         return '[FLUÊNCIA VERBAL] Pitch de vendas criativo de 30 segundos.';
-      case 'Universos Paralelos':
-        return '[PENSAMENTO DIVERGENTE] Resposta criativa a cenários hipotéticos alternativose originais.';
       case 'Reação Zero':
         return '[INIBIÇÃO MOTORA] Resposta rápida ao sinal TOQUE e contenção ao sinal CONGELAR.';
       case 'Detetive dos Pensamentos':
@@ -2690,6 +3294,7 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
 
   String _getMetricasJogo(String jogo) {
     switch (jogo) {
+      case 'Controle de Reações':
       case 'Respire':
       case 'Controle das Emoções - Respire':
       case 'Decisão Sob Pressão':
@@ -2711,8 +3316,6 @@ class _CriarAtividadeWizardPageState extends State<CriarAtividadeWizardPage> {
         return '• Taxa de acertos na classificação sob mudança de regra\n• Velocidade de adaptação mental';
       case 'Shark Mind':
         return '• Tempo de pitch gravado\n• Criatividade e fluência verbal na persuasão';
-      case 'Universos Paralelos':
-        return '• Originalidade na escolha de mídias de resposta\n• Detalhamento e profundidade do pensamento alternativo';
       case 'Reação Zero':
         return '• Acurácia sob sinais contraditórios\n• Nível de inibição motora e tempo de reação';
       case 'Detetive dos Pensamentos':

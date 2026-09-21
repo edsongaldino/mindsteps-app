@@ -85,7 +85,7 @@ class AtividadesPageState extends State<AtividadesPage> {
       },
       {
         'subcategoria': 'REGULAÇÃO EMOCIONAL',
-        'jogos': ['Respire', 'Ansiedade Social'],
+        'jogos': ['Controle de Reações', 'Ansiedade Social'],
         'desc': 'Respiração guiada, regulação de estados ansiosos e somatização.',
         'cor': const Color(0xFFE63946),
       },
@@ -103,7 +103,7 @@ class AtividadesPageState extends State<AtividadesPage> {
       },
       {
         'subcategoria': 'FLEXIBILIDADE COGNITIVA & LINGUAGEM',
-        'jogos': ['Mente Flexível', 'Laboratório Mental', 'Shark Mind', 'Universos Paralelos'],
+        'jogos': ['Mente Flexível', 'Laboratório Mental', 'Shark Mind'],
         'desc': 'Troca de regras, fluência verbal e raciocínio divergente.',
         'cor': const Color(0xFF7209B7),
       },

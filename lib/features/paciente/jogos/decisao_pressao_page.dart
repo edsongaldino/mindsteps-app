@@ -116,7 +116,7 @@ class _DecisaoSobPressaoPageState extends State<DecisaoSobPressaoPage> {
         backgroundColor: backgroundColor,
         elevation: 0,
         title: const Text(
-          'CONTROLE DAS EMOÇÕES - RESPIRE',
+          'CONTROLE DE REAÇÕES',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,

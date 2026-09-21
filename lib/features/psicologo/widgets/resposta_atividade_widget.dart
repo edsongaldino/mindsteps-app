@@ -52,7 +52,12 @@ class RespostaAtividadeWidget extends StatelessWidget {
   }
 
   Widget _renderizarMap(BuildContext context, Map<String, dynamic> data) {
-    // 1. Decisão Sob Pressão
+    // 0. Atividade Personalizada (Formulário)
+    if (data.containsKey('tipoAtividade') && data['tipoAtividade'] == 'personalizada') {
+      return _buildAtividadePersonalizada(data);
+    }
+
+    // 1. Controle de Reações (Decisão Sob Pressão)
     if (data.containsKey('acao_escolhida') ||
         (data.containsKey('situacao') && data.containsKey('tipo_acao'))) {
       return _buildDecisaoSobPressao(data);
@@ -86,12 +91,7 @@ class RespostaAtividadeWidget extends StatelessWidget {
       return _buildSharkMind(data);
     }
 
-    // 7. Universos Paralelos
-    if (data.containsKey('criacao') && data.containsKey('cenario')) {
-      return _buildUniversosParalelos(data);
-    }
-
-    // 8. Memória Tática
+    // 7. Memória Tática
     if (data.containsKey('arquivo_esperado') || data.containsKey('arquivo_respondido')) {
       return _buildMemoriaTatica(data);
     }
@@ -186,7 +186,7 @@ class RespostaAtividadeWidget extends StatelessWidget {
   }
 
   // ==========================================
-  // 1. DECISÃO SOB PRESSÃO (Atividade da Imagem)
+  // 1. CONTROLE DE REAÇÕES (Decisão Sob Pressão)
   // ==========================================
   Widget _buildDecisaoSobPressao(Map<String, dynamic> data) {
     final situacao = data['situacao']?.toString();
@@ -695,45 +695,7 @@ class RespostaAtividadeWidget extends StatelessWidget {
   }
 
   // ==========================================
-  // 7. UNIVERSOS PARALELOS
-  // ==========================================
-  Widget _buildUniversosParalelos(Map<String, dynamic> data) {
-    final cenario = data['cenario']?.toString() ?? '';
-    final metodo = data['metodo']?.toString() ?? 'Escrever';
-    final criacao = data['criacao']?.toString() ?? '';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildTagPill(
-          icone: LucideIcons.palette,
-          label: 'Método: $metodo',
-          bgCor: AppColors.softBlue,
-          textoCor: AppColors.primary,
-        ),
-        const SizedBox(height: 12),
-        if (cenario.isNotEmpty)
-          _buildInfoBloco(
-            titulo: 'CENÁRIO HIPOTÉTICO',
-            icone: LucideIcons.compass,
-            conteudo: cenario,
-          ),
-        if (criacao.isNotEmpty)
-          _buildInfoBloco(
-            titulo: 'CRIAÇÃO / RESPOSTA CRIATIVA DO PACIENTE',
-            icone: LucideIcons.sparkles,
-            conteudo: criacao,
-            bgCor: AppColors.softGreen.withValues(alpha: 0.4),
-            bordaCor: AppColors.secondary.withValues(alpha: 0.4),
-            iconeCor: AppColors.secondary,
-            destaque: true,
-          ),
-      ],
-    );
-  }
-
-  // ==========================================
-  // 8. MEMÓRIA TÁTICA
+  // 7. MEMÓRIA TÁTICA
   // ==========================================
   Widget _buildMemoriaTatica(Map<String, dynamic> data) {
     final acerto = data['acerto'] == true || data['acerto']?.toString().toLowerCase() == 'true';
@@ -1344,5 +1306,188 @@ class RespostaAtividadeWidget extends StatelessWidget {
     final raw = resultado.toString().trim();
     if (raw.isEmpty) return key;
     return raw[0].toUpperCase() + raw.substring(1);
+  }
+
+  // ============================================================================
+  // ATIVIDADE PERSONALIZADA (FORMULÁRIO)
+  // ============================================================================
+  Widget _buildAtividadePersonalizada(Map<String, dynamic> data) {
+    final respostas = data['respostas'];
+    
+    if (respostas == null || respostas is! List || respostas.isEmpty) {
+      return _buildVazioCard('Nenhuma resposta encontrada no formulário.');
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(LucideIcons.fileText, color: AppColors.primary, size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Respostas do Formulário',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.text),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        ...respostas.map<Widget>((r) {
+          final enunciado = r['enunciado']?.toString() ?? 'Pergunta desconhecida';
+          final tipo = r['tipo']?.toString() ?? 'desconhecido';
+          final respostaVal = r['resposta'];
+          
+          return _buildInfoBlockVertical(
+            label: enunciado,
+            badgeLabel: _obterLabelTipoPergunta(tipo),
+            child: _buildValorRespostaPersonalizada(tipo, respostaVal),
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  String _obterLabelTipoPergunta(String tipo) {
+    switch (tipo) {
+      case 'resposta_curta': return 'Texto Curto';
+      case 'resposta_longa': return 'Parágrafo';
+      case 'sim_nao': return 'Sim/Não';
+      case 'escolha_unica': return 'Única Escolha';
+      case 'multipla_escolha': return 'Múltipla Escolha';
+      case 'lista_suspensa': return 'Lista Suspensa';
+      case 'escala': return 'Escala';
+      case 'data': return 'Data';
+      case 'emocoes': return 'Emoção';
+      default: return 'Campo';
+    }
+  }
+
+  Widget _buildValorRespostaPersonalizada(String tipo, dynamic valor) {
+    if (valor == null || valor.toString().isEmpty) {
+      return const Text('Não respondido', style: TextStyle(color: AppColors.muted, fontStyle: FontStyle.italic));
+    }
+
+    if (tipo == 'multipla_escolha' && valor is List) {
+      return Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: valor.map<Widget>((v) => Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0F4FF),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+          ),
+          child: Text(v.toString(), style: const TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w600)),
+        )).toList(),
+      );
+    }
+    
+    if (tipo == 'escala') {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(6)),
+            child: Text(
+              valor.toString(),
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
+            ),
+          ),
+          const SizedBox(width: 8),
+          const Text('na escala', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+        ],
+      );
+    }
+
+    if (tipo == 'emocoes') {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(LucideIcons.smilePlus, size: 16, color: AppColors.primary),
+          const SizedBox(width: 6),
+          Text(valor.toString(), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.text)),
+        ],
+      );
+    }
+    
+    if (tipo == 'sim_nao') {
+      final vStr = valor.toString().toLowerCase();
+      final isSim = vStr == 'sim';
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: isSim ? AppColors.softGreen : const Color(0xFFFFF0F0),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          valor.toString(),
+          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isSim ? AppColors.secondary : Colors.red),
+        ),
+      );
+    }
+
+    return Text(
+      valor.toString(),
+      style: const TextStyle(fontSize: 14, color: AppColors.text, height: 1.4),
+    );
+  }
+
+  Widget _buildInfoBlockVertical({
+    required String label,
+    required String badgeLabel,
+    required Widget child,
+  }) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.text, height: 1.3),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0F4FF),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  badgeLabel,
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.primary),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
   }
 }

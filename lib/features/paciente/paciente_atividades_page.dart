@@ -21,7 +21,6 @@ import 'jogos/modo_piloto_page.dart';
 import 'jogos/laboratorio_mental_page.dart';
 import 'jogos/mente_flexivel_page.dart';
 import 'jogos/shark_mind_page.dart';
-import 'jogos/universos_paralelos_page.dart';
 import 'jogos/reacao_zero_page.dart';
 import 'jogos/cartas_sabotadores_page.dart';
 import 'jogos/escape_room_page.dart';
@@ -76,6 +75,7 @@ class _PacienteAtividadesPageState extends State<PacienteAtividadesPage> {
       final atividadeId = atividade['id']?.toString() ?? '';
 
       switch (nomeJogo) {
+        case 'Controle de Reações':
         case 'Respire':
         case 'Controle das Emoções - Respire':
         case 'Decisão Sob Pressão':
@@ -134,9 +134,6 @@ class _PacienteAtividadesPageState extends State<PacienteAtividadesPage> {
           break;
         case 'Shark Mind':
           gamePage = SharkMindPage(atividadePacienteId: atividadeId);
-          break;
-        case 'Universos Paralelos':
-          gamePage = UniversosParalelosPage(atividadePacienteId: atividadeId);
           break;
         case 'Reação Zero':
           gamePage = ReacaoZeroPage(atividadePacienteId: atividadeId);

@@ -12,7 +12,7 @@ void main() {
   }
 
   group('RespostaAtividadeWidget Tests', () {
-    testWidgets('Renderiza Decisão Sob Pressão com sucesso', (WidgetTester tester) async {
+    testWidgets('Renderiza Controle de Reações com sucesso', (WidgetTester tester) async {
       const jsonStr =
           '{"situacao":"Você enviou uma mensagem importante. A pessoa visualizou há 4 horas e não respondeu.","acao_escolhida":"Esperar com calma e responder normalmente depois","tipo_acao":"Assertiva","respirou":true}';
 
@@ -20,7 +20,7 @@ void main() {
         buildTestableWidget(
           const RespostaAtividadeWidget(
             resposta: jsonStr,
-            tituloAtividade: 'Decisão Sob Pressão',
+            tituloAtividade: 'Controle de Reações',
           ),
         ),
       );
@@ -39,7 +39,7 @@ void main() {
       );
     });
 
-    testWidgets('Renderiza Decisão Sob Pressão Impulsiva sem respiração', (WidgetTester tester) async {
+    testWidgets('Renderiza Controle de Reações Impulsivo sem respiração', (WidgetTester tester) async {
       const jsonStr =
           '{"situacao":"Conflito no trabalho","acao_escolhida":"Responder na hora com agressividade","tipo_acao":"Impulsiva","respirou":false}';
 
@@ -47,7 +47,7 @@ void main() {
         buildTestableWidget(
           const RespostaAtividadeWidget(
             resposta: jsonStr,
-            tituloAtividade: 'Decisão Sob Pressão',
+            tituloAtividade: 'Controle de Reações',
           ),
         ),
       );

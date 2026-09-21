@@ -6,9 +6,13 @@ import '../../features/auth/login_page.dart';
 import '../auth/auth_storage.dart';
 
 class ApiClient {
+  static const bool isLocal = true;
+  static const String localBaseUrl = 'https://localhost:7001/api'; // Change port if needed
+  static const String prodBaseUrl = 'https://api.mindsteps.com.br/api';
+
   static final Dio dio = Dio(
     BaseOptions(
-      baseUrl: 'https://api.mindsteps.com.br/api',
+      baseUrl: isLocal ? localBaseUrl : prodBaseUrl,
       connectTimeout: const Duration(seconds: 60),
       receiveTimeout: const Duration(seconds: 60),
       headers: {

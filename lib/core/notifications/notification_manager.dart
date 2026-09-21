@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../api/api_client.dart';
 import '../auth/auth_storage.dart';
+import 'local_notification_manager.dart';
 
 class NotificationManager {
   static final NotificationManager _instance = NotificationManager._internal();
@@ -23,6 +24,9 @@ class NotificationManager {
       
       final messaging = FirebaseMessaging.instance;
 
+      // Inicializa notificações locais
+      await LocalNotificationManager().inicializar();
+      
       // Solicita permissão de notificação
       await messaging.requestPermission(
         alert: true,
@@ -38,6 +42,13 @@ class NotificationManager {
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         if (kDebugMode) {
           print('Mensagem recebida em foreground: ${message.notification?.title}');
+        }
+        if (message.notification != null) {
+          LocalNotificationManager().exibirNotificacaoImediata(
+            id: message.hashCode,
+            title: message.notification!.title ?? 'MindSteps',
+            body: message.notification!.body ?? '',
+          );
         }
       });
 
@@ -55,6 +66,9 @@ class NotificationManager {
 
       // Se o usuário já estiver logado, atualiza o token
       await sincronizarToken();
+      
+      // Agenda checkin diário localmente
+      await LocalNotificationManager().agendarCheckinDiario();
     } catch (e) {
       if (kDebugMode) {
         print('Aviso: Não foi possível inicializar o Firebase Messaging (configurações do Firebase pendentes): $e');
