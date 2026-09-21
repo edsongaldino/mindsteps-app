@@ -16,8 +16,8 @@ class LocalNotificationManager {
 
     tz.initializeTimeZones();
     try {
-      final String currentTimeZone = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(currentTimeZone));
+      final tzInfo = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(tzInfo.toString()));
     } catch (e) {
       // Fallback
     }
@@ -39,7 +39,7 @@ class LocalNotificationManager {
     );
 
     await _flutterLocalNotificationsPlugin.initialize(
-      initializationSettings,
+      initializationSettings: initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse details) {
         // Handle notification tap
       },
@@ -62,7 +62,12 @@ class LocalNotificationManager {
     );
 
     const NotificationDetails details = NotificationDetails(android: androidDetails);
-    await _flutterLocalNotificationsPlugin.show(id, title, body, details);
+    await _flutterLocalNotificationsPlugin.show(
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: details,
+    );
   }
 
   Future<void> agendarCheckinDiario() async {
@@ -83,13 +88,12 @@ class LocalNotificationManager {
     }
 
     await _flutterLocalNotificationsPlugin.zonedSchedule(
-      1000,
-      'Bom dia!',
-      'Como você está se sentindo hoje? Faça seu check-in diário.',
-      scheduledDate,
-      details,
+      id: 1000,
+      title: 'Bom dia!',
+      body: 'Como você está se sentindo hoje? Faça seu check-in diário.',
+      scheduledDate: scheduledDate,
+      notificationDetails: details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
     );
   }
@@ -111,13 +115,12 @@ class LocalNotificationManager {
     if (tzDate.isAfter(tz.TZDateTime.now(tz.local))) {
       final id = atividadeId.hashCode;
       await _flutterLocalNotificationsPlugin.zonedSchedule(
-        id,
-        'Atividade vence amanhã',
-        'A atividade "$titulo" vence em 24h. Não se esqueça de concluí-la!',
-        tzDate,
-        details,
+        id: id,
+        title: 'Atividade vence amanhã',
+        body: 'A atividade "$titulo" vence em 24h. Não se esqueça de concluí-la!',
+        scheduledDate: tzDate,
+        notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
       );
     }
   }
