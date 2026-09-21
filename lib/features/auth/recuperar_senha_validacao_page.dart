@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:pinput/pinput.dart';
 import '../../core/theme/app_theme.dart';
+import 'auth_service.dart';
 import 'redefinir_senha_page.dart';
 
 class RecuperarSenhaValidacaoPage extends StatefulWidget {
