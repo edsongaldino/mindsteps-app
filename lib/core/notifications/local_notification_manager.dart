@@ -39,7 +39,7 @@ class LocalNotificationManager {
     );
 
     await _flutterLocalNotificationsPlugin.initialize(
-      initializationSettings: initializationSettings,
+      settings: initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse details) {
         // Handle notification tap
       },

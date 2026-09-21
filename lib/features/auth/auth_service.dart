@@ -54,38 +54,96 @@ class AuthService {
     }
   }
 
-  Future<void> registrarPsicologo({
+  Future<void> solicitarCadastroPsicologo({
     required String nome,
     required String email,
     required String senha,
     required String crp,
+    required String documento,
     String? telefone,
     String? bio,
   }) async {
     try {
       await ApiClient.dio.post(
-        '/Psicologos/registrar',
+        '/Psicologos/solicitar-cadastro',
         data: {
           'nome': nome,
           'email': email,
           'senha': senha,
           'crp': crp,
+          'documento': documento,
           'telefone': telefone,
           'bio': bio,
         },
       );
     } on DioException catch (e) {
       final data = e.response?.data;
+      if (data is Map && data['message'] != null) throw Exception(data['message']);
+      if (data is String && data.isNotEmpty) throw Exception(data);
+      throw Exception('Erro ao solicitar cadastro.');
+    }
+  }
 
-      if (data is Map && data['message'] != null) {
-        throw Exception(data['message']);
-      }
+  Future<Map<String, dynamic>> validarCadastro({
+    required String email,
+    required String codigo,
+  }) async {
+    try {
+      final response = await ApiClient.dio.post(
+        '/Psicologos/validar-cadastro',
+        data: {
+          'email': email,
+          'codigo': codigo,
+        },
+      );
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      if (data is Map && data['message'] != null) throw Exception(data['message']);
+      if (data is String && data.isNotEmpty) throw Exception(data);
+      throw Exception('Erro ao validar cadastro.');
+    }
+  }
 
-      if (data is String && data.isNotEmpty) {
-        throw Exception(data);
-      }
+  Future<Map<String, dynamic>> redefinirSenha({
+    required String email,
+    required String codigo,
+    required String novaSenha,
+  }) async {
+    try {
+      final response = await ApiClient.dio.post(
+        '/Auth/redefinir-senha',
+        data: {
+          'email': email,
+          'codigo': codigo,
+          'novaSenha': novaSenha,
+        },
+      );
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      if (data is Map && data['message'] != null) throw Exception(data['message']);
+      throw Exception('Erro ao redefinir a senha.');
+    }
+  }
 
-      throw Exception('Erro ao cadastrar psicólogo.');
+  Future<void> validarCodigoRecuperacao({
+    required String email,
+    required String codigo,
+  }) async {
+    try {
+      await ApiClient.dio.post(
+        '/Auth/validar-codigo-recuperacao',
+        data: {
+          'email': email,
+          'codigo': codigo,
+        },
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      if (data is Map && data['message'] != null) throw Exception(data['message']);
+      if (data is String && data.isNotEmpty) throw Exception(data);
+      throw Exception('Código de verificação inválido.');
     }
   }
 }

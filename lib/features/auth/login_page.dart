@@ -8,6 +8,7 @@ import '../admin/admin_home_page.dart';
 import '../psicologo/psicologo_home_page.dart';
 import '../paciente/paciente_home_page.dart';
 import 'recuperar_senha_page.dart';
+import 'cadastro_psicologo_page.dart';
 import '../../core/auth/biometric_service.dart';
 
 
@@ -375,7 +376,7 @@ class _LoginPageState extends State<LoginPage> {
                   children: [
                     TextSpan(text: 'O MindSteps é uma plataforma utilizada por\n'),
                     TextSpan(
-                      text: 'psicólogos, clínicas e pacientes.',
+                      text: 'psicólogos e pacientes.',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: AppColors.secondary,
@@ -428,7 +429,7 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                               SizedBox(height: 4),
                               Text(
-                                'O acesso é liberado pelo seu psicólogo ou pela clínica onde você está em acompanhamento.',
+                                'O acesso é liberado pelo seu psicólogo onde você está em acompanhamento.',
                                 style: TextStyle(
                                   fontSize: 12,
                                   height: 1.3,
@@ -466,25 +467,61 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Para psicólogos e clínicas',
+                              const Text(
+                                'Sou psicólogo',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                   color: AppColors.text,
                                 ),
                               ),
-                              SizedBox(height: 4),
-                              Text(
-                                'As contas são criadas e gerenciadas através da plataforma administrativa do MindSteps.',
+                              const SizedBox(height: 4),
+                              const Text(
+                                'Crie sua conta para começar a utilizar o MindSteps com seus pacientes.',
                                 style: TextStyle(
                                   fontSize: 12,
                                   height: 1.3,
                                   color: AppColors.muted,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    Navigator.pop(context); // Close modal
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const CadastroPsicologoPage()),
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.secondary,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                  ),
+                                  icon: const Icon(LucideIcons.externalLink, size: 16),
+                                  label: const Text(
+                                    'Criar minha conta',
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              const Center(
+                                child: Text(
+                                  'O cadastro é feito em poucos minutos.',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.muted,
+                                  ),
                                 ),
                               ),
                             ],
@@ -501,7 +538,7 @@ class _LoginPageState extends State<LoginPage> {
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8),
                 child: Text(
-                  'Caso ainda não tenha acesso, entre em contato com seu psicólogo ou clínica responsável.',
+                  'Caso ainda não tenha acesso, entre em contato com seu psicólogo responsável.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 13,
@@ -843,7 +880,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           const SizedBox(height: 6),
                           const Text(
-                            'Entre em contato com sua clínica ou psicólogo responsável para solicitar seu acesso.',
+                            'Entre em contato com seu psicólogo responsável para solicitar seu acesso.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: AppColors.muted,
