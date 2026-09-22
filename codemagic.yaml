@@ -11,6 +11,8 @@ workflows:
           source: true
 
     environment:
+      groups:
+        - mindsteps
       flutter: stable
       xcode: latest
 
@@ -22,11 +24,23 @@ workflows:
         - MINDSTEPS_ANDROID_KEYSTORE
 
     scripts:
-      - flutter clean
-      - flutter pub get
-      - xcode-project use-profiles
-      - flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
-      - flutter build appbundle --release
+      - name: Decodificar arquivos do Firebase
+        script: |
+          echo $GOOGLE_SERVICES_JSON | base64 --decode > android/app/google-services.json
+          echo $GOOGLE_SERVICE_INFO | base64 --decode > ios/Runner/GoogleService-Info.plist
+      - name: Limpar e baixar dependencias
+        script: |
+          flutter clean
+          flutter pub get
+      - name: Configurar perfis do iOS
+        script: |
+          xcode-project use-profiles
+      - name: Buildar iOS
+        script: |
+          flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
+      - name: Buildar Android
+        script: |
+          flutter build appbundle --release
 
     artifacts:
       - build/ios/ipa/*.ipa
