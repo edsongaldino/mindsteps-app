@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/api/api_client.dart';
@@ -413,6 +414,18 @@ class PacientesPageState extends State<PacientesPage> {
             senha: senhaController.text.trim(),
           );
           _recarregar();
+          
+          Future.delayed(const Duration(milliseconds: 400), () {
+            if (context.mounted) {
+              _exibirModalConvite(
+                context,
+                nomeController.text.trim(),
+                emailController.text.trim(),
+                telefoneController.text.replaceAll(RegExp(r'\D'), ''),
+                senhaController.text.trim(),
+              );
+            }
+          });
         } catch (e) {
           String errMsg = 'Erro ao cadastrar paciente.';
           try {
@@ -437,6 +450,153 @@ class PacientesPageState extends State<PacientesPage> {
             );
           }
         }
+      },
+    );
+  }
+
+  void _exibirModalConvite(BuildContext context, String nome, String email, String telefone, String senha) {
+    final mensagem = '''Olá $nome! Tudo bem?
+Seu psicólogo(a) preparou um espaço exclusivo para você no aplicativo MindSteps.
+Por lá, você poderá realizar atividades, jogos terapêuticos e muito mais.
+
+📲 Baixe o app aqui: https://mindsteps.app/download
+
+Aqui estão seus dados de acesso:
+E-mail: $email
+Senha: $senha
+
+Aguardamos você!''';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.softGreen,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(LucideIcons.messageCircle, color: AppColors.success),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Paciente cadastrado!',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.text),
+                        ),
+                        Text(
+                          'Envie o convite com os dados de acesso.',
+                          style: TextStyle(fontSize: 13, color: AppColors.muted),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Text(
+                  mensagem,
+                  style: const TextStyle(fontSize: 14, color: AppColors.text, height: 1.5),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: mensagem));
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          const SnackBar(content: Text('Mensagem copiada!')),
+                        );
+                      },
+                      icon: const Icon(LucideIcons.copy, size: 18),
+                      label: const Text('Copiar'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        String wppNumber = telefone;
+                        if (!wppNumber.startsWith('55') && wppNumber.length <= 11) {
+                           wppNumber = '55$wppNumber';
+                        }
+                        
+                        final url = Uri.parse('https://wa.me/$wppNumber?text=${Uri.encodeComponent(mensagem)}');
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(url, mode: LaunchMode.externalApplication);
+                        } else {
+                          if (ctx.mounted) {
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              const SnackBar(content: Text('Não foi possível abrir o WhatsApp.')),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(LucideIcons.send, size: 18),
+                      label: const Text('WhatsApp'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF25D366),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Agora não', style: TextStyle(color: AppColors.muted)),
+                ),
+              ),
+            ],
+          ),
+        );
       },
     );
   }
